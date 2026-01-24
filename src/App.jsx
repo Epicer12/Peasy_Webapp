@@ -1,13 +1,29 @@
-import { useState } from 'react';
-import './index.css'; // Make sure Tailwind is imported
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import './index.css';
+import { auth } from './firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    alert(`Email: ${email}\nPassword: ${password}`);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      alert(`Login successful!\nWelcome, ${user.email}`);
+      // TODO: redirect to dashboard here
+    } catch (error) {
+      if (error.code === 'auth/user-not-found') {
+        alert('No user found with this email.');
+      } else if (error.code === 'auth/wrong-password') {
+        alert('Incorrect password.');
+      } else {
+        alert(`Error: ${error.message}`);
+      }
+    }
   };
 
   return (
@@ -21,6 +37,7 @@ function App() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
           />
           <input
             type="password"
@@ -28,6 +45,7 @@ function App() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
           />
           <button
             type="submit"
@@ -36,6 +54,14 @@ function App() {
             Login
           </button>
         </form>
+
+        {/* Sign-Up Link Below Login Form */}
+        <p className="text-center mt-4 text-sm">
+          Don't have an account?{' '}
+          <Link to="/signup" className="text-blue-600 hover:underline">
+            Sign up
+          </Link>
+        </p>
       </div>
     </div>
   );
