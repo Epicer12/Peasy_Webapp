@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import './index.css';
-import { auth } from './firebase';
+import { Link, useNavigate } from 'react-router-dom';
+import '../../index.css';
+import { auth } from '../../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
-function App() {
+function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      alert(`Login successful!\nWelcome, ${user.email}`);
-      // TODO: redirect to dashboard here
+      // Redirect to home page after successful login
+      navigate('/home');
     } catch (error) {
       if (error.code === 'auth/user-not-found') {
         alert('No user found with this email.');
@@ -67,4 +68,4 @@ function App() {
   );
 }
 
-export default App;
+export default LoginPage;

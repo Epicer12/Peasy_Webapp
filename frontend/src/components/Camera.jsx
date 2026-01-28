@@ -71,6 +71,7 @@ function Camera() {
       detected: ["GPU"],
       confidence: 0.85,
       image: capturedImage,
+      model_id: "test",
       note: "Frontend mock detection result",
     };
 
@@ -135,10 +136,6 @@ function Camera() {
           <div style={{ marginTop: "10px" }}>
             <button onClick={scanImage}>
               Scan
-            </button>
-
-            <button onClick={scanImage} style={{ marginLeft: "10px" }}>
-              View Results
             </button>
 
             <button onClick={resetScan} style={{ marginLeft: "10px" }}>

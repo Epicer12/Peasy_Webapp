@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
-import { auth } from './firebase';
+import { auth } from '../../firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { Link } from 'react-router-dom';
-import './index.css';
+import { Link, useNavigate } from 'react-router-dom';
+import '../../index.css';
 
-function SignUp() {
+function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const navigate = useNavigate();
 
   const handleSignUp = async (e) => {
     e.preventDefault();
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      alert(`Sign-up successful! Welcome, ${userCredential.user.email}`);
-      // TODO: redirect to login page or dashboard
+      // Redirect to home page after successful signup
+      navigate('/home');
     } catch (error) {
       if (error.code === 'auth/email-already-in-use') {
         alert('This email is already registered.');
@@ -66,4 +67,4 @@ function SignUp() {
   );
 }
 
-export default SignUp;
+export default SignUpPage;
