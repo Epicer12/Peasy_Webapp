@@ -62,12 +62,15 @@ export default function SecureModelViewer({ modelId }) {
   if (!modelUrl) return <div>Loading Secure Model…</div>;
 
   return (
-    <div onContextMenu={(e) => e.preventDefault()}>
-      <Canvas>
-        <Stage environment="city" intensity={0.6}>
+    <div
+      onContextMenu={(e) => e.preventDefault()}
+      style={{ width: '100%', height: '100%', minHeight: '300px', background: '#f5f5f5', borderRadius: '8px', overflow: 'hidden' }}
+    >
+      <Canvas shadows camera={{ position: [0, 0, 5], fov: 45 }}>
+        <Stage environment="city" intensity={0.6} adjustCamera={true}>
           <Model url={modelUrl} />
         </Stage>
-        <OrbitControls />
+        <OrbitControls makeDefault />
       </Canvas>
     </div>
   );
