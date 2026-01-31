@@ -6,3 +6,6 @@ pydantic
 python-multipart
 aiofiles
 supabase
+opencv-python
+ultralytics
+websockets

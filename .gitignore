@@ -1,6 +1,36 @@
-node_modules/
+# System
 .DS_Store
-backend/app/__pycache__/
-.env
-*.pyc
+Thumbs.db
+
+# VS Code / Editors
+.vscode/
+.idea/
+
+# Frontend (React)
+node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# Backend (Python)
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+backend/.env
+
+# YOLO / AI
+runs/
+*.pt
+*.onnx
+!backend/app/routers/best.pt  # Allow the specific model we use
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
 docs/

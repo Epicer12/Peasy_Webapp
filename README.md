@@ -1,7 +1,7 @@
 # Peasy Web App – Team Setup Guide
 
 <p><strong>Audience:</strong> Internal team members</p>
-<p>This document explains how to set up and run the Peasy Web App locally.</p>
+<p>This document explains how to set up and run the Peasy Web App locally. Specifically for the <strong>React Frontend</strong> and <strong>FastAPI Backend</strong>.</p>
 
 <hr/>
 
@@ -11,6 +11,8 @@ Install these **before cloning the repository**:
 
 - **Node.js** (v18 or higher)  
   👉 https://nodejs.org
+- **Python** (v3.10 or higher)
+  👉 https://python.org
 - **Git**  
   👉 https://git-scm.com
 
@@ -19,6 +21,7 @@ Install these **before cloning the repository**:
 ```bash
 node -v
 npm -v
+python --version
 git --version
 ```
 
@@ -42,8 +45,8 @@ cd Peasy_Webapp
 ```text
 Peasy_Webapp/
 │
-├── frontend/      # React frontend
-├── backend/       # Node / Express backend
+├── frontend/      # React frontend (Vite)
+├── backend/       # Python FastAPI Backend
 └── README.md
 ```
 
@@ -66,19 +69,40 @@ http://localhost:5173
 
 <hr/>
 
-## 🧠 Backend Setup (Only if working on backend)
+## 🧠 Backend Setup (Python / FastAPI)
 
 Open a **new terminal**:
 
-```bash
-cd backend
-npm install
-npm run dev
-```
+1. Navigate to backend:
+   ```bash
+   cd backend
+   ```
 
-Backend usually runs on:
+2. (Optional but Recommended) Create a Virtual Environment:
+   ```bash
+   # Windows
+   python -m venv venv
+   .\venv\Scripts\activate
+   
+   # Mac/Linux
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. Install Dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+   *Note: This includes FastAPI, Uvicorn, OpenCV, Ultralytics (YOLO), and WebSockets.*
+
+4. Run the Server:
+   ```bash
+   python -m uvicorn app.main:app --reload
+   ```
+
+Backend runs on:
 ```
-http://localhost:5000
+http://localhost:8000
 ```
 
 <hr/>
@@ -88,7 +112,7 @@ http://localhost:5000
 You need **two terminals**:
 
 - Terminal 1 → `frontend` → `npm run dev`
-- Terminal 2 → `backend` → `npm run dev`
+- Terminal 2 → `backend` → `python -m uvicorn app.main:app --reload`
 
 <hr/>
 
@@ -97,6 +121,8 @@ You need **two terminals**:
 - ❌ Do **NOT** push directly to `main`
 - ❌ Do **NOT** commit:
   - `node_modules/`
+  - `venv/`
+  - `__pycache__/`
   - `.env`
 - ✅ Always pull latest changes before starting work
 
@@ -176,13 +202,16 @@ rm -rf node_modules
 npm install
 ```
 
+### Backend "Module Not Found"
+Ensure you activated your virtual environment (`venv`) and ran `pip install -r requirements.txt`.
+
 ### App not loading
 - Check terminal errors
-- Make sure backend is running if frontend depends on it
+- Make sure backend is running on port 8000.
 
 <hr/>
 
 ## 📄 Notes
 
-- AI models (YOLO / ONNX) are **NOT required** to run the web app locally
-- AR features are planned and not part of this setup
+- **AI Features:** The backend uses YOLOv8 for component identification. Ensure you have the `best.pt` model file in `backend/app/routers/` or root `backend/`.
+- **WebSockets:** The backend exposes a `/ws/identify` endpoint for real-time inference.
