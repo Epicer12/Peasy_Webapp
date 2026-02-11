@@ -23,9 +23,7 @@ backend/.env
 
 # YOLO / AI
 runs/
-*.pt
 *.onnx
-!backend/app/routers/best.pt  # Allow the specific model we use
 
 # Logs
 *.log

@@ -9,3 +9,5 @@ supabase
 opencv-python
 ultralytics
 websockets
+openai
+pillow

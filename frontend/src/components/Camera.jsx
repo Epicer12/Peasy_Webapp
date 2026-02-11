@@ -6,6 +6,8 @@ const TARGET_COMPONENTS = [
   "PC_CASE", "RAM", "PSU", "MOTHERBOARD"
 ];
 
+const MULTI_INSTANCE_ALLOWED = ["GPU", "RAM", "SSD", "HDD", "CASE_FAN"];
+
 function Camera() {
   const videoRef = useRef(null);
   const captureCanvasRef = useRef(null);
@@ -17,6 +19,15 @@ function Camera() {
   const [lockedItems, setLockedItems] = useState(new Set());
   const [connectionStatus, setConnectionStatus] = useState("disconnected");
   const [allFound, setAllFound] = useState(false);
+  const [detailedResults, setDetailedResults] = useState({});
+  const [loadingDetails, setLoadingDetails] = useState(false);
+
+  // Multi-mode state
+  const [mode, setMode] = useState("standard"); // "standard" | "advanced"
+  const [quantities, setQuantities] = useState({
+    GPU: 1, RAM: 1, SSD: 1, HDD: 1, CASE_FAN: 1
+  });
+  const [instanceCounts, setInstanceCounts] = useState({}); // Advanced mode: {GPU: 2, RAM: 3, ...}
 
   // Start/Stop Camera & WebSocket
   useEffect(() => {
@@ -26,7 +37,7 @@ function Camera() {
       // Connect WebSocket - Use generic host handling
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const host = "localhost:8000"; // Hardcoded for local dev as per verify instructions
-      const wsUrl = `${protocol}//${host}/api/ws/identify`;
+      const wsUrl = `${protocol}//${host}/api/ws/identify?mode=${mode}`;
 
       console.log("Connecting to WS:", wsUrl);
       const socket = new WebSocket(wsUrl);
@@ -107,6 +118,69 @@ function Camera() {
     if (videoRef.current && videoRef.current.srcObject) {
       videoRef.current.srcObject.getTracks().forEach(track => track.stop());
       videoRef.current.srcObject = null;
+    }
+  };
+
+  // Get detailed identification from Vision API
+  const getComponentDetails = async () => {
+    setLoadingDetails(true);
+    const results = {};
+
+    try {
+      if (mode === "standard") {
+        // Standard mode: One call per component type with quantity
+        for (const component of Array.from(lockedItems)) {
+          const quantity = MULTI_INSTANCE_ALLOWED.includes(component) ? quantities[component] : 1;
+          const response = await fetch(
+            `http://localhost:8000/api/identify-details?component_type=${component}&quantity=${quantity}`,
+            { method: 'POST' }
+          );
+          const data = await response.json();
+          results[component] = { ...data, quantity };
+        }
+      } else {
+        // Advanced mode: Multiple calls per component type (one per instance)
+        for (const component of Array.from(lockedItems)) {
+          const count = instanceCounts[component] || 1;
+          results[component] = [];
+
+          for (let i = 0; i < count; i++) {
+            const response = await fetch(
+              `http://localhost:8000/api/identify-details?component_type=${component}&instance=${i}`,
+              { method: 'POST' }
+            );
+            const data = await response.json();
+            results[component].push(data);
+          }
+        }
+      }
+
+      setDetailedResults(results);
+    } catch (error) {
+      console.error('Error getting details:', error);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  // Add instance for Advanced mode
+  const addInstance = async (component) => {
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/add-instance?component_type=${component}`,
+        { method: 'POST' }
+      );
+      const data = await response.json();
+
+      if (data.status === "ready_to_scan") {
+        // Increment instance count
+        setInstanceCounts(prev => ({
+          ...prev,
+          [component]: (prev[component] || 1) + 1
+        }));
+      }
+    } catch (error) {
+      console.error('Error adding instance:', error);
     }
   };
 
@@ -211,10 +285,25 @@ function Camera() {
   };
 
   return (
-    <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "20px", fontFamily: "sans-serif" }}>
-      <h2 style={{ textAlign: "center", marginBottom: "20px" }}>Component Identification</h2>
+    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "20px", fontFamily: "sans-serif", position: "relative" }}>
 
-      <div style={{ display: "flex", gap: "20px", flexDirection: "row", flexWrap: "wrap", justifyContent: "center" }}>
+      {/* Mode Toggle (Top-Right) */}
+      <div style={{ position: "absolute", top: "20px", right: "20px", zIndex: 100 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", cursor: "pointer" }}>
+          <span style={{ fontWeight: mode === "standard" ? "bold" : "normal" }}>Standard</span>
+          <input
+            type="checkbox"
+            checked={mode === "advanced"}
+            onChange={(e) => setMode(e.target.checked ? "advanced" : "standard")}
+            style={{ cursor: "pointer" }}
+          />
+          <span style={{ fontWeight: mode === "advanced" ? "bold" : "normal" }}>Advanced</span>
+        </label>
+      </div>
+
+      <h2 style={{ textAlign: "center", marginBottom: "30px" }}>Component Identification Dashboard</h2>
+
+      <div style={{ display: "flex", gap: "30px", flexDirection: "row", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "center" }}>
 
         {/* Camera View */}
         <div style={{ position: "relative", width: "640px", height: "480px", backgroundColor: "black", borderRadius: "12px", overflow: "hidden" }}>
@@ -290,7 +379,67 @@ function Camera() {
                   <span style={{ marginRight: "10px", fontSize: "18px" }}>
                     {isFound ? "✅" : "⬜"}
                   </span>
-                  {target}
+
+                  {isFound && (
+                    <img
+                      src={`http://localhost:8000/api/snapshot/${target}${mode === 'advanced' ? `?instance=${(instanceCounts[target] || 1) - 1}` : ''}`}
+                      alt={target}
+                      style={{
+                        width: "80px",
+                        height: "50px",
+                        objectFit: "cover",
+                        borderRadius: "4px",
+                        marginRight: "15px",
+                        border: "2px solid #319795",
+                        backgroundColor: "#eee"
+                      }}
+                      key={`${target}-${instanceCounts[target] || 0}`} // Force reload on new scan
+                    />
+                  )}
+
+                  <span style={{ flex: 1 }}>{target}</span>
+
+                  {/* Standard Mode: Quantity Selector for multi-instance components */}
+                  {mode === "standard" && MULTI_INSTANCE_ALLOWED.includes(target) && isFound && (
+                    <select
+                      value={quantities[target]}
+                      onChange={(e) => setQuantities({ ...quantities, [target]: parseInt(e.target.value) })}
+                      style={{
+                        marginLeft: "10px",
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        border: "1px solid #319795",
+                        backgroundColor: "white",
+                        cursor: "pointer"
+                      }}
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n} value={n}>Qty: {n}</option>)}
+                    </select>
+                  )}
+
+                  {/* Advanced Mode: Instance count and + button */}
+                  {mode === "advanced" && MULTI_INSTANCE_ALLOWED.includes(target) && isFound && (
+                    <div style={{ marginLeft: "10px", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ fontSize: "12px", color: "#666" }}>
+                        {instanceCounts[target] || 1} scanned
+                      </span>
+                      <button
+                        onClick={() => addInstance(target)}
+                        style={{
+                          padding: "4px 12px",
+                          backgroundColor: "#007bff",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          fontSize: "16px",
+                          fontWeight: "bold"
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+                  )}
                 </li>
               );
             })}
@@ -300,6 +449,115 @@ function Camera() {
             <p><strong>Instructions:</strong> Point camera at PC components. Hold steady to lock identification.</p>
             <p>Progress: {lockedItems.size} / {TARGET_COMPONENTS.length}</p>
           </div>
+
+          {/* Get Details Button */}
+          {lockedItems.size > 0 && !loadingDetails && Object.keys(detailedResults).length === 0 && (
+            <button
+              onClick={getComponentDetails}
+              style={{
+                width: "100%",
+                padding: "12px",
+                marginTop: "20px",
+                backgroundColor: "#007bff",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontSize: "16px",
+                fontWeight: "bold"
+              }}
+            >
+              Get Detailed Info (Vision API)
+            </button>
+          )}
+
+          {loadingDetails && (
+            <div style={{ marginTop: "20px", textAlign: "center", color: "#666" }}>
+              <p>🔍 Analyzing components...</p>
+            </div>
+          )}
+
+          {/* Detailed Results */}
+          {Object.keys(detailedResults).length > 0 && (
+            <div style={{ marginTop: "20px", borderTop: "2px solid #ddd", paddingTop: "15px" }}>
+              <h3>Detailed Identification</h3>
+              {Object.entries(detailedResults).map(([component, details]) => {
+                // Standard mode: details is an object with quantity
+                // Advanced mode: details is an array of objects
+                const isAdvanced = Array.isArray(details);
+
+                if (isAdvanced) {
+                  // Advanced mode: Show each instance separately
+                  return (
+                    <div key={component} style={{ marginBottom: "20px" }}>
+                      <h4 style={{ margin: "0 0 10px 0", color: "#0056b3" }}>{component}</h4>
+                      {details.map((instance, idx) => (
+                        <div key={idx} style={{
+                          marginBottom: "10px",
+                          padding: "10px",
+                          backgroundColor: "#f0f8ff",
+                          borderRadius: "6px",
+                          border: "1px solid #b0d4ff",
+                          marginLeft: "15px"
+                        }}>
+                          <p style={{ margin: "0 0 10px 0", fontWeight: "bold" }}>Instance {idx + 1}</p>
+
+                          <img
+                            src={`http://localhost:8000/api/snapshot/${component}?instance=${idx}`}
+                            alt={`${component} instance ${idx}`}
+                            style={{ width: "100%", maxHeight: "150px", objectFit: "contain", borderRadius: "6px", marginBottom: "10px", backgroundColor: "#000" }}
+                          />
+                          {instance.error ? (
+                            <p style={{ color: "#dc3545", margin: 0 }}>Error: {instance.error}</p>
+                          ) : (
+                            <>
+                              <p style={{ margin: "4px 0" }}><strong>Brand:</strong> {instance.brand || "Unknown"}</p>
+                              {instance.sub_brand && <p style={{ margin: "4px 0" }}><strong>Sub-brand:</strong> {instance.sub_brand}</p>}
+                              <p style={{ margin: "4px 0" }}><strong>Model:</strong> {instance.model || "Unknown"}</p>
+                              <p style={{ margin: "4px 0" }}><strong>Confidence:</strong> {(instance.confidence * 100).toFixed(0)}%</p>
+                              {instance.notes && <p style={{ margin: "4px 0", fontSize: "12px", color: "#666" }}>{instance.notes}</p>}
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                } else {
+                  // Standard mode: Show single result with quantity
+                  return (
+                    <div key={component} style={{
+                      marginBottom: "15px",
+                      padding: "12px",
+                      backgroundColor: "#f0f8ff",
+                      borderRadius: "8px",
+                      border: "1px solid #b0d4ff"
+                    }}>
+                      <h4 style={{ margin: "0 0 8px 0", color: "#0056b3" }}>
+                        {component} {details.quantity > 1 && `(Qty: ${details.quantity})`}
+                      </h4>
+
+                      <img
+                        src={`http://localhost:8000/api/snapshot/${component}`}
+                        alt={component}
+                        style={{ width: "100%", maxHeight: "150px", objectFit: "contain", borderRadius: "6px", marginBottom: "10px", backgroundColor: "#000" }}
+                      />
+                      {details.error ? (
+                        <p style={{ color: "#dc3545", margin: 0 }}>Error: {details.error}</p>
+                      ) : (
+                        <>
+                          <p style={{ margin: "4px 0" }}><strong>Brand:</strong> {details.brand || "Unknown"}</p>
+                          {details.sub_brand && <p style={{ margin: "4px 0" }}><strong>Sub-brand:</strong> {details.sub_brand}</p>}
+                          <p style={{ margin: "4px 0" }}><strong>Model:</strong> {details.model || "Unknown"}</p>
+                          <p style={{ margin: "4px 0" }}><strong>Confidence:</strong> {(details.confidence * 100).toFixed(0)}%</p>
+                          {details.notes && <p style={{ margin: "4px 0", fontSize: "12px", color: "#666" }}>{details.notes}</p>}
+                        </>
+                      )}
+                    </div>
+                  );
+                }
+              })}
+            </div>
+          )}
         </div>
       </div>
 
