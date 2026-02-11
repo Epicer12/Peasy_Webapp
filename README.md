@@ -211,7 +211,33 @@ Ensure you activated your virtual environment (`venv`) and ran `pip install -r r
 
 <hr/>
 
+## 🤖 Vision API Setup (Optional - For Detailed Component Identification)
+
+The app uses OpenAI Vision API to identify component brands and models after YOLO detection.
+
+### 1. Get API Key
+1. Sign up at [OpenAI Platform](https://platform.openai.com/)
+2. Generate an API key from [API Keys page](https://platform.openai.com/api-keys)
+
+### 2. Configure Backend
+```bash
+cd backend
+cp .env.example .env
+# Edit .env and add:
+OPENAI_API_KEY=sk-your-actual-key-here
+```
+
+### 3. Cost Information
+- **Model**: gpt-4o-mini (cost-optimized)
+- **Image Size**: 512×512 (optimized)
+- **Cost**: ~$0.0015 per session (10 components)
+- **1000 sessions**: ~$1.50
+
+<hr/>
+
 ## 📄 Notes
 
 - **AI Features:** The backend uses YOLOv8 for component identification. Ensure you have the `best.pt` model file in `backend/app/routers/` or root `backend/`.
 - **WebSockets:** The backend exposes a `/ws/identify` endpoint for real-time inference.
+- **Vision API:** Optional but recommended for detailed brand/model identification.
+
