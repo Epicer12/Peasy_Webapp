@@ -21,6 +21,7 @@ function Camera() {
   const [allFound, setAllFound] = useState(false);
   const [detailedResults, setDetailedResults] = useState({});
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [isAnalysing, setIsAnalysing] = useState(false);
 
   // Multi-mode state
   const [mode, setMode] = useState("standard"); // "standard" | "advanced"
@@ -121,15 +122,17 @@ function Camera() {
     }
   };
 
-  // Get detailed identification from Vision API
+  // Get detailed identification using Parallel Requests
   const getComponentDetails = async () => {
     setLoadingDetails(true);
+    setIsAnalysing(true);
+    setCameraOn(false); // Turn off camera immediately
     const results = {};
 
     try {
       if (mode === "standard") {
-        // Standard mode: One call per component type with quantity
-        for (const component of Array.from(lockedItems)) {
+        // Parallelized Standard Mode
+        const pool = Array.from(lockedItems).map(async (component) => {
           const quantity = MULTI_INSTANCE_ALLOWED.includes(component) ? quantities[component] : 1;
           const response = await fetch(
             `http://localhost:8000/api/identify-details?component_type=${component}&quantity=${quantity}`,
@@ -137,27 +140,92 @@ function Camera() {
           );
           const data = await response.json();
           results[component] = { ...data, quantity };
-        }
+        });
+        await Promise.all(pool);
       } else {
-        // Advanced mode: Multiple calls per component type (one per instance)
+        // Parallelized Advanced Mode
+        const pool = [];
         for (const component of Array.from(lockedItems)) {
           const count = instanceCounts[component] || 1;
           results[component] = [];
 
           for (let i = 0; i < count; i++) {
-            const response = await fetch(
-              `http://localhost:8000/api/identify-details?component_type=${component}&instance=${i}`,
-              { method: 'POST' }
-            );
-            const data = await response.json();
-            results[component].push(data);
+            pool.push((async () => {
+              const response = await fetch(
+                `http://localhost:8000/api/identify-details?component_type=${component}&instance=${i}`,
+                { method: 'POST' }
+              );
+              const data = await response.json();
+              results[component][i] = data; // Assign to correct index
+            })());
           }
         }
+        await Promise.all(pool);
       }
 
       setDetailedResults(results);
     } catch (error) {
       console.error('Error getting details:', error);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const unlockComponent = async (component, instance = null) => {
+    try {
+      const url = `http://localhost:8000/api/unlock-component?component_type=${component}${instance !== null ? `&instance=${instance}` : ''}`;
+      const response = await fetch(url, { method: 'POST' });
+      const data = await response.json();
+
+      if (data.status === "unlocked") {
+        // Update local state immediately
+        const newList = new Set(lockedItems);
+        newList.delete(component);
+        setLockedItems(newList);
+
+        // Remove from detailed results if they exist
+        const updatedResults = { ...detailedResults };
+        delete updatedResults[component];
+        setDetailedResults(updatedResults);
+
+        if (mode === "advanced") {
+          setInstanceCounts(prev => ({ ...prev, [component]: Math.max(0, (prev[component] || 1) - 1) }));
+        }
+      }
+    } catch (error) {
+      console.error("Error unlocking:", error);
+    }
+  };
+
+  const handleUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setLoadingDetails(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('http://localhost:8000/api/identify-upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+
+      if (data.status === "locked_manually") {
+        const newList = new Set(lockedItems);
+        newList.add(data.yolo_class);
+        setLockedItems(newList);
+        setCameraOn(false);
+        // Force refresh instance counts if needed
+        if (mode === "advanced") {
+          setInstanceCounts(prev => ({ ...prev, [data.yolo_class]: (prev[data.yolo_class] || 0) + 1 }));
+        }
+      } else if (data.error) {
+        alert(data.error);
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
     } finally {
       setLoadingDetails(false);
     }
@@ -285,284 +353,260 @@ function Camera() {
   };
 
   return (
-    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "20px", fontFamily: "sans-serif", position: "relative" }}>
+    <div style={{
+      height: "100vh",
+      display: "flex",
+      flexDirection: "column",
+      fontFamily: "'Segoe UI', Roboto, sans-serif",
+      backgroundColor: "#f0f2f5",
+      overflow: "hidden"
+    }}>
+      {/* Header */}
+      <header style={{
+        padding: "15px 30px",
+        backgroundColor: "white",
+        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        zIndex: 10
+      }}>
+        <h2 style={{ margin: 0, color: "#1a73e8" }}>Peasy Identification Dashboard</h2>
 
-      {/* Mode Toggle (Top-Right) */}
-      <div style={{ position: "absolute", top: "20px", right: "20px", zIndex: 100 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", cursor: "pointer" }}>
-          <span style={{ fontWeight: mode === "standard" ? "bold" : "normal" }}>Standard</span>
-          <input
-            type="checkbox"
-            checked={mode === "advanced"}
-            onChange={(e) => setMode(e.target.checked ? "advanced" : "standard")}
-            style={{ cursor: "pointer" }}
-          />
-          <span style={{ fontWeight: mode === "advanced" ? "bold" : "normal" }}>Advanced</span>
-        </label>
-      </div>
+        <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+          <label style={{ cursor: "pointer", backgroundColor: "#fff", border: "1px solid #ddd", padding: "6px 12px", borderRadius: "20px", fontSize: "14px" }}>
+            📁 Upload
+            <input type="file" hidden onChange={handleUpload} accept="image/*" />
+          </label>
 
-      <h2 style={{ textAlign: "center", marginBottom: "30px" }}>Component Identification Dashboard</h2>
-
-      <div style={{ display: "flex", gap: "30px", flexDirection: "row", flexWrap: "wrap", alignItems: "flex-start", justifyContent: "center" }}>
-
-        {/* Camera View */}
-        <div style={{ position: "relative", width: "640px", height: "480px", backgroundColor: "black", borderRadius: "12px", overflow: "hidden" }}>
-          {!cameraOn && (
-            <div style={{ position: "absolute", top: "0", left: "0", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "white", zIndex: 10 }}>
-              <button
-                onClick={() => setCameraOn(true)}
-                style={{ padding: "15px 40px", fontSize: "18px", backgroundColor: "#28a745", color: "white", border: "none", borderRadius: "8px", cursor: "pointer" }}
-              >
-                Start Camera
-              </button>
-            </div>
-          )}
-
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            style={{ width: "100%", height: "100%", objectFit: "contain" }}
-          />
-
-          <canvas
-            ref={overlayCanvasRef}
-            style={{ position: "absolute", top: "0", left: "0", pointerEvents: "none", width: "100%", height: "100%" }}
-          />
-
-          {allFound && (
-            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", backgroundColor: "rgba(0, 255, 0, 0.8)", padding: "20px", borderRadius: "10px", textAlign: "center" }}>
-              <h1 style={{ margin: 0, color: "white", fontSize: "32px" }}>ALL COMPONENTS FOUND! 🎉</h1>
-            </div>
-          )}
+          <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", cursor: "pointer", fontWeight: "600" }}>
+            <span>Standard</span>
+            <input
+              type="checkbox"
+              checked={mode === "advanced"}
+              onChange={(e) => setMode(e.target.checked ? "advanced" : "standard")}
+              style={{ width: "16px", height: "16px" }}
+            />
+            <span>Advanced</span>
+          </label>
         </div>
+      </header>
 
-        {/* Info / Controls Panel */}
-        <div style={{ flex: "1", minWidth: "300px", maxWidth: "400px", backgroundColor: "#f8f9fa", padding: "20px", borderRadius: "12px", border: "1px solid #ddd" }}>
+      {/* Main Content Area */}
+      <main style={{ flex: 1, display: "flex", overflow: "hidden" }}>
 
-          <div style={{ marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{
-              padding: "5px 10px", borderRadius: "4px", fontSize: "12px", fontWeight: "bold",
-              backgroundColor: connectionStatus === "connected" ? "#d4edda" : "#f8d7da",
-              color: connectionStatus === "connected" ? "#155724" : "#721c24"
-            }}>
-              Status: {connectionStatus}
-            </span>
+        {/* Left Side: Scanning/Track List */}
+        <div style={{ flex: "1", display: "flex", flexDirection: "column", borderRight: "1px solid #ddd", overflow: "hidden" }}>
+          <div style={{ padding: "20px", flex: 1, overflowY: "auto" }}>
 
-            {cameraOn && (
-              <button
-                onClick={() => setCameraOn(false)}
-                style={{ padding: "8px 16px", backgroundColor: "#dc3545", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}
-              >
-                Camera Off
-              </button>
+            {cameraOn ? (
+              <div style={{ position: "relative", marginBottom: "20px", borderRadius: "12px", overflow: "hidden", backgroundColor: "#000", aspectRatio: "4/3" }}>
+                <video ref={videoRef} autoPlay muted playsInline style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                <canvas ref={overlayCanvasRef} style={{ position: "absolute", top: "0", left: "0", pointerEvents: "none", width: "100%", height: "100%" }} />
+
+                {allFound && cameraOn && (
+                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", backgroundColor: "rgba(0, 255, 0, 0.9)", padding: "20px", borderRadius: "12px", textAlign: "center", zIndex: 20 }}>
+                    <h1 style={{ margin: 0, color: "white", fontSize: "24px" }}>ALL FOUND! 🎉</h1>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => setCameraOn(false)}
+                  style={{ position: "absolute", bottom: "10px", right: "10px", padding: "8px 15px", backgroundColor: "#dc3545", color: "white", border: "none", borderRadius: "8px", cursor: "pointer" }}
+                >
+                  Close Scanner
+                </button>
+              </div>
+            ) : (
+              <div style={{ textAlign: "center", padding: "40px 20px", border: "2px dashed #ccc", borderRadius: "12px", backgroundColor: "white", marginBottom: "20px" }}>
+                <p style={{ color: "#666", marginBottom: "15px" }}>Scanner is inactive</p>
+                <button
+                  onClick={() => {
+                    setCameraOn(true);
+                    setAllFound(false);
+                    setDetailedResults({});
+                  }}
+                  style={{ padding: "12px 30px", backgroundColor: "#28a745", color: "white", border: "none", borderRadius: "8px", fontSize: "16px", fontWeight: "bold", cursor: "pointer" }}
+                >
+                  Launch Live Scanner
+                </button>
+              </div>
             )}
-          </div>
 
-          <h3 style={{ borderBottom: "2px solid #ddd", paddingBottom: "10px" }}>Target Components</h3>
-          <ul style={{ listStyle: "none", padding: 0 }}>
-            {TARGET_COMPONENTS.map(target => {
-              const isFound = lockedItems.has(target); // Note: Simple string match. Ensure Backend sends exact same strings.
-              return (
-                <li key={target} style={{
-                  padding: "10px",
-                  marginBottom: "8px",
-                  backgroundColor: isFound ? "#e6fffa" : "white",
-                  border: `1px solid ${isFound ? "#319795" : "#ddd"}`,
-                  borderRadius: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  fontWeight: isFound ? "bold" : "normal",
-                  color: isFound ? "#2c7a7b" : "#666"
-                }}>
-                  <span style={{ marginRight: "10px", fontSize: "18px" }}>
-                    {isFound ? "✅" : "⬜"}
-                  </span>
+            <h3 style={{ marginBottom: "15px", display: "flex", justifyContent: "space-between" }}>
+              Scanning Targets
+              <span style={{ fontSize: "14px", fontWeight: "normal", color: "#666" }}>{lockedItems.size} / {TARGET_COMPONENTS.length}</span>
+            </h3>
 
-                  {isFound && (
-                    <img
-                      src={`http://localhost:8000/api/snapshot/${target}${mode === 'advanced' ? `?instance=${(instanceCounts[target] || 1) - 1}` : ''}`}
-                      alt={target}
-                      style={{
-                        width: "80px",
-                        height: "50px",
-                        objectFit: "cover",
-                        borderRadius: "4px",
-                        marginRight: "15px",
-                        border: "2px solid #319795",
-                        backgroundColor: "#eee"
-                      }}
-                      key={`${target}-${instanceCounts[target] || 0}`} // Force reload on new scan
-                    />
-                  )}
+            <div style={{ display: "grid", gap: "10px" }}>
+              {TARGET_COMPONENTS.map(target => {
+                const isFound = lockedItems.has(target);
+                return (
+                  <div key={target} style={{
+                    padding: "12px",
+                    backgroundColor: "white",
+                    borderRadius: "10px",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    border: isFound ? "2px solid #28a745" : "1px solid #ddd"
+                  }}>
+                    <span style={{ fontSize: "20px" }}>{isFound ? "✅" : "⏳"}</span>
 
-                  <span style={{ flex: 1 }}>{target}</span>
-
-                  {/* Standard Mode: Quantity Selector for multi-instance components */}
-                  {mode === "standard" && MULTI_INSTANCE_ALLOWED.includes(target) && isFound && (
-                    <select
-                      value={quantities[target]}
-                      onChange={(e) => setQuantities({ ...quantities, [target]: parseInt(e.target.value) })}
-                      style={{
-                        marginLeft: "10px",
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        border: "1px solid #319795",
-                        backgroundColor: "white",
-                        cursor: "pointer"
-                      }}
-                    >
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n} value={n}>Qty: {n}</option>)}
-                    </select>
-                  )}
-
-                  {/* Advanced Mode: Instance count and + button */}
-                  {mode === "advanced" && MULTI_INSTANCE_ALLOWED.includes(target) && isFound && (
-                    <div style={{ marginLeft: "10px", display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span style={{ fontSize: "12px", color: "#666" }}>
-                        {instanceCounts[target] || 1} scanned
-                      </span>
-                      <button
-                        onClick={() => addInstance(target)}
-                        style={{
-                          padding: "4px 12px",
-                          backgroundColor: "#007bff",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          fontSize: "16px",
-                          fontWeight: "bold"
-                        }}
-                      >
-                        +
-                      </button>
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-
-          <div style={{ marginTop: "20px", fontSize: "14px", color: "#666" }}>
-            <p><strong>Instructions:</strong> Point camera at PC components. Hold steady to lock identification.</p>
-            <p>Progress: {lockedItems.size} / {TARGET_COMPONENTS.length}</p>
-          </div>
-
-          {/* Get Details Button */}
-          {lockedItems.size > 0 && !loadingDetails && Object.keys(detailedResults).length === 0 && (
-            <button
-              onClick={getComponentDetails}
-              style={{
-                width: "100%",
-                padding: "12px",
-                marginTop: "20px",
-                backgroundColor: "#007bff",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-                fontSize: "16px",
-                fontWeight: "bold"
-              }}
-            >
-              Get Detailed Info (Vision API)
-            </button>
-          )}
-
-          {loadingDetails && (
-            <div style={{ marginTop: "20px", textAlign: "center", color: "#666" }}>
-              <p>🔍 Analyzing components...</p>
-            </div>
-          )}
-
-          {/* Detailed Results */}
-          {Object.keys(detailedResults).length > 0 && (
-            <div style={{ marginTop: "20px", borderTop: "2px solid #ddd", paddingTop: "15px" }}>
-              <h3>Detailed Identification</h3>
-              {Object.entries(detailedResults).map(([component, details]) => {
-                // Standard mode: details is an object with quantity
-                // Advanced mode: details is an array of objects
-                const isAdvanced = Array.isArray(details);
-
-                if (isAdvanced) {
-                  // Advanced mode: Show each instance separately
-                  return (
-                    <div key={component} style={{ marginBottom: "20px" }}>
-                      <h4 style={{ margin: "0 0 10px 0", color: "#0056b3" }}>{component}</h4>
-                      {details.map((instance, idx) => (
-                        <div key={idx} style={{
-                          marginBottom: "10px",
-                          padding: "10px",
-                          backgroundColor: "#f0f8ff",
-                          borderRadius: "6px",
-                          border: "1px solid #b0d4ff",
-                          marginLeft: "15px"
-                        }}>
-                          <p style={{ margin: "0 0 10px 0", fontWeight: "bold" }}>Instance {idx + 1}</p>
-
-                          <img
-                            src={`http://localhost:8000/api/snapshot/${component}?instance=${idx}`}
-                            alt={`${component} instance ${idx}`}
-                            style={{ width: "100%", maxHeight: "150px", objectFit: "contain", borderRadius: "6px", marginBottom: "10px", backgroundColor: "#000" }}
-                          />
-                          {instance.error ? (
-                            <p style={{ color: "#dc3545", margin: 0 }}>Error: {instance.error}</p>
-                          ) : (
-                            <>
-                              <p style={{ margin: "4px 0" }}><strong>Brand:</strong> {instance.brand || "Unknown"}</p>
-                              {instance.sub_brand && <p style={{ margin: "4px 0" }}><strong>Sub-brand:</strong> {instance.sub_brand}</p>}
-                              <p style={{ margin: "4px 0" }}><strong>Model:</strong> {instance.model || "Unknown"}</p>
-                              <p style={{ margin: "4px 0" }}><strong>Confidence:</strong> {(instance.confidence * 100).toFixed(0)}%</p>
-                              {instance.notes && <p style={{ margin: "4px 0", fontSize: "12px", color: "#666" }}>{instance.notes}</p>}
-                            </>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  );
-                } else {
-                  // Standard mode: Show single result with quantity
-                  return (
-                    <div key={component} style={{
-                      marginBottom: "15px",
-                      padding: "12px",
-                      backgroundColor: "#f0f8ff",
-                      borderRadius: "8px",
-                      border: "1px solid #b0d4ff"
-                    }}>
-                      <h4 style={{ margin: "0 0 8px 0", color: "#0056b3" }}>
-                        {component} {details.quantity > 1 && `(Qty: ${details.quantity})`}
-                      </h4>
-
+                    {isFound && (
                       <img
-                        src={`http://localhost:8000/api/snapshot/${component}`}
-                        alt={component}
-                        style={{ width: "100%", maxHeight: "150px", objectFit: "contain", borderRadius: "6px", marginBottom: "10px", backgroundColor: "#000" }}
+                        src={`http://localhost:8000/api/snapshot/${target}${mode === 'advanced' ? `?instance=${(instanceCounts[target] || 1) - 1}` : ''}`}
+                        alt={target}
+                        style={{
+                          width: "50px",
+                          height: "35px",
+                          objectFit: "cover",
+                          borderRadius: "4px",
+                          border: "1px solid #28a745",
+                          backgroundColor: "#eee"
+                        }}
+                        key={`${target}-${instanceCounts[target] || 0}`}
                       />
-                      {details.error ? (
-                        <p style={{ color: "#dc3545", margin: 0 }}>Error: {details.error}</p>
-                      ) : (
-                        <>
-                          <p style={{ margin: "4px 0" }}><strong>Brand:</strong> {details.brand || "Unknown"}</p>
-                          {details.sub_brand && <p style={{ margin: "4px 0" }}><strong>Sub-brand:</strong> {details.sub_brand}</p>}
-                          <p style={{ margin: "4px 0" }}><strong>Model:</strong> {details.model || "Unknown"}</p>
-                          <p style={{ margin: "4px 0" }}><strong>Confidence:</strong> {(details.confidence * 100).toFixed(0)}%</p>
-                          {details.notes && <p style={{ margin: "4px 0", fontSize: "12px", color: "#666" }}>{details.notes}</p>}
-                        </>
-                      )}
+                    )}
+
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: "600", color: isFound ? "#28a745" : "#333" }}>{target.replace("_", " ")}</div>
+                      {isFound && <div style={{ fontSize: "12px", color: "#666" }}>Component Locked</div>}
                     </div>
-                  );
-                }
+
+                    {isFound && (
+                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                        <button
+                          onClick={() => unlockComponent(target)}
+                          style={{ padding: "4px 10px", fontSize: "12px", backgroundColor: "#f8f9fa", border: "1px solid #ddd", borderRadius: "4px", cursor: "pointer" }}
+                        >
+                          Edit
+                        </button>
+                        {mode === "standard" && MULTI_INSTANCE_ALLOWED.includes(target) && (
+                          <select
+                            value={quantities[target]}
+                            onChange={(e) => setQuantities({ ...quantities, [target]: parseInt(e.target.value) })}
+                            style={{ padding: "4px", fontSize: "12px", borderRadius: "4px" }}
+                          >
+                            {[1, 2, 3, 4].map(n => <option key={n} value={n}>Qty: {n}</option>)}
+                          </select>
+                        )}
+                        {mode === "advanced" && MULTI_INSTANCE_ALLOWED.includes(target) && (
+                          <button onClick={() => addInstance(target)} style={{ width: "24px", height: "24px", borderRadius: "50%", backgroundColor: "#1a73e8", color: "white", border: "none", cursor: "pointer" }}>+</button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
               })}
             </div>
+          </div>
+
+          {lockedItems.size > 0 && (
+            <div style={{ padding: "20px", backgroundColor: "white", borderTop: "1px solid #ddd" }}>
+              <button
+                onClick={getComponentDetails}
+                disabled={loadingDetails}
+                style={{
+                  width: "100%",
+                  padding: "15px",
+                  backgroundColor: "#1a73e8",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontSize: "18px",
+                  fontWeight: "bold",
+                  opacity: loadingDetails ? 0.7 : 1
+                }}
+              >
+                {loadingDetails ? "Analyzing Components..." : "Analyse & Finalize"}
+              </button>
+            </div>
           )}
         </div>
-      </div>
+
+        {/* Right Side: Results Panel */}
+        <div style={{ flex: "1.2", backgroundColor: "white", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div style={{ padding: "20px", flex: 1, overflowY: "auto" }}>
+            {!loadingDetails && Object.keys(detailedResults).length === 0 && (
+              <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#666" }}>
+                <div style={{ fontSize: "40px", marginBottom: "20px" }}>📊</div>
+                <p>System analysis will appear here</p>
+              </div>
+            )}
+
+            {loadingDetails && (
+              <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                <div className="spinner" style={{ width: "40px", height: "40px", border: "4px solid #f3f3f3", borderTop: "4px solid #1a73e8", borderRadius: "50%", animation: "spin 1s linear infinite" }}></div>
+                <p style={{ marginTop: "15px", color: "#1a73e8", fontWeight: "600" }}>Running AI Identification...</p>
+              </div>
+            )}
+
+            {/* Results Header */}
+            {Object.keys(detailedResults).length > 0 && (
+              <h3 style={{ borderBottom: "1px solid #eee", paddingBottom: "10px", marginBottom: "20px" }}>Analysis Results</h3>
+            )}
+
+            {/* Scanning Results */}
+            {Object.entries(detailedResults).map(([component, details]) => {
+              const instances = Array.isArray(details) ? details : [details];
+              return (
+                <div key={component} style={{ marginBottom: "30px", backgroundColor: "#fff", border: "1px solid #ddd", borderRadius: "12px", overflow: "hidden" }}>
+                  <div style={{ padding: "10px 15px", backgroundColor: "#f8f9fa", borderBottom: "1px solid #ddd", display: "flex", justifyContent: "space-between" }}>
+                    <h4 style={{ margin: 0 }}>{component.replace("_", " ")}</h4>
+                  </div>
+
+                  <div style={{ padding: "15px" }}>
+                    {instances.map((inst, i) => (
+                      <div key={i} style={{ display: "flex", gap: "20px", marginBottom: i < instances.length - 1 ? "20px" : 0, borderBottom: i < instances.length - 1 ? "1px dashed #ddd" : "none", paddingBottom: i < instances.length - 1 ? "20px" : 0 }}>
+                        <div style={{ width: "120px" }}>
+                          <img
+                            src={`http://localhost:8000/api/snapshot/${component}${Array.isArray(details) ? `?instance=${i}` : ''}`}
+                            style={{ width: "100%", borderRadius: "6px", objectFit: "cover", backgroundColor: "#eee" }}
+                            alt="Reference"
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: "16px", fontWeight: "bold", color: "#1a73e8" }}>{inst.model || "Unknown Model"}</div>
+                          <div style={{ fontSize: "14px", color: "#333", margin: "4px 0" }}>{inst.brand} {inst.sub_brand}</div>
+
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "8px" }}>
+                            <div style={{ fontSize: "12px", padding: "2px 8px", backgroundColor: "#eef", borderRadius: "4px" }}>
+                              Confidence: {(inst.confidence * 100).toFixed(0)}%
+                            </div>
+                            {inst.is_ocr_confirmed && <div style={{ fontSize: "11px", color: "#28a745" }}>Verified by Text Scan</div>}
+                          </div>
+
+                          {inst.notes && <p style={{ fontSize: "12px", color: "#666", marginTop: "10px", fontStyle: "italic" }}>"{inst.notes}"</p>}
+
+                          {inst.possible_models?.length > 0 && (
+                            <div style={{ marginTop: "10px" }}>
+                              <div style={{ fontSize: "11px", color: "#999", textTransform: "uppercase" }}>Other Possibilities:</div>
+                              <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", marginTop: "4px" }}>
+                                {inst.possible_models.map(m => (
+                                  <span key={m} style={{ fontSize: "10px", padding: "2px 6px", backgroundColor: "#f0f0f0", borderRadius: "3px" }}>{m}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </main>
 
       {/* Hidden Capture Canvas */}
       <canvas ref={captureCanvasRef} style={{ display: "none" }} />
+      <style>{`
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }
