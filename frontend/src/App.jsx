@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/auth/LoginPage';
 import SignUpPage from './pages/auth/SignUpPage';
 import HomePage from './pages/HomePage';
+import BuildPage from "./pages/BuildPage";
 import CameraPage from './pages/CameraPage';
 import ResultsPage from './pages/ResultsPage';
 import ModelViewerPage from './pages/ModelViewerPage';
@@ -25,6 +26,18 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/build"
+          element={
+            <ProtectedRoute>
+              <BuildPage />
+            </ProtectedRoute>
+          }
+        />
+
+
+
         <Route
           path="/camera"
           element={

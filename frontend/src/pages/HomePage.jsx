@@ -47,6 +47,24 @@ export default function HomePage() {
                             </button>
                         </div>
                     </div>
+                {/* Build Your Own PC Card */}
+                <div
+                    onClick={() => navigate('/build')}
+                    className="bg-white rounded-xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow border-2 border-transparent hover:border-purple-500"
+                >
+                    <div className="text-center">
+                        <div className="text-6xl mb-4">🛠</div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                            Build Your Own PC
+                        </h2>
+                        <p className="text-gray-600 mb-4">
+                            Answer guided questions and generate your custom PC build plan
+                        </p>
+                        <button className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold">
+                            Start Building
+                        </button>
+                    </div>
+                </div>
 
                     {/* View 3D Models Card */}
                     <div
