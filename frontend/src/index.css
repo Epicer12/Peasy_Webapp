@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Tailwind layers (kept for compatibility) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Theme */
 @theme {
     --font-display: "Oswald", sans-serif;
     --font-mono: "Space Mono", monospace;
@@ -16,7 +22,6 @@
         background-color: var(--color-deep-black);
         color: var(--color-off-white);
         font-family: var(--font-mono);
-        /* Default to mono for data feel */
     }
 
     h1,

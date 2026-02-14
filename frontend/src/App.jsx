@@ -3,12 +3,12 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/auth/LoginPage';
 import SignUpPage from './pages/auth/SignUpPage';
 import HomePage from './pages/HomePage';
+import BuildPage from "./pages/BuildPage";
 import CameraPage from './pages/CameraPage';
 import ResultsPage from './pages/ResultsPage';
 import ModelViewerPage from './pages/ModelViewerPage';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
-import BuildPage from './pages/BuildPage';
 import ManualBuildPage from './pages/ManualBuildPage';
 import PurchaseSummaryPage from './pages/PurchaseSummaryPage';
 import PlanningPage from './pages/PlanningPage';
@@ -18,7 +18,6 @@ import MarketplacePage from './pages/MarketplacePage';
 import CommunityPage from './pages/CommunityPage';
 import GuidePage from './pages/GuidePage';
 
-
 function App() {
   return (
     <BrowserRouter>
@@ -27,7 +26,7 @@ function App() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
 
-        {/* Proteted Routes wrapped in MainLayout */}
+        {/* Protected Routes wrapped in MainLayout */}
         <Route path="/build" element={<ProtectedRoute><BuildPage /></ProtectedRoute>} />
         <Route path="/manual-build" element={<ProtectedRoute><ManualBuildPage /></ProtectedRoute>} />
         <Route path="/purchase-summary" element={<ProtectedRoute><PurchaseSummaryPage /></ProtectedRoute>} />
@@ -40,7 +39,6 @@ function App() {
           <Route path="/marketplace" element={<MarketplacePage />} />
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/guide" element={<GuidePage />} />
-
 
           {/* Sub-features */}
           <Route path="/camera" element={<CameraPage />} />
