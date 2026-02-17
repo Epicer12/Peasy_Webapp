@@ -1,3 +1,38 @@
+<<<<<<< HEAD
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+=======
+@import "tailwindcss";
+
+@theme {
+    --font-display: "Oswald", sans-serif;
+    --font-mono: "Space Mono", monospace;
+
+    --color-neon-blue: #00f3ff;
+    --color-neon-orange: #ff4400;
+    --color-acid-green: #ccff00;
+    --color-deep-black: #050505;
+    --color-off-white: #eeeeee;
+}
+
+@layer base {
+    body {
+        background-color: var(--color-deep-black);
+        color: var(--color-off-white);
+        font-family: var(--font-mono);
+        /* Default to mono for data feel */
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: var(--font-display);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+}
+>>>>>>> origin/main

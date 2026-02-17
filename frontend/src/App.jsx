@@ -8,6 +8,12 @@ import CameraPage from './pages/CameraPage';
 import ResultsPage from './pages/ResultsPage';
 import ModelViewerPage from './pages/ModelViewerPage';
 import ProtectedRoute from './components/layout/ProtectedRoute';
+import MainLayout from './components/layout/MainLayout';
+import PlanningPage from './pages/PlanningPage';
+import AssemblePage from './pages/AssemblePage';
+import TroubleshootPage from './pages/TroubleshootPage';
+import MarketplacePage from './pages/MarketplacePage';
+import CommunityPage from './pages/CommunityPage';
 
 function App() {
   return (
@@ -26,18 +32,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        <Route
-          path="/build"
-          element={
-            <ProtectedRoute>
-              <BuildPage />
-            </ProtectedRoute>
-          }
-        />
-
-
-
         <Route
           path="/camera"
           element={
