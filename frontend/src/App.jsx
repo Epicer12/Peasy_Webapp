@@ -7,6 +7,12 @@ import CameraPage from './pages/CameraPage';
 import ResultsPage from './pages/ResultsPage';
 import ModelViewerPage from './pages/ModelViewerPage';
 import ProtectedRoute from './components/layout/ProtectedRoute';
+import MainLayout from './components/layout/MainLayout';
+import PlanningPage from './pages/PlanningPage';
+import AssemblePage from './pages/AssemblePage';
+import TroubleshootPage from './pages/TroubleshootPage';
+import MarketplacePage from './pages/MarketplacePage';
+import CommunityPage from './pages/CommunityPage';
 
 function App() {
   return (
@@ -16,39 +22,20 @@ function App() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
 
-        {/* Protected Routes */}
-        <Route
-          path="/home"
-          element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/camera"
-          element={
-            <ProtectedRoute>
-              <CameraPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/result"
-          element={
-            <ProtectedRoute>
-              <ResultsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/model/:modelId"
-          element={
-            <ProtectedRoute>
-              <ModelViewerPage />
-            </ProtectedRoute>
-          }
-        />
+        {/* Proteted Routes wrapped in MainLayout */}
+        <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/plan" element={<PlanningPage />} />
+          <Route path="/assemble" element={<AssemblePage />} />
+          <Route path="/troubleshoot" element={<TroubleshootPage />} />
+          <Route path="/marketplace" element={<MarketplacePage />} />
+          <Route path="/community" element={<CommunityPage />} />
+
+          {/* Sub-features */}
+          <Route path="/camera" element={<CameraPage />} />
+          <Route path="/result" element={<ResultsPage />} />
+          <Route path="/model/:modelId" element={<ModelViewerPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
