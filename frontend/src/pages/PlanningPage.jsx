@@ -1,6 +1,7 @@
-import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const PlanningPage = () => {
+    const navigate = useNavigate();
     return (
         <div className="flex flex-col h-full space-y-6 max-w-7xl mx-auto">
             <div className="border-b-2 border-[#333] pb-4">
@@ -61,7 +62,10 @@ const PlanningPage = () => {
                     </div>
 
                     <div className="relative z-10 mt-8">
-                        <button className="w-full py-3 border border-[#00f3ff] text-[#00f3ff] font-black font-mono uppercase tracking-widest hover:bg-[#00f3ff] hover:text-black transition-all text-xs">
+                        <button
+                            onClick={() => navigate('/build')}
+                            className="w-full py-3 border border-[#00f3ff] text-[#00f3ff] font-black font-mono uppercase tracking-widest hover:bg-[#00f3ff] hover:text-black transition-all text-xs"
+                        >
                             INITIALIZE_AI_AGENT
                         </button>
                     </div>

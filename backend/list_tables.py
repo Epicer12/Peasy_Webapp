@@ -1,0 +1,28 @@
+import os
+from dotenv import load_dotenv
+from supabase import create_client
+
+load_dotenv()
+
+url = os.getenv("SUPABASE_URL")
+key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+supabase = create_client(url, key)
+
+print("Attempting to list tables...")
+
+try:
+    # This query often works if pg_catalog access is allowed, or if there's a specific RPC
+    # Since we can't easily query information_schema via postgrest directly without permissions/expose
+    # We will try a few common names that might be used for PC parts
+    common_names = ["products", "items", "inventory", "hardware", "cpu", "gpu", "ram", "motherboard"]
+    
+    for name in common_names:
+        try:
+            print(f"Checking table: {name}")
+            response = supabase.table(name).select("count", count="exact").limit(0).execute()
+            print(f"FOUND TABLE: {name} (Count: {response.count})")
+        except Exception as e:
+            pass # Table likely doesn't exist or not accessible
+            
+except Exception as e:
+    print(f"Error: {e}")

@@ -8,6 +8,7 @@ import ResultsPage from './pages/ResultsPage';
 import ModelViewerPage from './pages/ModelViewerPage';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
+import BuildPage from './pages/BuildPage';
 import PlanningPage from './pages/PlanningPage';
 import AssemblePage from './pages/AssemblePage';
 import TroubleshootPage from './pages/TroubleshootPage';
@@ -23,6 +24,8 @@ function App() {
         <Route path="/signup" element={<SignUpPage />} />
 
         {/* Proteted Routes wrapped in MainLayout */}
+        <Route path="/build" element={<ProtectedRoute><BuildPage /></ProtectedRoute>} />
+
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path="/home" element={<HomePage />} />
           <Route path="/plan" element={<PlanningPage />} />
