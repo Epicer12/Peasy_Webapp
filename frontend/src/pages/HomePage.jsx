@@ -67,24 +67,7 @@ const HomePage = () => {
                                 <span>EST: {build.price}</span>
                             </div>
                         </div>
-                    ))}
-
-                    {/* Add New Project Card */}
-                    <Link to="/plan" className="bg-[#111] p-5 border border-[#333] border-dashed flex flex-col items-center justify-center text-[#666] hover:text-[#eeeeee] hover:border-[#eeeeee] transition-all cursor-pointer min-h-[200px] hover:bg-[#1a1a1a]">
-                        <div className="text-4xl font-thin mb-3">+</div>
-                        <span className="font-mono text-[10px] tracking-widest uppercase">INIT_NEW_BUILD</span>
-                    </Link>
-                </div>
-            </section>
-
-            {/* Section 2: Market Deals (Right/Alt Aligned) - THEME: ORANGE */}
-            <section className="space-y-6">
-                <div className="flex items-center justify-end gap-4">
-                    <h2 className="text-xl font-bold uppercase tracking-tighter text-[#eeeeee] text-right">
-                        MARKET_DEALS
-                    </h2>
-                    <div className="w-3 h-3 bg-[#ff4400]"></div>
-                </div>
+                    </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {specialDeals.map(deal => (
@@ -150,6 +133,4 @@ const HomePage = () => {
             `}</style>
         </div>
     );
-};
-
-export default HomePage;
+}
