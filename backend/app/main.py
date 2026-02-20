@@ -14,9 +14,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from .routers import models, component_identification
+from .routers import models, component_identification, troubleshoot
 app.include_router(models.router, prefix="/api")
 app.include_router(component_identification.router, prefix="/api") 
+app.include_router(troubleshoot.router, prefix="/api/troubleshoot", tags=["troubleshoot"])
 
 @app.get("/")
 def root():
