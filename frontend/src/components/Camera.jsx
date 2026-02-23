@@ -331,7 +331,7 @@ function Camera() {
 
       // Draw Label Background
       const labelText = `${obj.class} ${(obj.prob * 100).toFixed(0)}%`;
-      ctx.font = "bold 16px Arial";
+      ctx.font = "bold 16px 'Space Mono', monospace";
       const textWidth = ctx.measureText(labelText).width;
 
       ctx.fillStyle = color;
@@ -353,147 +353,116 @@ function Camera() {
   };
 
   return (
-    <div style={{
-      height: "100vh",
-      display: "flex",
-      flexDirection: "column",
-      fontFamily: "'Segoe UI', Roboto, sans-serif",
-      backgroundColor: "#f0f2f5",
-      overflow: "hidden"
-    }}>
-      {/* Header */}
-      <header style={{
-        padding: "15px 30px",
-        backgroundColor: "white",
-        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        zIndex: 10
-      }}>
-        <h2 style={{ margin: 0, color: "#1a73e8" }}>Peasy Identification Dashboard</h2>
+    <div className="flex flex-col h-full bg-[#050505] text-[#eeeeee] font-mono overflow-hidden">
+      {/* Toolbar / Header */}
+      <div className="p-4 bg-[#050505] border-b-2 border-[#333] flex justify-between items-center z-10">
+        <h2 className="text-xl font-bold uppercase tracking-widest text-[#00f3ff]">Scanner // Control</h2>
 
-        <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
-          <label style={{ cursor: "pointer", backgroundColor: "#fff", border: "1px solid #ddd", padding: "6px 12px", borderRadius: "20px", fontSize: "14px" }}>
-            📁 Upload
+        <div className="flex gap-4 items-center">
+          <label className="cursor-pointer bg-[#1a1a1a] border border-[#333] hover:border-[#eeeeee] px-4 py-1 flex items-center gap-2 text-sm uppercase tracking-wide transition-colors">
+            <span>Upload_IMG</span>
             <input type="file" hidden onChange={handleUpload} accept="image/*" />
           </label>
 
-          <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", cursor: "pointer", fontWeight: "600" }}>
-            <span>Standard</span>
-            <input
-              type="checkbox"
-              checked={mode === "advanced"}
-              onChange={(e) => setMode(e.target.checked ? "advanced" : "standard")}
-              style={{ width: "16px", height: "16px" }}
-            />
-            <span>Advanced</span>
+          <label className="flex items-center gap-2 text-sm font-bold uppercase cursor-pointer text-[#666]">
+            <span>STND</span>
+            <div className={`w-10 h-5 bg-[#333] relative transition-colors ${mode === "advanced" ? "bg-[#00f3ff]" : ""}`}>
+              <input
+                type="checkbox"
+                checked={mode === "advanced"}
+                onChange={(e) => setMode(e.target.checked ? "advanced" : "standard")}
+                className="opacity-0 w-full h-full absolute inset-0 cursor-pointer"
+              />
+              <div className={`absolute top-0 bottom-0 w-5 bg-[#eeeeee] transition-transform ${mode === "advanced" ? "translate-x-full" : ""}`}></div>
+            </div>
+            <span className={mode === "advanced" ? "text-[#00f3ff]" : "text-[#666]"}>ADV</span>
           </label>
         </div>
-      </header>
+      </div>
 
       {/* Main Content Area */}
-      <main style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-
+      <main className="flex-1 flex overflow-hidden">
         {/* Left Side: Scanning/Track List */}
-        <div style={{ flex: "1", display: "flex", flexDirection: "column", borderRight: "1px solid #ddd", overflow: "hidden" }}>
-          <div style={{ padding: "20px", flex: 1, overflowY: "auto" }}>
-
+        <div className="flex-1 flex flex-col border-r-2 border-[#333] overflow-hidden">
+          <div className="p-6 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-[#333]">
             {cameraOn ? (
-              <div style={{ position: "relative", marginBottom: "20px", borderRadius: "12px", overflow: "hidden", backgroundColor: "#000", aspectRatio: "4/3" }}>
-                <video ref={videoRef} autoPlay muted playsInline style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                <canvas ref={overlayCanvasRef} style={{ position: "absolute", top: "0", left: "0", pointerEvents: "none", width: "100%", height: "100%" }} />
+              <div className="relative mb-6 bg-black border-2 border-[#333] aspect-[4/3]">
+                <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-contain" />
+                <canvas ref={overlayCanvasRef} className="absolute top-0 left-0 w-full h-full pointer-events-none" />
 
                 {allFound && cameraOn && (
-                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", backgroundColor: "rgba(0, 255, 0, 0.9)", padding: "20px", borderRadius: "12px", textAlign: "center", zIndex: 20 }}>
-                    <h1 style={{ margin: 0, color: "white", fontSize: "24px" }}>ALL FOUND! 🎉</h1>
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[#00ff88] text-black px-6 py-4 text-center border-2 border-white z-20">
+                    <h1 className="text-2xl font-black uppercase">ALL TARGETS ACQUIRED</h1>
                   </div>
                 )}
 
                 <button
                   onClick={() => setCameraOn(false)}
-                  style={{ position: "absolute", bottom: "10px", right: "10px", padding: "8px 15px", backgroundColor: "#dc3545", color: "white", border: "none", borderRadius: "8px", cursor: "pointer" }}
+                  className="absolute bottom-4 right-4 px-4 py-2 bg-[#ff4400] text-black font-bold uppercase tracking-widest border-2 border-[#ff4400] hover:bg-black hover:text-[#ff4400] transition-colors"
                 >
-                  Close Scanner
+                  TERMINATE_FEED
                 </button>
               </div>
             ) : (
-              <div style={{ textAlign: "center", padding: "40px 20px", border: "2px dashed #ccc", borderRadius: "12px", backgroundColor: "white", marginBottom: "20px" }}>
-                <p style={{ color: "#666", marginBottom: "15px" }}>Scanner is inactive</p>
+              <div className="text-center py-12 border-2 border-dashed border-[#333] bg-[#111] mb-6">
+                <p className="text-[#666] mb-4 uppercase tracking-widest">// FEED_OFFLINE</p>
                 <button
                   onClick={() => {
                     setCameraOn(true);
                     setAllFound(false);
                     setDetailedResults({});
                   }}
-                  style={{ padding: "12px 30px", backgroundColor: "#28a745", color: "white", border: "none", borderRadius: "8px", fontSize: "16px", fontWeight: "bold", cursor: "pointer" }}
+                  className="px-8 py-3 bg-[#00f3ff] text-black font-bold uppercase tracking-widest border-2 border-[#00f3ff] hover:bg-black hover:text-[#00f3ff] transition-colors"
                 >
-                  Launch Live Scanner
+                  INITIALIZE_LENS
                 </button>
               </div>
             )}
 
-            <h3 style={{ marginBottom: "15px", display: "flex", justifyContent: "space-between" }}>
-              Scanning Targets
-              <span style={{ fontSize: "14px", fontWeight: "normal", color: "#666" }}>{lockedItems.size} / {TARGET_COMPONENTS.length}</span>
+            <h3 className="mb-4 flex justify-between text-[#eeeeee] uppercase tracking-widest border-b border-[#333] pb-2">
+              TARGET_LIST
+              <span className="text-[#666]">{lockedItems.size} / {TARGET_COMPONENTS.length}</span>
             </h3>
 
-            <div style={{ display: "grid", gap: "10px" }}>
+            <div className="grid gap-2">
               {TARGET_COMPONENTS.map(target => {
                 const isFound = lockedItems.has(target);
                 return (
-                  <div key={target} style={{
-                    padding: "12px",
-                    backgroundColor: "white",
-                    borderRadius: "10px",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    border: isFound ? "2px solid #28a745" : "1px solid #ddd"
-                  }}>
-                    <span style={{ fontSize: "20px" }}>{isFound ? "✅" : "⏳"}</span>
+                  <div key={target} className={`p-3 bg-[#050505] flex items-center gap-4 border-2 ${isFound ? "border-[#00f3ff]" : "border-[#333]"}`}>
+                    <span className="text-xl">{isFound ? "▣" : "□"}</span>
 
                     {isFound && (
                       <img
                         src={`http://localhost:8000/api/snapshot/${target}${mode === 'advanced' ? `?instance=${(instanceCounts[target] || 1) - 1}` : ''}`}
                         alt={target}
-                        style={{
-                          width: "50px",
-                          height: "35px",
-                          objectFit: "cover",
-                          borderRadius: "4px",
-                          border: "1px solid #28a745",
-                          backgroundColor: "#eee"
-                        }}
+                        className="w-12 h-8 object-cover border border-[#333] grayscale hover:grayscale-0 transition-all"
                         key={`${target}-${instanceCounts[target] || 0}`}
                       />
                     )}
 
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: "600", color: isFound ? "#28a745" : "#333" }}>{target.replace("_", " ")}</div>
-                      {isFound && <div style={{ fontSize: "12px", color: "#666" }}>Component Locked</div>}
+                    <div className="flex-1">
+                      <div className={`font-bold uppercase tracking-wide ${isFound ? "text-[#00f3ff]" : "text-[#666]"}`}>{target.replace("_", " ")}</div>
                     </div>
 
                     {isFound && (
-                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <div className="flex gap-2 items-center">
                         <button
                           onClick={() => unlockComponent(target)}
-                          style={{ padding: "4px 10px", fontSize: "12px", backgroundColor: "#f8f9fa", border: "1px solid #ddd", borderRadius: "4px", cursor: "pointer" }}
+                          className="px-2 py-1 text-xs border border-[#444] text-[#888] hover:text-[#eeeeee] hover:border-[#eeeeee] uppercase transition-colors"
                         >
-                          Edit
+                          RESET
                         </button>
                         {mode === "standard" && MULTI_INSTANCE_ALLOWED.includes(target) && (
                           <select
                             value={quantities[target]}
                             onChange={(e) => setQuantities({ ...quantities, [target]: parseInt(e.target.value) })}
-                            style={{ padding: "4px", fontSize: "12px", borderRadius: "4px" }}
+                            className="bg-[#111] border border-[#333] text-[#eeeeee] text-xs px-1 py-1 uppercase rounded-none"
                           >
-                            {[1, 2, 3, 4].map(n => <option key={n} value={n}>Qty: {n}</option>)}
+                            {[1, 2, 3, 4].map(n => <option key={n} value={n}>QTY: {n}</option>)}
                           </select>
                         )}
                         {mode === "advanced" && MULTI_INSTANCE_ALLOWED.includes(target) && (
-                          <button onClick={() => addInstance(target)} style={{ width: "24px", height: "24px", borderRadius: "50%", backgroundColor: "#1a73e8", color: "white", border: "none", cursor: "pointer" }}>+</button>
+                          <button onClick={() => addInstance(target)} className="w-6 h-6 bg-[#00f3ff] text-black font-bold flex items-center justify-center hover:bg-white transition-colors">+</button>
                         )}
                       </div>
                     )}
@@ -504,89 +473,76 @@ function Camera() {
           </div>
 
           {lockedItems.size > 0 && (
-            <div style={{ padding: "20px", backgroundColor: "white", borderTop: "1px solid #ddd" }}>
+            <div className="p-6 bg-[#050505] border-t-2 border-[#333]">
               <button
                 onClick={getComponentDetails}
                 disabled={loadingDetails}
-                style={{
-                  width: "100%",
-                  padding: "15px",
-                  backgroundColor: "#1a73e8",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "18px",
-                  fontWeight: "bold",
-                  opacity: loadingDetails ? 0.7 : 1
-                }}
+                className={`w-full py-4 bg-[#ccff00] text-black text-lg font-black uppercase tracking-widest border-2 border-[#ccff00] hover:bg-black hover:text-[#ccff00] transition-colors ${loadingDetails ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                {loadingDetails ? "Analyzing Components..." : "Analyse & Finalize"}
+                {loadingDetails ? "PROCESSING_DATA..." : "ANALYSE_SYSTEM"}
               </button>
             </div>
           )}
         </div>
 
         {/* Right Side: Results Panel */}
-        <div style={{ flex: "1.2", backgroundColor: "white", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          <div style={{ padding: "20px", flex: 1, overflowY: "auto" }}>
+        <div className="flex-[1.2] bg-[#050505] flex flex-col overflow-hidden">
+          <div className="p-6 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-[#333]">
             {!loadingDetails && Object.keys(detailedResults).length === 0 && (
-              <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#666" }}>
-                <div style={{ fontSize: "40px", marginBottom: "20px" }}>📊</div>
-                <p>System analysis will appear here</p>
+              <div className="h-full flex flex-col items-center justify-center text-[#333]">
+                <div className="text-6xl mb-4 opacity-20">📊</div>
+                <p className="uppercase tracking-widest text-sm">// WAITING_FOR_DATA</p>
               </div>
             )}
 
             {loadingDetails && (
-              <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                <div className="spinner" style={{ width: "40px", height: "40px", border: "4px solid #f3f3f3", borderTop: "4px solid #1a73e8", borderRadius: "50%", animation: "spin 1s linear infinite" }}></div>
-                <p style={{ marginTop: "15px", color: "#1a73e8", fontWeight: "600" }}>Running AI Identification...</p>
+              <div className="h-full flex flex-col items-center justify-center">
+                <div className="w-12 h-12 border-4 border-[#333] border-t-[#00f3ff] rounded-none animate-spin mb-4"></div>
+                <p className="text-[#00f3ff] font-bold uppercase tracking-widest">RUNNING_NEURAL_NET...</p>
               </div>
             )}
 
-            {/* Results Header */}
             {Object.keys(detailedResults).length > 0 && (
-              <h3 style={{ borderBottom: "1px solid #eee", paddingBottom: "10px", marginBottom: "20px" }}>Analysis Results</h3>
+              <h3 className="border-b-2 border-[#333] pb-2 mb-6 text-[#eeeeee] uppercase tracking-widest">DIAGNOSTIC_RESULTS</h3>
             )}
 
-            {/* Scanning Results */}
             {Object.entries(detailedResults).map(([component, details]) => {
               const instances = Array.isArray(details) ? details : [details];
               return (
-                <div key={component} style={{ marginBottom: "30px", backgroundColor: "#fff", border: "1px solid #ddd", borderRadius: "12px", overflow: "hidden" }}>
-                  <div style={{ padding: "10px 15px", backgroundColor: "#f8f9fa", borderBottom: "1px solid #ddd", display: "flex", justifyContent: "space-between" }}>
-                    <h4 style={{ margin: 0 }}>{component.replace("_", " ")}</h4>
+                <div key={component} className="mb-6 bg-[#050505] border-2 border-[#333]">
+                  <div className="p-2 bg-[#1a1a1a] border-b-2 border-[#333] flex justify-between">
+                    <h4 className="font-bold text-[#eeeeee] uppercase tracking-wider">{component.replace("_", " ")}</h4>
                   </div>
 
-                  <div style={{ padding: "15px" }}>
+                  <div className="p-4">
                     {instances.map((inst, i) => (
-                      <div key={i} style={{ display: "flex", gap: "20px", marginBottom: i < instances.length - 1 ? "20px" : 0, borderBottom: i < instances.length - 1 ? "1px dashed #ddd" : "none", paddingBottom: i < instances.length - 1 ? "20px" : 0 }}>
-                        <div style={{ width: "120px" }}>
+                      <div key={i} className={`flex gap-4 ${i < instances.length - 1 ? "mb-6 border-b border-dashed border-[#333] pb-6" : ""}`}>
+                        <div className="w-24">
                           <img
                             src={`http://localhost:8000/api/snapshot/${component}${Array.isArray(details) ? `?instance=${i}` : ''}`}
-                            style={{ width: "100%", borderRadius: "6px", objectFit: "cover", backgroundColor: "#eee" }}
+                            className="w-full border border-[#333] bg-[#111]"
                             alt="Reference"
                           />
                         </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: "16px", fontWeight: "bold", color: "#1a73e8" }}>{inst.model || "Unknown Model"}</div>
-                          <div style={{ fontSize: "14px", color: "#333", margin: "4px 0" }}>{inst.brand} {inst.sub_brand}</div>
+                        <div className="flex-1">
+                          <div className="text-lg font-bold text-[#00f3ff] uppercase leading-none mb-1">{inst.model || "UNKNOWN_MODEL"}</div>
+                          <div className="text-sm text-[#888] font-mono mb-2">{inst.brand} {inst.sub_brand}</div>
 
-                          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "8px" }}>
-                            <div style={{ fontSize: "12px", padding: "2px 8px", backgroundColor: "#eef", borderRadius: "4px" }}>
-                              Confidence: {(inst.confidence * 100).toFixed(0)}%
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="text-xs px-2 py-0.5 bg-[#111] border border-[#00f3ff] text-[#00f3ff]">
+                              CONF: {(inst.confidence * 100).toFixed(0)}%
                             </div>
-                            {inst.is_ocr_confirmed && <div style={{ fontSize: "11px", color: "#28a745" }}>Verified by Text Scan</div>}
+                            {inst.is_ocr_confirmed && <div className="text-xs text-[#00ff88] uppercase">[OCR_VERIFIED]</div>}
                           </div>
 
-                          {inst.notes && <p style={{ fontSize: "12px", color: "#666", marginTop: "10px", fontStyle: "italic" }}>"{inst.notes}"</p>}
+                          {inst.notes && <p className="text-xs text-[#666] italic border-l-2 border-[#333] pl-2">"{inst.notes}"</p>}
 
                           {inst.possible_models?.length > 0 && (
-                            <div style={{ marginTop: "10px" }}>
-                              <div style={{ fontSize: "11px", color: "#999", textTransform: "uppercase" }}>Other Possibilities:</div>
-                              <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", marginTop: "4px" }}>
+                            <div className="mt-2">
+                              <div className="text-[10px] text-[#444] uppercase mb-1">ALTERNATIVES:</div>
+                              <div className="flex gap-2 flex-wrap">
                                 {inst.possible_models.map(m => (
-                                  <span key={m} style={{ fontSize: "10px", padding: "2px 6px", backgroundColor: "#f0f0f0", borderRadius: "3px" }}>{m}</span>
+                                  <span key={m} className="text-[10px] px-1 bg-[#111] text-[#666] border border-[#333]">{m}</span>
                                 ))}
                               </div>
                             </div>
@@ -600,15 +556,13 @@ function Camera() {
             })}
           </div>
         </div>
-      </main>
 
-      {/* Hidden Capture Canvas */}
-      <canvas ref={captureCanvasRef} style={{ display: "none" }} />
-      <style>{`
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-      `}</style>
+        {/* Hidden Capture Canvas */}
+        <canvas ref={captureCanvasRef} className="hidden" />
+      </main>
     </div>
   );
 }
+
 
 export default Camera;
