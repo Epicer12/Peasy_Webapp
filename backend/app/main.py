@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware  # ✅ added
 
 load_dotenv()
 
@@ -21,6 +22,7 @@ app.include_router(components.router, prefix="/api")
 from .routers import builder
 app.include_router(builder.router, prefix="/api")
 
+# --- Routes ---
 @app.get("/")
 def root():
     return {"message": "Peasy backend is running 🚀"}
@@ -31,5 +33,3 @@ def health_check():
         "status": "ok",
         "service": "peasy-backend"
     }
-
-

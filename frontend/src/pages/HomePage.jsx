@@ -67,7 +67,29 @@ const HomePage = () => {
                                 <span>EST: {build.price}</span>
                             </div>
                         </div>
+<<<<<<< HEAD
                     ))}
+=======
+                    </div>
+                {/* Build Your Own PC Card */}
+                <div
+                    onClick={() => navigate('/build')}
+                    className="bg-white rounded-xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow border-2 border-transparent hover:border-purple-500"
+                >
+                    <div className="text-center">
+                        <div className="text-6xl mb-4">🛠</div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                            Build Your Own PC
+                        </h2>
+                        <p className="text-gray-600 mb-4">
+                            Answer guided questions and generate your custom PC build plan
+                        </p>
+                        <button className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold">
+                            Start Building
+                        </button>
+                    </div>
+                </div>
+>>>>>>> main
 
                     {/* Add New Project Card */}
                     <Link to="/plan" className="bg-[#111] p-5 border border-[#333] border-dashed flex flex-col items-center justify-center text-[#666] hover:text-[#eeeeee] hover:border-[#eeeeee] transition-all cursor-pointer min-h-[200px] hover:bg-[#1a1a1a]">
@@ -150,6 +172,10 @@ const HomePage = () => {
             `}</style>
         </div>
     );
+<<<<<<< HEAD
 };
 
 export default HomePage;
+=======
+}
+>>>>>>> main
