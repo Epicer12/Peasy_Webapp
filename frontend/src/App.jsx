@@ -9,11 +9,15 @@ import ModelViewerPage from './pages/ModelViewerPage';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
 import BuildPage from './pages/BuildPage';
+import ManualBuildPage from './pages/ManualBuildPage';
+import PurchaseSummaryPage from './pages/PurchaseSummaryPage';
 import PlanningPage from './pages/PlanningPage';
 import AssemblePage from './pages/AssemblePage';
 import TroubleshootPage from './pages/TroubleshootPage';
 import MarketplacePage from './pages/MarketplacePage';
 import CommunityPage from './pages/CommunityPage';
+import GuidePage from './pages/GuidePage';
+
 
 function App() {
   return (
@@ -25,6 +29,8 @@ function App() {
 
         {/* Proteted Routes wrapped in MainLayout */}
         <Route path="/build" element={<ProtectedRoute><BuildPage /></ProtectedRoute>} />
+        <Route path="/manual-build" element={<ProtectedRoute><ManualBuildPage /></ProtectedRoute>} />
+        <Route path="/purchase-summary" element={<ProtectedRoute><PurchaseSummaryPage /></ProtectedRoute>} />
 
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path="/home" element={<HomePage />} />
@@ -33,6 +39,8 @@ function App() {
           <Route path="/troubleshoot" element={<TroubleshootPage />} />
           <Route path="/marketplace" element={<MarketplacePage />} />
           <Route path="/community" element={<CommunityPage />} />
+          <Route path="/guide" element={<GuidePage />} />
+
 
           {/* Sub-features */}
           <Route path="/camera" element={<CameraPage />} />
