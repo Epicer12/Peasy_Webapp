@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from fastapi.middleware.cors import CORSMiddleware  # ✅ added
 
 load_dotenv()
 
@@ -16,7 +15,7 @@ app.add_middleware(
 )
 
 # --- Routers ---
-from .routers import models, component_identification, assembly_instructions
+from .routers import models, component_identification, assembly_instructions, troubleshoot
 
 app.include_router(models.router, prefix="/api")
 app.include_router(component_identification.router, prefix="/api")

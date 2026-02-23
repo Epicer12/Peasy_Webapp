@@ -26,6 +26,53 @@ function App() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
 
+<<<<<<< HEAD
+        {/* Protected Routes */}
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/build"
+          element={
+            <ProtectedRoute>
+              <BuildPage />
+            </ProtectedRoute>
+          }
+        />
+
+
+
+        <Route
+          path="/camera"
+          element={
+            <ProtectedRoute>
+              <CameraPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/result"
+          element={
+            <ProtectedRoute>
+              <ResultsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/model/:modelId"
+          element={
+            <ProtectedRoute>
+              <ModelViewerPage />
+            </ProtectedRoute>
+          }
+        />
+=======
         {/* Protected Routes wrapped in MainLayout */}
         <Route path="/build" element={<ProtectedRoute><BuildPage /></ProtectedRoute>} />
         <Route path="/manual-build" element={<ProtectedRoute><ManualBuildPage /></ProtectedRoute>} />
@@ -45,6 +92,7 @@ function App() {
           <Route path="/result" element={<ResultsPage />} />
           <Route path="/model/:modelId" element={<ModelViewerPage />} />
         </Route>
+>>>>>>> main
       </Routes>
     </BrowserRouter>
   );
