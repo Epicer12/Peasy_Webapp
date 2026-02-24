@@ -6,7 +6,7 @@ pydantic
 python-multipart
 aiofiles
 supabase
-opencv-python
+opencv-python-headless
 ultralytics
 websockets
 openai

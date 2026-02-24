@@ -11,10 +11,10 @@ router = APIRouter()
 
 # Initialize Supabase
 url = os.getenv("SUPABASE_URL")
-key = os.getenv("SUPABASE_KEY")
+key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 if not url or not key:
-    raise ValueError("Supabase URL and Key must be set in environment variables")
+    raise ValueError("Supabase URL and Service Role Key must be set in environment variables")
 
 supabase = create_client(url, key)
 

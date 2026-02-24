@@ -1,12 +1,5 @@
 @import "tailwindcss";
 
-/* Tailwind layers (kept for compatibility) */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-<<<<<<< HEAD
-=======
-
 /* Custom Theme */
 @theme {
     --font-display: "Oswald", sans-serif;
@@ -37,4 +30,3 @@
         letter-spacing: 0.05em;
     }
 }
->>>>>>> main
