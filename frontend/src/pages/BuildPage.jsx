@@ -1,92 +1,3 @@
-<<<<<<< HEAD
-import { useState } from "react";
-import Question from "../components/build/Question";
-
-export default function BuildPage() {
-  const [step, setStep] = useState(1);
-
-  const [answers, setAnswers] = useState({
-    purpose: [],
-    resolution: [],
-    performance: "",
-    budget: "",
-    ownedParts: [],
-    upgrade: "",
-    aesthetics: "",
-    caseSize: "",
-    overclock: "",
-    wifi: "",
-  });
-
-  const updateAnswer = (field, value) => {
-    setAnswers({ ...answers, [field]: value });
-  };
-
-  const next = () => setStep(step + 1);
-  const back = () => setStep(step - 1);
-
-  const pageWrapper = {
-    padding: "40px 20px",
-  };
-
-  const titleStyle = {
-    textAlign: "center",
-    fontSize: "36px",
-    fontWeight: "700",
-    marginBottom: "30px",
-  };
-
-  const boxStyle = {
-    maxWidth: "600px",
-    margin: "0 auto",
-    padding: "30px",
-    backgroundColor: "white",
-    borderRadius: "12px",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-  };
-
-  const buttonRow = {
-    display: "flex",
-    justifyContent: "space-between",
-    marginTop: "30px",
-  };
-
-  const buttonStyle = {
-    padding: "10px 20px",
-    borderRadius: "6px",
-    border: "none",
-    cursor: "pointer",
-    backgroundColor: "#4a7cff",
-    color: "white",
-    fontWeight: "600",
-  };
-
-  const backStyle = {
-    ...buttonStyle,
-    backgroundColor: "#ccc",
-    color: "#333",
-  };
-
-  if (step === 11) {
-    return (
-      <div style={pageWrapper}>
-        <h1 style={titleStyle}>Build Your Own PC</h1>
-
-        <div style={boxStyle}>
-          <h2 style={{ marginBottom: "20px" }}>Build Plan Summary</h2>
-
-          {Object.entries(answers).map(([key, value]) => (
-            <p key={key} style={{ marginBottom: "10px" }}>
-              <strong>{key.toUpperCase()}:</strong>{" "}
-              {Array.isArray(value) ? value.join(", ") : value}
-            </p>
-          ))}
-
-          <div style={buttonRow}>
-            <button style={backStyle} onClick={() => setStep(10)}>
-              Back
-            </button>
-=======
 import { useState, useEffect, useRef } from "react";
 import Navbar from "../components/layout/Navbar";
 import Question from "../components/build/Question";
@@ -158,6 +69,7 @@ export default function BuildPage() {
 
   const handleOwnedPartsSelect = (newSelection) => {
     const prevSelection = answers.ownedParts;
+    // Enforce "None" exclusivity
     if (!prevSelection.includes("None") && newSelection.includes("None")) {
       setAnswers({ ...answers, ownedParts: ["None"] });
       setOwnedDetails({});
@@ -236,7 +148,7 @@ export default function BuildPage() {
   };
 
   const renderComponentSearch = (part) => (
-    <div ref={activeSearchPart === part ? searchContainerRef : null} style={{ position: "relative", marginTop: "0px", minWidth: "250px" }}>
+    <div ref={activeSearchPart === part ? searchContainerRef : null} style={{ position: "relative", marginTop: "10px", minWidth: "250px" }}>
       <input
         type="text"
         placeholder={`Search ${part}...`}
@@ -244,24 +156,24 @@ export default function BuildPage() {
         onChange={(e) => handleOwnedDetailChange(part, e.target.value)}
         onKeyDown={(e) => handleKeyDown(e, part)}
         onFocus={() => handleOwnedDetailChange(part, ownedDetails[part] || "")}
-        style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid", borderColor: activeSearchPart === part ? "#4a7cff" : "#ccc", fontSize: "14px", height: "38px", outline: "none", backgroundColor: "white", color: "black" }}
+        style={{ width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1.5px solid", borderColor: activeSearchPart === part ? "#4a7cff" : "#e0e0e0", fontSize: "14px", outline: "none", backgroundColor: "#fff", color: "#333", transition: "all 0.2s" }}
       />
       {activeSearchPart === part && (
-        <ul style={{ listStyle: "none", padding: 0, margin: 4, border: "1px solid #eee", borderRadius: "6px", maxHeight: "220px", overflowY: "auto", backgroundColor: "white", position: "absolute", zIndex: 9999, width: "100%", boxShadow: "0 4px 16px rgba(0,0,0,0.12)" }}>
+        <ul style={{ listStyle: "none", padding: 0, margin: "8px 0 0 0", border: "1px solid #eee", borderRadius: "10px", maxHeight: "250px", overflowY: "auto", backgroundColor: "white", position: "absolute", zIndex: 9999, width: "100%", boxShadow: "0 10px 25px rgba(0,0,0,0.1)", borderTop: "none" }}>
           {loadingState[part] ? (
-            <li style={{ padding: "10px 12px", fontStyle: "italic" }}>Loading components...</li>
+            <li style={{ padding: "12px 16px", fontStyle: "italic", color: "#666", fontSize: "13px" }}>Searching Database...</li>
           ) : searchResults[part]?.length ? (
             searchResults[part].map((res, idx) => (
               <li
                 key={res.id || idx}
                 onMouseDown={(e) => { e.preventDefault(); selectComponent(part, getComponentDisplayName(res)); }}
-                style={{ padding: "10px 12px", cursor: "pointer", borderBottom: "1px solid #f5f5f5", backgroundColor: idx === selectedIndex ? "#f0f7ff" : "white" }}
+                style={{ padding: "12px 16px", cursor: "pointer", borderBottom: "1px solid #f8f8f8", backgroundColor: idx === selectedIndex ? "#f0f7ff" : "white", fontSize: "13px", color: idx === selectedIndex ? "#1d4ed8" : "#333", fontWeight: idx === selectedIndex ? "600" : "400" }}
               >
                 {getComponentDisplayName(res)}
               </li>
             ))
           ) : (
-            <li style={{ padding: "10px 12px", fontStyle: "italic" }}>No results found</li>
+            <li style={{ padding: "12px 16px", fontStyle: "italic", color: "#999", fontSize: "13px" }}>No matches found</li>
           )}
         </ul>
       )}
@@ -269,17 +181,9 @@ export default function BuildPage() {
   );
 
   const handleTabChange = (tab) => { setActiveTab(tab); window.scrollTo(0, 0); };
-  const next = () => setStep(step + 1);
-  const back = () => setStep(step - 1);
-
-  const pageWrapper = { padding: "40px 20px", maxWidth: "800px", margin: "0 auto" };
-  const titleStyle = { textAlign: "center", fontSize: "36px", fontWeight: 700, marginBottom: "30px" };
-  const buttonStyle = { padding: "12px 24px", borderRadius: "8px", border: "none", cursor: "pointer", backgroundColor: "#4a7cff", color: "white", fontWeight: "600", fontSize: "16px", marginTop: "30px", width: "100%" };
-  const backStyle = { ...buttonStyle, backgroundColor: "#ccc", color: "#333" };
-  const buttonRow = { display: "flex", justifyContent: "space-between", marginTop: "30px" };
 
   const handleClearAll = () => {
-    if (window.confirm("Clear all answers?")) {
+    if (window.confirm("Format data sector? (Clear all answers)")) {
       setAnswers({ purpose: [], resolution: "", performance: "", budget: { min: "", max: "" }, ownedParts: [], existingFit: "", upgrade: "", caseSize: "", aesthetics: "", overclock: "", wifi: "", cpuBrand: "", gpuBrand: "", expansion: [] });
       setAdvAnswers({ refreshRate: "", priority: "", budgetOpt: "", workloadFocus: "", storageSetup: "", storageSize: "", caseStyle: "", coolingImp: "", coolingType: "", noise: "", powerEff: "", connectivity: [], rayTracing: "", rgbSoftware: "" });
       setOwnedDetails({});
@@ -292,46 +196,64 @@ export default function BuildPage() {
 
   const handleSubmitBuild = async () => {
     const summaryData = { timestamp: new Date().toISOString(), type: activeTab === "advanced" ? "Advanced Build" : "Basic Build", basicPreferences: answers, ownedComponents: ownedDetails, ...(activeTab === "advanced" && { advancedPreferences: advAnswers }) };
-    const { success, error } = await submitBuildRequest({ payload: summaryData });
-    if (success) alert("Build request submitted successfully!");
-    else { console.error(error); alert("Failed to submit build request."); }
+    try {
+      const { success, error } = await submitBuildRequest({ payload: summaryData });
+      if (success) alert("SYSTEM MESSAGE: BUILD_SPECIFICATIONS_UPLOADED_SUCCESSFULLY");
+      else { console.error(error); alert("COMM_ERROR: UPLOAD_FAILED"); }
+    } catch (err) {
+      alert("CRITICAL_ERROR: SECTOR_NOT_REACHABLE");
+    }
   };
+
+  // Styles
+  const pageWrapper = { padding: "40px 20px", maxWidth: "900px", margin: "0 auto", minHeight: "100vh" };
+  const titleStyle = { textAlign: "center", fontSize: "3rem", fontWeight: 900, marginBottom: "40px", letterSpacing: "-0.05em", textTransform: "uppercase" };
+  const tabContainerStyle = { display: "flex", justifyContent: "center", gap: "10px", marginBottom: "40px", borderBottom: "2px solid #333" };
+  const getTabStyle = (tabName) => ({ padding: "12px 30px", cursor: "pointer", border: "none", borderBottom: activeTab === tabName ? "4px solid #00f3ff" : "4px solid transparent", color: activeTab === tabName ? "#00f3ff" : "#666", fontWeight: "900", fontSize: "14px", textTransform: "uppercase", letterSpacing: "0.1em", transition: "all 0.2s" });
+  const buttonStyle = { padding: "16px 32px", border: "2px solid #333", cursor: "pointer", backgroundColor: "#00f3ff", color: "black", fontWeight: "900", fontSize: "14px", textTransform: "uppercase", letterSpacing: "0.1em", width: "100%", marginTop: "40px", transition: "all 0.2s shadow-lg" };
 
   if (showSummary) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-[#050505] text-[#eeeeee] font-mono">
         <Navbar />
         <div style={pageWrapper}>
-          <h1 style={{ ...titleStyle, fontSize: "28px", marginBottom: "15px" }}>{activeTab === "advanced" ? "Advanced Build Summary" : "Basic Build Summary"}</h1>
+          <h1 style={{ ...titleStyle, fontSize: "2rem", marginBottom: "20px" }}>{activeTab === "advanced" ? "ADVANCED_SUMMARY" : "BASIC_SUMMARY"}</h1>
 
-          {/* Basic & Advanced Summary */}
-          <div style={{ backgroundColor: "#f9f9f9", borderRadius: "12px", boxShadow: "0 10px 30px rgba(0,0,0,0.1)", padding: "25px" }}>
+          <div style={{ backgroundColor: "#111", border: "2px solid #333", padding: "40px" }}>
+            <h3 style={{ color: "#00f3ff", marginBottom: "20px", borderBottom: "1px solid #333", paddingBottom: "10px" }}>CORE_PREFERENCES</h3>
             {Object.entries(answers).map(([key, value]) => (
-              <div key={key} style={{ marginBottom: "8px", display: "flex", justifyContent: "space-between" }}>
-                <strong>{key}:</strong>
-                <span>{Array.isArray(value) ? value.join(", ") : (typeof value === "object" ? `LKR ${value.min || 0} - LKR ${value.max || "∞"}` : value || "Not selected")}</span>
+              <div key={key} style={{ marginBottom: "12px", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #222", paddingBottom: "4px" }}>
+                <strong style={{ color: "#666", fontSize: "10px" }}>{key.toUpperCase()}:</strong>
+                <span style={{ fontSize: "12px" }}>{Array.isArray(value) ? value.join(", ") : (typeof value === "object" ? `LKR ${value.min || 0} - ${value.max || "INF"}` : value || "NULL")}</span>
               </div>
             ))}
+
             {Object.keys(ownedDetails).length > 0 && (
-              <div style={{ marginTop: "15px" }}>
+              <div style={{ marginTop: "30px" }}>
+                <h3 style={{ color: "#ccff00", marginBottom: "20px", borderBottom: "1px solid #333", paddingBottom: "10px" }}>OWNED_HARDWARE</h3>
                 {Object.entries(ownedDetails).map(([part, detail]) => (
-                  <div key={part} style={{ display: "flex", justifyContent: "space-between" }}>
-                    <strong>{part}:</strong> <span>{detail}</span>
+                  <div key={part} style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", borderBottom: "1px solid #222", paddingBottom: "4px" }}>
+                    <strong style={{ color: "#666", fontSize: "10px" }}>{part.toUpperCase()}:</strong> <span style={{ fontSize: "12px" }}>{detail}</span>
                   </div>
                 ))}
               </div>
             )}
-            {activeTab === "advanced" && Object.entries(advAnswers).map(([key, value]) => (
-              <div key={key} style={{ marginBottom: "8px", display: "flex", justifyContent: "space-between" }}>
-                <strong>{key}:</strong> <span>{Array.isArray(value) ? value.join(", ") : value || "Not selected"}</span>
-              </div>
-            ))}
-          </div>
 
-          <div style={{ marginTop: "30px", textAlign: "center" }}>
-            <button style={{ ...buttonStyle, width: "auto" }} onClick={handleSubmitBuild}>Submit Build Request</button>
-            <button style={{ ...buttonStyle, backgroundColor: "#f0f0f0", color: "#333", border: "1px solid #ccc", marginTop: "10px", width: "auto" }} onClick={() => { setShowSummary(false); handleTabChange("basic"); }}>Edit Answers</button>
->>>>>>> main
+            {activeTab === "advanced" && (
+              <div style={{ marginTop: "30px" }}>
+                <h3 style={{ color: "#ff4400", marginBottom: "20px", borderBottom: "1px solid #333", paddingBottom: "10px" }}>ADVANCED_METRICS</h3>
+                {Object.entries(advAnswers).map(([key, value]) => (
+                  <div key={key} style={{ marginBottom: "12px", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #222", paddingBottom: "4px" }}>
+                    <strong style={{ color: "#666", fontSize: "10px" }}>{key.toUpperCase()}:</strong> <span style={{ fontSize: "12px" }}>{Array.isArray(value) ? value.join(", ") : value || "NULL"}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ marginTop: "40px", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <button style={buttonStyle} onClick={handleSubmitBuild}>COMPLETE_INITIALIZATION</button>
+              <button style={{ ...buttonStyle, backgroundColor: "#222", color: "#eee", border: "2px solid #333" }} onClick={() => setShowSummary(false)}>ADJUST_SIGNALS</button>
+            </div>
           </div>
         </div>
       </div>
@@ -339,182 +261,55 @@ export default function BuildPage() {
   }
 
   return (
-<<<<<<< HEAD
-    <div style={pageWrapper}>
-      {/* BIG CENTERED TITLE ABOVE BOX */}
-      <h1 style={titleStyle}>Build Your Own PC</h1>
-
-      <div style={boxStyle}>
-        {step === 1 && (
-          <Question
-            title="1. What will you primarily use this PC for?"
-            options={[
-              "Gaming",
-              "Video Editing",
-              "Graphic Design",
-              "Programming",
-              "3D Rendering",
-              "AI / Machine Learning",
-              "General Use",
-              "Mixed Use",
-            ]}
-            selected={answers.purpose}
-            onSelect={(val) => updateAnswer("purpose", val)}
-            multi={true}
-          />
-        )}
-
-        {step === 2 && (
-          <Question
-            title="2. What resolution will you be using?"
-            options={["1080p", "1440p", "4K", "Not sure"]}
-            selected={answers.resolution}
-            onSelect={(val) => updateAnswer("resolution", val)}
-            multi={true}
-          />
-        )}
-
-        {step === 3 && (
-          <Question
-            title="3. What performance level are you aiming for?"
-            options={[
-              "Entry Level",
-              "Mid-Range",
-              "High-End",
-              "Enthusiast / Extreme",
-            ]}
-            selected={answers.performance}
-            onSelect={(val) => updateAnswer("performance", val)}
-          />
-        )}
-
-        {step === 4 && (
-          <Question
-            title="4. What is your total budget?"
-            options={[
-              "Under 150,000",
-              "150,000 - 300,000",
-              "300,000 - 600,000",
-              "600,000+",
-            ]}
-            selected={answers.budget}
-            onSelect={(val) => updateAnswer("budget", val)}
-          />
-        )}
-
-        {step === 5 && (
-          <Question
-            title="5. Do you already own any components?"
-            options={[
-              "CPU",
-              "GPU",
-              "RAM",
-              "Storage",
-              "PSU",
-              "Case",
-              "None",
-            ]}
-            selected={answers.ownedParts}
-            onSelect={(val) => updateAnswer("ownedParts", val)}
-            multi={true}
-          />
-        )}
-
-        {step === 6 && (
-          <Question
-            title="6. How important is future upgradeability?"
-            options={[
-              "Not important",
-              "Somewhat important",
-              "Very important",
-            ]}
-            selected={answers.upgrade}
-            onSelect={(val) => updateAnswer("upgrade", val)}
-          />
-        )}
-
-        {step === 7 && (
-          <Question
-            title="7. Do aesthetics matter to you?"
-            options={[
-              "Performance only",
-              "Minimal build",
-              "RGB build",
-              "White themed build",
-              "No preference",
-            ]}
-            selected={answers.aesthetics}
-            onSelect={(val) => updateAnswer("aesthetics", val)}
-          />
-        )}
-
-        {step === 8 && (
-          <Question
-            title="8. What case size do you prefer?"
-            options={[
-              "Mini ITX",
-              "Micro ATX",
-              "ATX",
-              "No preference",
-            ]}
-            selected={answers.caseSize}
-            onSelect={(val) => updateAnswer("caseSize", val)}
-          />
-        )}
-
-        {step === 9 && (
-          <Question
-            title="9. Do you plan to overclock?"
-            options={["Yes", "No", "Not sure"]}
-            selected={answers.overclock}
-            onSelect={(val) => updateAnswer("overclock", val)}
-          />
-        )}
-
-        {step === 10 && (
-          <Question
-            title="10. Do you need WiFi & Bluetooth built-in?"
-            options={["Yes", "No", "Doesn't matter"]}
-            selected={answers.wifi}
-            onSelect={(val) => updateAnswer("wifi", val)}
-          />
-        )}
-
-        <div style={buttonRow}>
-          {step !== 1 && (
-            <button style={backStyle} onClick={back}>
-              Back
-            </button>
-          )}
-
-          {step === 10 ? (
-            <button style={buttonStyle} onClick={() => setStep(11)}>
-              View Summary
-            </button>
-          ) : (
-            <button style={buttonStyle} onClick={next}>
-              Next
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-=======
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#050505] text-[#eeeeee] font-mono">
       <Navbar />
       <div style={pageWrapper}>
-        <h1 style={titleStyle}>Build Your Own PC</h1>
+        <h1 style={titleStyle}>SYSTEM_BUILDER</h1>
 
-        <div style={{ display: "flex", justifyContent: "center", gap: "20px", marginBottom: "30px", borderBottom: "1px solid #ddd" }}>
-          <div style={{ padding: "10px 20px", cursor: "pointer", borderBottom: activeTab === "basic" ? "3px solid #4a7cff" : "3px solid transparent", color: activeTab === "basic" ? "#4a7cff" : "#666" }} onClick={() => handleTabChange("basic")}>Basic</div>
-          <div style={{ padding: "10px 20px", cursor: "pointer", borderBottom: activeTab === "advanced" ? "3px solid #4a7cff" : "3px solid transparent", color: activeTab === "advanced" ? "#4a7cff" : "#666" }} onClick={() => handleTabChange("advanced")}>Advanced</div>
+        <div style={tabContainerStyle}>
+          <button style={getTabStyle("basic")} onClick={() => handleTabChange("basic")}>01_BASIC</button>
+          <button style={getTabStyle("advanced")} onClick={() => handleTabChange("advanced")}>02_ADVANCED</button>
         </div>
 
-        {/* Here you can render all Questions as in HEAD version with renderComponentSearch, advanced questions, etc. */}
+        <div style={{ backgroundColor: "#111", border: "2px solid #333", padding: "40px", marginBottom: "100px" }}>
+          {activeTab === "basic" ? (
+            <div className="space-y-8">
+              <Question title="PRIMARY_OBJECTIVE" options={["Gaming", "Video Editing", "Graphic Design", "3D Rendering", "Programming", "AI / Machine Learning", "Streaming", "Office / General Use", "Heavy Multitasking", "Mixed Use"]} selected={answers.purpose} onSelect={(val) => updateAnswer("purpose", val)} multi={true} layout="grid" />
+              <Question title="VISUAL_RESOLUTION" options={["1080p", "1440p", "4K", "Not sure"]} selected={answers.resolution} onSelect={(val) => updateAnswer("resolution", val)} layout="row" />
+              <Question title="PERFORMANCE_TIER" options={["Entry Level", "Mid-Range", "High-End", "Enthusiast"]} selected={answers.performance} onSelect={(val) => updateAnswer("performance", val)} />
+              <Question title="BUDGET_THRESHOLD" type="range" selected={answers.budget} onSelect={(val) => updateAnswer("budget", val)} min={100000} />
+              <Question title="EXISTING_HARDWARE" options={["CPU", "GPU", "RAM", "Storage", "PSU", "Case", "None"]} selected={answers.ownedParts} onSelect={(val) => handleOwnedPartsSelect(val)} multi={true} renderOptionExtra={(option) => option !== "None" && renderComponentSearch(option)} />
+              <Question title="PROCESSOR_PREFERENCE" subtitle={isPartOwned("CPU") ? "SECTOR_OWNED: CPU" : null} options={["Intel", "AMD", "No preference", isPartOwned("CPU") ? "ALREADY_OWNED" : null].filter(Boolean)} selected={answers.cpuBrand} onSelect={(val) => updateAnswer("cpuBrand", val)} layout="row" />
+              <Question title="GRAPHICS_PREFERENCE" subtitle={isPartOwned("GPU") ? "SECTOR_OWNED: GPU" : null} options={["NVIDIA", "AMD", "No preference", isPartOwned("GPU") ? "ALREADY_OWNED" : null].filter(Boolean)} selected={answers.gpuBrand} onSelect={(val) => updateAnswer("gpuBrand", val)} layout="row" />
+              <Question title="FUTURE_EXPANSION" options={["More RAM slots", "Extra storage slots", "Space for GPU upgrades", "No preference"]} selected={answers.expansion} onSelect={(val) => updateAnswer("expansion", val)} multi={true} exclusiveOption="No preference" />
+              <Question title="FORM_FACTOR" subtitle={isPartOwned("Case") ? "SECTOR_OWNED: CASE" : null} options={["Mini ITX", "Micro ATX", "ATX", "No preference", isPartOwned("Case") ? "ALREADY_OWNED" : null].filter(Boolean)} selected={answers.caseSize} onSelect={(val) => updateAnswer("caseSize", val)} />
+              <Question title="AESTHETIC_PROFILE" options={["Performance only", "Minimal build", "RGB build", "White themed build", "No preference"]} selected={answers.aesthetics} onSelect={(val) => updateAnswer("aesthetics", val)} />
+              <Question title="UPGRADE_PRIORITY" options={["Not important", "Somewhat important", "Very important"]} selected={answers.upgrade} onSelect={(val) => updateAnswer("upgrade", val)} />
+
+              <button style={buttonStyle} onClick={() => { setShowSummary(true); window.scrollTo(0, 0); }}>GENERATE_REPORT</button>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              <div style={{ marginBottom: "30px", padding: "15px", backgroundColor: "rgba(255,180,0,0.1)", border: "1px solid #ff4400", color: "#ff4400", fontSize: "10px" }}>
+                <strong>SYSTEM_NOTE:</strong> ENSURE BASIC_TELEMETRY (TAB_01) IS COMPLETE BEFORE ANALYZING ADVANCED_METRICS.
+              </div>
+              <Question title="REFRESH_RATE" options={["60Hz", "75Hz", "120Hz", "144Hz", "165Hz+", "Not sure"]} selected={advAnswers.refreshRate} onSelect={(val) => updateAdvAnswer("refreshRate", val)} layout="row" />
+              <Question title="PRIMARY_FOCUS" options={["Maximum gaming FPS", "Rendering performance", "Smooth multitasking", "Balanced performance"]} selected={advAnswers.priority} onSelect={(val) => updateAdvAnswer("priority", val)} />
+              <Question title="STORAGE_CONFIG" options={["NVMe SSD (Fastest)", "SSD + HDD combo", "Large HDD storage", "Not sure", isPartOwned("Storage") ? "ALREADY_OWNED" : null].filter(Boolean)} selected={advAnswers.storageSetup} onSelect={(val) => updateAdvAnswer("storageSetup", val)} />
+              <Question title="STORAGE_CAPACITY" options={["500GB", "1TB", "2TB", "4TB+", "Not sure", isPartOwned("Storage") ? "ALREADY_OWNED" : null].filter(Boolean)} selected={advAnswers.storageSize} onSelect={(val) => updateAdvAnswer("storageSize", val)} layout="row" />
+              <Question title="COOLING_PROFILE" options={["Air cooling", "Liquid cooling (AIO)", "Custom water cooling", "No preference"]} selected={advAnswers.coolingType} onSelect={(val) => updateAdvAnswer("coolingType", val)} />
+              <Question title="ACOUSTIC_PROFILE" options={["Silent build", "Balanced", "Performance over noise"]} selected={advAnswers.noise} onSelect={(val) => updateAdvAnswer("noise", val)} layout="row" />
+              <Question title="POWER_EFFICIENCY" options={["Yes", "Somewhat", "Not important"]} selected={advAnswers.powerEff} onSelect={(val) => updateAdvAnswer("powerEff", val)} layout="row" />
+              <Question title="INTELLIGENT_TECH" options={["Must have Ray Tracing", "DLSS/FSR focus", "Native Rasterization", "Don't care"]} selected={advAnswers.rayTracing} onSelect={(val) => updateAdvAnswer("rayTracing", val)} />
+
+              <button style={buttonStyle} onClick={() => { setShowSummary(true); window.scrollTo(0, 0); }}>GENERATE_FULL_REPORT</button>
+            </div>
+          )}
+          <div style={{ marginTop: "20px", textAlign: "center" }}>
+            <span onClick={handleClearAll} style={{ color: "#666", cursor: "pointer", fontSize: "10px", textDecoration: "underline", textTransform: "uppercase" }}>PURGE_ALL_BUFFERS</span>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
->>>>>>> main

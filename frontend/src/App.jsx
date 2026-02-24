@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/auth/LoginPage';
 import SignUpPage from './pages/auth/SignUpPage';
 import HomePage from './pages/HomePage';
-import BuildPage from "./pages/BuildPage";
+import BuildPage from './pages/BuildPage';
 import CameraPage from './pages/CameraPage';
 import ResultsPage from './pages/ResultsPage';
 import ModelViewerPage from './pages/ModelViewerPage';
@@ -26,58 +26,12 @@ function App() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
 
-<<<<<<< HEAD
-        {/* Protected Routes */}
-        <Route
-          path="/home"
-          element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/build"
-          element={
-            <ProtectedRoute>
-              <BuildPage />
-            </ProtectedRoute>
-          }
-        />
-
-
-
-        <Route
-          path="/camera"
-          element={
-            <ProtectedRoute>
-              <CameraPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/result"
-          element={
-            <ProtectedRoute>
-              <ResultsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/model/:modelId"
-          element={
-            <ProtectedRoute>
-              <ModelViewerPage />
-            </ProtectedRoute>
-          }
-        />
-=======
-        {/* Protected Routes wrapped in MainLayout */}
+        {/* Protected Routes directly accessible (Build process) */}
         <Route path="/build" element={<ProtectedRoute><BuildPage /></ProtectedRoute>} />
         <Route path="/manual-build" element={<ProtectedRoute><ManualBuildPage /></ProtectedRoute>} />
         <Route path="/purchase-summary" element={<ProtectedRoute><PurchaseSummaryPage /></ProtectedRoute>} />
 
+        {/* Protected Routes wrapped in MainLayout */}
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path="/home" element={<HomePage />} />
           <Route path="/plan" element={<PlanningPage />} />
@@ -92,7 +46,6 @@ function App() {
           <Route path="/result" element={<ResultsPage />} />
           <Route path="/model/:modelId" element={<ModelViewerPage />} />
         </Route>
->>>>>>> main
       </Routes>
     </BrowserRouter>
   );

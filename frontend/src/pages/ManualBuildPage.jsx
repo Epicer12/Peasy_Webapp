@@ -146,8 +146,6 @@ const ManualBuildPage = () => {
         }));
     };
 
-    // ... (Rest of logic remains same until return)
-
     // Update total price and Check Compatibility
     useEffect(() => {
         // Price
@@ -232,9 +230,6 @@ const ManualBuildPage = () => {
     };
 
     const isCompatible = (item) => {
-        // Log debug for Motherboards to trace sorting issues
-        // const debug = activeCategory === 'motherboard' && buildState.cpu && Math.random() < 0.05;
-
         // 0. Platform Enforcement (CPU level)
         if (activeCategory === 'cpu') {
             if (chipset === 'AMD' && item.specs?.brand === 'Intel') return false;
@@ -247,17 +242,9 @@ const ManualBuildPage = () => {
             const moboSocket = item.specs?.socket;
 
             if (cpuSocket && moboSocket && cpuSocket !== moboSocket) {
-                // if (debug) console.log(`Incompatible Mobo: ${item.name} (${moboSocket}) vs CPU (${cpuSocket})`);
                 return false;
             }
 
-            // If Socket parses as Undefined, assuming Incompatible if we have a CPU?
-            // Safer to flag as incompatible if we know the CPU has a specific socket.
-            if (cpuSocket && !moboSocket) {
-                // return false; // Too aggressive if parser is weak?
-            }
-
-            // Also Filter Mobo by Platform Toggle if no CPU selected yet
             if (!buildState.cpu) {
                 const isIntelSocket = moboSocket?.includes('LGA');
                 const isAMDSocket = moboSocket?.includes('AM');
@@ -277,9 +264,6 @@ const ManualBuildPage = () => {
         if (activeCategory === 'case' && buildState.motherboard) {
             const moboFF = buildState.motherboard.specs?.form_factor;
             const caseFF = item.specs?.form_factor;
-            // Simplified logic: ATX board needs ATX case.
-            // Micro-ATX board fits in ATX case.
-            // ITX board fits in everything.
             if (moboFF === "ATX" && (caseFF === "Micro-ATX" || caseFF === "ITX")) return false;
             if (moboFF === "E-ATX" && caseFF !== "E-ATX") return false;
         }
@@ -288,10 +272,6 @@ const ManualBuildPage = () => {
 
     const getSortedList = () => {
         let list = [...products];
-
-        // Global Compatibility Sort
-        // 1. Compatible items FIRST
-        // 2. Incompatible items LAST
         list.sort((a, b) => {
             const aComp = isCompatible(a);
             const bComp = isCompatible(b);
@@ -299,24 +279,21 @@ const ManualBuildPage = () => {
             if (!aComp && bComp) return 1;
             return 0;
         });
-
         return list;
     };
 
     return (
         <div className="flex h-screen bg-[#050505] text-[#eeeeee] font-mono overflow-hidden selection:bg-[#ccff00] selection:text-black">
-
-
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0">
-                {/* Composite Header - Recreating the "Sidebar Top + Main Header" visual strip */}
+                {/* Composite Header */}
                 <div className="flex h-20 shrink-0 bg-[#050505] z-50">
-                    {/* Logo Area (Matches Category Sidebar Width, Left Aligned) */}
+                    {/* Logo Area */}
                     <div className="w-[300px] flex justify-start items-center pl-4 border-r-2 border-b-2 border-[#333333] shrink-0">
                         <img src={logo} alt="PEASY" className="h-full max-h-12 object-contain" />
                     </div>
 
-                    {/* Main Header Area (Simulates MainLayout Header) */}
+                    {/* Main Header Area */}
                     <header className="flex-1 flex flex-col justify-between px-6 md:px-8 pb-3 pt-3 border-b-2 border-[#333333] bg-[#050505] min-w-0">
                         <div className="flex justify-between items-start mb-1">
                             <span className="text-[10px] font-mono text-[#666666] ml-auto">SYS.VER.2.0.5 // ONLINE</span>
@@ -375,8 +352,8 @@ const ManualBuildPage = () => {
                                 // Section Header Logic
                                 const prevCat = index > 0 ? CATEGORIES[index - 1] : null;
                                 const isNewSection = !prevCat || cat.section !== prevCat.section;
-                                const showSectionHeader = isNewSection && cat.section !== 'OTHERS'; // Don't show header for OTHERS
-                                const showSpacer = isNewSection && cat.section === 'OTHERS'; // Just spacer for OTHERS
+                                const showSectionHeader = isNewSection && cat.section !== 'OTHERS';
+                                const showSpacer = isNewSection && cat.section === 'OTHERS';
 
                                 return (
                                     <React.Fragment key={cat.id}>
@@ -393,7 +370,6 @@ const ManualBuildPage = () => {
 
                                         {/* Category Item */}
                                         {cat.subCategories ? (
-                                            // Logic for collapsible Parent Categories
                                             <div className="border-b border-neutral-900">
                                                 {/* Parent Header */}
                                                 <div
@@ -453,7 +429,6 @@ const ManualBuildPage = () => {
                                                 )}
                                             </div>
                                         ) : (
-                                            // Standard Categories
                                             <div
                                                 ref={el => categoryRefs.current[cat.id] = el}
                                                 onClick={() => setActiveCategory(cat.id)}
@@ -473,7 +448,6 @@ const ManualBuildPage = () => {
                                                     )}
                                                 </div>
 
-                                                {/* Delete Icon for Standard Categories */}
                                                 {buildState[cat.id] && (
                                                     <button
                                                         onClick={(e) => handleRemoveItem(e, cat.id)}
@@ -490,7 +464,7 @@ const ManualBuildPage = () => {
                             })}
                         </div>
 
-                        {/* Total Price Area - Fixed at Bottom */}
+                        {/* Total Price Area */}
                         <div className="p-6 bg-neutral-950 border-t border-neutral-800 shrink-0 z-10">
                             <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Estimated Total</div>
                             <div className="text-2xl font-black text-[#00f3ff]">

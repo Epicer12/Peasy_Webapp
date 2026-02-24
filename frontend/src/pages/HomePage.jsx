@@ -71,42 +71,24 @@ const HomePage = () => {
                         </div>
                     ))}
 
-                    {/* Build Your Own PC Card */}
+                    {/* Build Your Own PC Card - Styled to match Neo-Brutalist design */}
                     <div
                         onClick={() => navigate('/build')}
-                        className="bg-white rounded-xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow border-2 border-transparent hover:border-purple-500"
+                        className="bg-[#050505] p-5 border border-[#333] hover:border-[#ccff00] transition-all group relative flex flex-col justify-center items-center cursor-pointer min-h-[200px]"
                     >
-                        <div className="text-center">
-                            <div className="text-6xl mb-4">🛠</div>
-                            <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                                Build Your Own PC
-                            </h2>
-                            <p className="text-gray-600 mb-4">
-                                Answer guided questions and generate your custom PC build plan
-                            </p>
-                            <button className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold">
-                                Start Building
-                            </button>
-                        </div>
-                    </div>
-                {/* Build Your Own PC Card */}
-                <div
-                    onClick={() => navigate('/build')}
-                    className="bg-white rounded-xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow border-2 border-transparent hover:border-purple-500"
-                >
-                    <div className="text-center">
-                        <div className="text-6xl mb-4">🛠</div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                            Build Your Own PC
-                        </h2>
-                        <p className="text-gray-600 mb-4">
-                            Answer guided questions and generate your custom PC build plan
+                        <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#333] group-hover:border-[#ccff00]"></div>
+                        <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-[#333] group-hover:border-[#ccff00]"></div>
+                        <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-[#333] group-hover:border-[#ccff00]"></div>
+                        <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#333] group-hover:border-[#ccff00]"></div>
+
+                        <div className="text-4xl mb-3 text-[#ccff00] group-hover:scale-110 transition-transform">🛠</div>
+                        <h3 className="font-mono text-base text-[#eeeeee] uppercase tracking-widest mb-2 group-hover:text-[#ccff00]">
+                            INITIATE_BUILD
+                        </h3>
+                        <p className="text-[10px] font-mono text-[#666] text-center uppercase tracking-tighter">
+                            GENERATE_CUSTOM_SPECIFICATIONS
                         </p>
-                        <button className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold">
-                            Start Building
-                        </button>
                     </div>
-                </div>
 
                     {/* Add New Project Card */}
                     <Link to="/plan" className="bg-[#111] p-5 border border-[#333] border-dashed flex flex-col items-center justify-center text-[#666] hover:text-[#eeeeee] hover:border-[#eeeeee] transition-all cursor-pointer min-h-[200px] hover:bg-[#1a1a1a]">
@@ -183,10 +165,6 @@ const HomePage = () => {
             </section>
         </div>
     );
-<<<<<<< HEAD
-}
-=======
 };
 
 export default HomePage;
->>>>>>> main
