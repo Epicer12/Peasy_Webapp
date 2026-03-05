@@ -18,6 +18,9 @@ import MarketplacePage from './pages/MarketplacePage';
 import CommunityPage from './pages/CommunityPage';
 import GuidePage from './pages/GuidePage';
 
+import WarrantyPage from './pages/WarrantyPage';
+import ProfilePage from './pages/ProfilePage';
+
 function App() {
   return (
     <BrowserRouter>
@@ -40,6 +43,8 @@ function App() {
           <Route path="/marketplace" element={<MarketplacePage />} />
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/guide" element={<GuidePage />} />
+          <Route path="/warranty" element={<WarrantyPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
 
           {/* Sub-features */}
           <Route path="/camera" element={<CameraPage />} />

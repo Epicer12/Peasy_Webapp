@@ -26,7 +26,7 @@ const TroubleshootPage = () => {
     const wsRef = useRef(null);
 
     useEffect(() => {
-        fetch('http://localhost:8000/api/troubleshoot/brands')
+        fetch('/api/troubleshoot/brands')
             .then(res => res.json())
             .then(data => setBrands(data))
             .catch(err => console.error("Error fetching brands:", err));
@@ -36,7 +36,7 @@ const TroubleshootPage = () => {
         if (!selectedBrand || !manualCode) return;
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:8000/api/troubleshoot/diagnose/manual', {
+            const res = await fetch('/api/troubleshoot/diagnose/manual', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ brand: selectedBrand, code: manualCode })
@@ -62,7 +62,7 @@ const TroubleshootPage = () => {
 
         setAiLoading(prev => ({ ...prev, [key]: true }));
         try {
-            const res = await fetch(`http://localhost:8000/api/troubleshoot/analyze/${type}`, {
+            const res = await fetch(`/api/troubleshoot/analyze/${type}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -126,7 +126,7 @@ const TroubleshootPage = () => {
 
     const connectWebSocket = () => {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//localhost:8000/api/troubleshoot/ws/troubleshoot`;
+        const wsUrl = `${protocol}//${window.location.host}/api/troubleshoot/ws/troubleshoot`;
         const ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
@@ -182,7 +182,7 @@ const TroubleshootPage = () => {
     const autoAnalyze = async (code) => {
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:8000/api/troubleshoot/diagnose/manual', {
+            const res = await fetch('/api/troubleshoot/diagnose/manual', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ brand: selectedBrand, code: code })
@@ -369,8 +369,8 @@ const TroubleshootPage = () => {
                                             setResult(null);
                                         }}
                                         className={`text-left px-5 py-4 font-mono text-lg border-2 transition-all ${selectedBrand === brand
-                                                ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
-                                                : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
+                                            ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
+                                            : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
                                             }`}
                                     >
                                         {brand}

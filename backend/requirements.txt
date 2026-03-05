@@ -1,5 +1,5 @@
 fastapi
-uvicorn [standard]
+uvicorn[standard]
 firebase-admin
 python-dotenv
 pydantic
@@ -11,3 +11,6 @@ ultralytics
 websockets
 openai
 pillow
+groq
+PyJWT
+httpx
