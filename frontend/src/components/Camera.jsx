@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 const TARGET_COMPONENTS = [
@@ -84,7 +84,7 @@ function Camera() {
       stopCamera();
       if (ws.current) ws.current.close();
     };
-  }, [cameraOn]);
+  }, [cameraOn, handleDetectionResult, mode, sendFrame]);
 
   const isProcessing = useRef(false); // Flow control flag
 
@@ -252,7 +252,7 @@ function Camera() {
     }
   };
 
-  const sendFrame = () => {
+  const sendFrame = useCallback(() => {
     if (!ws.current || ws.current.readyState !== WebSocket.OPEN) return;
     if (!videoRef.current || !captureCanvasRef.current) {
       // Retry shortly if video not ready (e.g. initial load)
@@ -286,9 +286,9 @@ function Camera() {
         console.warn("Frame send skipped/failed");
       }
     }, "image/jpeg", 0.7);
-  };
+  }, [allFound]);
 
-  const handleDetectionResult = (data) => {
+  const handleDetectionResult = useCallback((data) => {
     // data: { objects: [...], locked_count: n, locked_items: [...] }
 
     // Update Locked Items State
@@ -311,7 +311,7 @@ function Camera() {
     // Use requestAnimationFrame to yield to UI thread if needed, or just call directly.
     // requestAnimationFrame ensures smoother UI interaction.
     requestAnimationFrame(() => sendFrame());
-  };
+  }, [sendFrame]);
 
   const drawOverlay = (objects) => {
     const canvas = overlayCanvasRef.current;

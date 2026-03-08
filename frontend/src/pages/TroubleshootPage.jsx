@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 const TroubleshootPage = () => {
     // viewMode: 'config' | 'dashboard'
@@ -124,24 +124,7 @@ const TroubleshootPage = () => {
         }
     };
 
-    const connectWebSocket = () => {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//localhost:8000/api/troubleshoot/ws/troubleshoot`;
-        const ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-            console.log("Troubleshoot WS Connected");
-            sendFrame(ws);
-        };
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            handleWSMessage(data, ws);
-        };
-        ws.onclose = () => setStreamStatus('offline');
-        wsRef.current = ws;
-    };
-
-    const sendFrame = (ws) => {
+    const sendFrame = useCallback((ws) => {
         if (!cameraOn || !videoRef.current || ws.readyState !== WebSocket.OPEN) return;
         const canvas = canvasRef.current;
         const video = videoRef.current;
@@ -156,9 +139,9 @@ const TroubleshootPage = () => {
         canvas.toBlob((blob) => {
             if (blob && ws.readyState === WebSocket.OPEN) ws.send(blob);
         }, 'image/jpeg', 0.6);
-    };
+    }, [cameraOn]);
 
-    const handleWSMessage = (data, ws) => {
+    const handleWSMessage = useCallback((data, ws) => {
         if (data.status === 'calibrating') {
             setStreamStatus('calibrating');
             setCalibrationProgress(data.progress * 100);
@@ -177,9 +160,9 @@ const TroubleshootPage = () => {
             }
         }
         if (cameraOn) requestAnimationFrame(() => sendFrame(ws));
-    };
+    }, [autoAnalyze, cameraOn, sendFrame]);
 
-    const autoAnalyze = async (code) => {
+    const autoAnalyze = useCallback(async (code) => {
         setLoading(true);
         try {
             const res = await fetch('http://localhost:8000/api/troubleshoot/diagnose/manual', {
@@ -197,7 +180,7 @@ const TroubleshootPage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [selectedBrand]);
 
     // Diagnostic Dashboard Component
     const DiagnosticDashboard = () => (
@@ -369,8 +352,8 @@ const TroubleshootPage = () => {
                                             setResult(null);
                                         }}
                                         className={`text-left px-5 py-4 font-mono text-lg border-2 transition-all ${selectedBrand === brand
-                                                ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
-                                                : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
+                                            ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
+                                            : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
                                             }`}
                                     >
                                         {brand}
