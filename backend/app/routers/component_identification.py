@@ -145,7 +145,25 @@ async def identify_details(component_type: str, quantity: int = 1, instance: int
     result["tier_used"] = "Tier 1 (VLM Only - SerpAPI Disabled)"
 
     result["yolo_class"] = component_type
+    
+    # PERSIST: Save identification result for the final build summary
+    if "error" not in result:
+        result["quantity"] = quantity # Ensure quantity is persisted
+        global_tracker.update_details(component_type, result)
+        
     return result
+
+@router.get("/final-build-summary")
+async def get_build_summary():
+    """Retrieve the consolidated list of all identified components in KV format"""
+    if not global_tracker:
+        return [{}]
+    return global_tracker.get_summary()
+
+def generate_build_json():
+    """Literal function to return current component list as JSON string in KV format"""
+    summary = global_tracker.get_summary() if global_tracker else [{}]
+    return json.dumps(summary, indent=2)
 
 @router.post("/add-instance")
 async def add_instance(component_type: str):
