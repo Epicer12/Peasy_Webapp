@@ -29,6 +29,7 @@ const MainLayout = () => {
         const path = location.pathname;
         const activeNav = navigation.find(n => n.href === path);
         if (activeNav) return activeNav.name;
+        if (path.startsWith('/community')) return 'COMMUNITY';
         if (path === '/camera') return 'SCANNER';
         if (path.startsWith('/model')) return 'MODEL_VIEW';
         return 'DASHBOARD';
