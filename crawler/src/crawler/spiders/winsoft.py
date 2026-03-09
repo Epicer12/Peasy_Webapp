@@ -64,68 +64,85 @@ class WinsoftCrawler(BaseCrawler):
             cat_name = cat_data['name']
             
             print(f"Crawling Winsoft category: {cat_name}...")
-            response = self.fetch_page(url)
-            if not response:
-                continue
-
-            soup = BeautifulSoup(response.content, 'html.parser')
-            # WooCommerce product list item or Astra theme structure
-            products = soup.select('li.product')
-            if not products:
-                # Try more generic selectors if li.product fails
-                products = soup.select('.product')
             
-            print(f"Found {len(products)} products in {cat_name}")
+            page_num = 1
+            while url:
+                print(f"  - Fetching page {page_num} for {cat_name}...")
+                response = self.fetch_page(url)
+                if not response:
+                    break
 
-            for p_item in products:
-                try:
-                    # Title
-                    title_tag = p_item.select_one('.woocommerce-loop-product__title') or \
-                                p_item.select_one('.ast-loop-product__title') or \
-                                p_item.select_one('h3') or \
-                                p_item.select_one('h2')
-                    
-                    if not title_tag: continue
-                    name = title_tag.get_text(strip=True)
+                soup = BeautifulSoup(response.content, 'html.parser')
+                # WooCommerce product list item or Astra theme structure
+                products = soup.select('li.product')
+                if not products:
+                    # Try more generic selectors if li.product fails
+                    products = soup.select('.product')
+                
+                print(f"    Found {len(products)} products on page {page_num}")
+                
+                if not products:
+                    print("    No products found, stopping pagination for this category.")
+                    break
 
-                    # Link
-                    link_tag = p_item.select_one('a.woocommerce-LoopProduct-link') or \
-                               p_item.select_one('a')
-                    product_url = link_tag['href'] if link_tag else None
-
-                    # Price
-                    # Prices are often in <span class="price">
-                    price_tag = p_item.select_one('.price bdi') or \
-                                p_item.select_one('.price span') or \
-                                p_item.select_one('.woocommerce-Price-amount')
-                    
-                    price_str = price_tag.get_text(strip=True) if price_tag else "0"
-                    # Remove currency symbols and formatting
-                    clean_price = price_str.replace(',', '').replace('Rs.', '').replace('රු', '').replace('LKR', '').strip()
+                for p_item in products:
                     try:
-                        price = float(clean_price)
-                    except ValueError:
-                        price = 0.0
+                        # Title
+                        title_tag = p_item.select_one('.woocommerce-loop-product__title') or \
+                                    p_item.select_one('.ast-loop-product__title') or \
+                                    p_item.select_one('h3') or \
+                                    p_item.select_one('h2')
+                        
+                        if not title_tag: continue
+                        name = title_tag.get_text(strip=True)
 
-                    # Availability
-                    stock_tag = p_item.select_one('.ast-shop-product-out-of-stock') or \
-                                p_item.select_one('.out-of-stock')
-                    stock_status = "Out of Stock" if stock_tag else "In Stock"
+                        # Link
+                        link_tag = p_item.select_one('a.woocommerce-LoopProduct-link') or \
+                                   p_item.select_one('a')
+                        product_url = link_tag['href'] if link_tag else None
 
-                    yield Product(
-                        name=name,
-                        category=cat_name,
-                        price=price,
-                        url=product_url,
-                        shop_name=self.shop_name,
-                        metadata={
-                            "stock_status": stock_status,
-                            "original_category_name": cat_name
-                        }
-                    )
-                except Exception as e:
-                    print(f"Error parsing product on Winsoft: {e}")
-                    continue
+                        # Price
+                        # Prices are often in <span class="price">
+                        price_tag = p_item.select_one('.price bdi') or \
+                                    p_item.select_one('.price span') or \
+                                    p_item.select_one('.woocommerce-Price-amount')
+                        
+                        price_str = price_tag.get_text(strip=True) if price_tag else "0"
+                        # Remove currency symbols and formatting
+                        clean_price = price_str.replace(',', '').replace('Rs.', '').replace('රු', '').replace('LKR', '').strip()
+                        try:
+                            price = float(clean_price)
+                        except ValueError:
+                            price = 0.0
+
+                        # Availability
+                        stock_tag = p_item.select_one('.ast-shop-product-out-of-stock') or \
+                                    p_item.select_one('.out-of-stock')
+                        stock_status = "Out of Stock" if stock_tag else "In Stock"
+
+                        yield Product(
+                            name=name,
+                            category=cat_name,
+                            price=price,
+                            url=product_url,
+                            shop_name=self.shop_name,
+                            metadata={
+                                "stock_status": stock_status,
+                                "original_category_name": cat_name
+                            }
+                        )
+                    except Exception as e:
+                        print(f"Error parsing product on Winsoft: {e}")
+                        continue
+                
+                # Find next page
+                # WooCommerce standard for next page
+                next_link = soup.select_one('a.next')
+                if next_link and next_link.get('href'):
+                    url = next_link['href']
+                    page_num += 1
+                else:
+                    url = None
 
     def scrape_product_details(self, url: str) -> dict:
         response = self.fetch_page(url)
