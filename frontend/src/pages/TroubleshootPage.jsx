@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const TroubleshootPage = () => {
     // viewMode: 'config' | 'dashboard'
@@ -88,89 +88,24 @@ const TroubleshootPage = () => {
         setCameraOn(false);
     };
 
-    const autoAnalyze = useCallback(async (code) => {
-        setLoading(true);
-        try {
-            const res = await fetch('http://localhost:8000/api/troubleshoot/diagnose/manual', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ brand: selectedBrand, code: code })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setResult(data);
-                setViewMode('dashboard');
+    // Camera Logic
+    useEffect(() => {
+        if (cameraOn) {
+            startCamera();
+            connectWebSocket();
+        } else {
+            stopCamera();
+            if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
             }
-        } catch (err) {
-            console.error("Auto analysis error:", err);
-        } finally {
-            setLoading(false);
-        }
-    }, [selectedBrand]);
-
-    const sendFrame = useCallback((ws) => {
-        if (!cameraOn || !videoRef.current || ws.readyState !== WebSocket.OPEN) return;
-        const canvas = canvasRef.current;
-        const video = videoRef.current;
-        if (!video || video.videoWidth === 0) {
-            requestAnimationFrame(() => sendFrame(ws));
-            return;
-        }
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0);
-        canvas.toBlob((blob) => {
-            if (blob && ws.readyState === WebSocket.OPEN) ws.send(blob);
-        }, 'image/jpeg', 0.6);
-    }, [cameraOn]);
-
-    const handleWSMessage = useCallback((data, ws) => {
-        if (data.status === 'calibrating') {
-            setStreamStatus('calibrating');
-            setCalibrationProgress(data.progress * 100);
-        } else if (data.status === 'calibrated') {
-            setStreamStatus('detecting');
-        } else if (data.status === 'detecting') {
-            setLastBrightness(data.brightness);
-            setStreamState(data.state);
-            setBlinkCount(data.blink_count);
-            setPartialPattern(data.partial_pattern);
-
-            if (data.detected_code) {
-                setManualCode(data.detected_code);
-                setCameraOn(false); // AUTO STOP
-                autoAnalyze(data.detected_code);
-            }
-        }
-        if (cameraOn) requestAnimationFrame(() => sendFrame(ws));
-    }, [autoAnalyze, cameraOn, sendFrame]);
-
-    const connectWebSocket = useCallback(() => {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//localhost:8000/api/troubleshoot/ws/troubleshoot`;
-        console.log("Connecting to Troubleshoot WS:", wsUrl);
-
-        const socket = new WebSocket(wsUrl);
-        socket.onopen = () => {
-            console.log("Troubleshoot WS Connected");
-            setStreamStatus('connected');
-            sendFrame(socket);
-        };
-        socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            handleWSMessage(data, socket);
-        };
-        socket.onclose = () => {
-            console.log("Troubleshoot WS Disconnected");
             setStreamStatus('offline');
+        }
+        return () => {
+            stopCamera();
+            if (wsRef.current) wsRef.current.close();
         };
-        socket.onerror = (err) => {
-            console.error("Troubleshoot WS Error:", err);
-            setStreamStatus('error');
-        };
-        wsRef.current = socket;
-    }, [handleWSMessage, sendFrame]);
+    }, [cameraOn]);
 
     const startCamera = async () => {
         try {
@@ -189,24 +124,80 @@ const TroubleshootPage = () => {
         }
     };
 
-    // Camera Logic
-    useEffect(() => {
-        if (cameraOn) {
-            startCamera();
-            connectWebSocket();
-        } else {
-            stopCamera();
-            if (wsRef.current) {
-                wsRef.current.close();
-                wsRef.current = null;
-            }
-            setStreamStatus('offline');
-        }
-        return () => {
-            stopCamera();
-            if (wsRef.current) wsRef.current.close();
+    const connectWebSocket = () => {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//localhost:8000/api/troubleshoot/ws/troubleshoot`;
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            console.log("Troubleshoot WS Connected");
+            sendFrame(ws);
         };
-    }, [cameraOn, connectWebSocket]);
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            handleWSMessage(data, ws);
+        };
+        ws.onclose = () => setStreamStatus('offline');
+        wsRef.current = ws;
+    };
+
+    const sendFrame = (ws) => {
+        if (!cameraOn || !videoRef.current || ws.readyState !== WebSocket.OPEN) return;
+        const canvas = canvasRef.current;
+        const video = videoRef.current;
+        if (!video || video.videoWidth === 0) {
+            requestAnimationFrame(() => sendFrame(ws));
+            return;
+        }
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        canvas.toBlob((blob) => {
+            if (blob && ws.readyState === WebSocket.OPEN) ws.send(blob);
+        }, 'image/jpeg', 0.6);
+    };
+
+    const handleWSMessage = (data, ws) => {
+        if (data.status === 'calibrating') {
+            setStreamStatus('calibrating');
+            setCalibrationProgress(data.progress * 100);
+        } else if (data.status === 'calibrated') {
+            setStreamStatus('detecting');
+        } else if (data.status === 'detecting') {
+            setLastBrightness(data.brightness);
+            setStreamState(data.state);
+            setBlinkCount(data.blink_count);
+            setPartialPattern(data.partial_pattern);
+
+            if (data.detected_code) {
+                setManualCode(data.detected_code);
+                setCameraOn(false); // AUTO STOP
+                autoAnalyze(data.detected_code);
+            }
+        }
+        if (cameraOn) requestAnimationFrame(() => sendFrame(ws));
+    };
+
+    const autoAnalyze = async (code) => {
+        setLoading(true);
+        try {
+            const res = await fetch('http://localhost:8000/api/troubleshoot/diagnose/manual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ brand: selectedBrand, code: code })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setResult(data);
+                setViewMode('dashboard');
+            }
+        } catch (err) {
+            console.error("Auto analysis error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Diagnostic Dashboard Component
     const DiagnosticDashboard = () => (
@@ -378,8 +369,8 @@ const TroubleshootPage = () => {
                                             setResult(null);
                                         }}
                                         className={`text-left px-5 py-4 font-mono text-lg border-2 transition-all ${selectedBrand === brand
-                                            ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
-                                            : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
+                                                ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
+                                                : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
                                             }`}
                                     >
                                         {brand}

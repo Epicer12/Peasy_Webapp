@@ -8,8 +8,6 @@ const PurchaseSummaryPage = () => {
     const navigate = useNavigate();
     const { buildState, totalPrice, compatibility } = location.state || { buildState: {}, totalPrice: 0, compatibility: { issues: [], warnings: [] } };
 
-    const [orderId] = React.useState(() => Math.random().toString(36).substr(2, 9).toUpperCase());
-
     // Group items for display
     const coreComponents = ['cpu', 'motherboard', 'ram', 'gpu', 'ssd', 'hdd', 'psu', 'case', 'cooler', 'software'];
     const peripherals = ['monitors', 'keyboards', 'mice', 'headsets', 'speakers', 'kameralizer', 'flight_stick', 'stream_deck', 'webcam', 'microphone', 'capture_card'];
@@ -53,7 +51,7 @@ const PurchaseSummaryPage = () => {
                     <h1 className="text-2xl md:text-3xl font-black tracking-[-0.05em] uppercase text-[#eeeeee]">
                         SYSTEM CONFIGURATION SUMMARY
                     </h1>
-                    <span className="text-[10px] font-mono text-[#666666]">ORD.ID: {orderId}</span>
+                    <span className="text-[10px] font-mono text-[#666666]">ORD.ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}</span>
                 </header>
             </div>
 

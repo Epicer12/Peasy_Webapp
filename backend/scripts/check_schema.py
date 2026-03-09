@@ -1,15 +1,15 @@
+
 import os
 from dotenv import load_dotenv
 from supabase import create_client
 
-# Load env variables from backend/.env
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+load_dotenv()
 
-url = os.getenv("MAIN_SUPABASE_URL")
-key = os.getenv("MAIN_SUPABASE_KEY")
+url = os.getenv("SUPABASE_URL")
+key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 if not url or not key:
-    print("Error: MAIN_SUPABASE_URL and MAIN_SUPABASE_KEY must be set in .env")
+    print("Error: Supabase credentials not found in environment variables.")
     exit(1)
 
 supabase = create_client(url, key)
