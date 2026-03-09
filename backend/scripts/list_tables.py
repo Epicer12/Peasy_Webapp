@@ -3,25 +3,33 @@ import asyncio
 from dotenv import load_dotenv
 from app.dependencies import get_warranty_supabase
 
-load_dotenv()
+# Load env variables from backend/.env
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
-async def list_tables():
-    try:
-        supabase = get_warranty_supabase()
-        # Newer supabase-py might not have a direct list_tables, 
-        # but we can try common ones or use a raw RPC/query if enabled.
-        # Alternatively, we can try to query common tables or use postgrest info.
-        
-        # Let's try to query the REST explorer or similar if possible.
-        # Most reliable way without custom RPC is to try and trigger an error 
-        # that lists tables, or just check the schema.
-        
-        # We'll try to use a query that fails or checks system tables if permitted.
-        res = supabase.rpc("get_tables").execute() # If they have this
-        print(f"Tables RPC: {res}")
-    except Exception as e:
-        print(f"RPC Error: {e}")
-        # Fallback: just try to guess or use the error from before.
+url = os.getenv("MAIN_SUPABASE_URL")
+key = os.getenv("MAIN_SUPABASE_KEY")
 
-if __name__ == "__main__":
-    asyncio.run(list_tables())
+if not url or not key:
+    print("Error: MAIN_SUPABASE_URL and MAIN_SUPABASE_KEY must be set in .env")
+    exit(1)
+
+supabase = create_client(url, key)
+
+print("Attempting to list tables...")
+
+try:
+    # This query often works if pg_catalog access is allowed, or if there's a specific RPC
+    # Since we can't easily query information_schema via postgrest directly without permissions/expose
+    # We will try a few common names that might be used for PC parts
+    common_names = ["products", "items", "inventory", "hardware", "cpu", "gpu", "ram", "motherboard"]
+    
+    for name in common_names:
+        try:
+            print(f"Checking table: {name}")
+            response = supabase.table(name).select("count", count="exact").limit(0).execute()
+            print(f"FOUND TABLE: {name} (Count: {response.count})")
+        except Exception as e:
+            pass # Table likely doesn't exist or not accessible
+            
+except Exception as e:
+    print(f"Error: {e}")
