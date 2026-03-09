@@ -17,12 +17,12 @@ _SUPABASE = None
 def get_supabase():
     global _SUPABASE
     if _SUPABASE is None:
-        url = os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        url = os.getenv("MAIN_SUPABASE_URL") or os.getenv("SUPABASE_URL")
+        key = os.getenv("MAIN_SUPABASE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         if not url or not key:
             raise HTTPException(
                 status_code=503,
-                detail="Supabase credentials not configured",
+                detail="Supabase credentials not configured (MAIN)",
             )
         _SUPABASE = create_client(url, key)
     return _SUPABASE
