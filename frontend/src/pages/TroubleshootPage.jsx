@@ -88,41 +88,25 @@ const TroubleshootPage = () => {
         setCameraOn(false);
     };
 
-    // Camera Logic
-    useEffect(() => {
-        if (cameraOn) {
-            startCamera();
-            connectWebSocket();
-        } else {
-            stopCamera();
-            if (wsRef.current) {
-                wsRef.current.close();
-                wsRef.current = null;
-            }
-            setStreamStatus('offline');
-        }
-        return () => {
-            stopCamera();
-            if (wsRef.current) wsRef.current.close();
-        };
-    }, [cameraOn]);
-
-    const startCamera = async () => {
+    const autoAnalyze = useCallback(async (code) => {
+        setLoading(true);
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
-            if (videoRef.current) videoRef.current.srcObject = stream;
+            const res = await fetch('http://localhost:8000/api/troubleshoot/diagnose/manual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ brand: selectedBrand, code: code })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setResult(data);
+                setViewMode('dashboard');
+            }
         } catch (err) {
-            console.error("Camera access error:", err);
-            setCameraOn(false);
+            console.error("Auto analysis error:", err);
+        } finally {
+            setLoading(false);
         }
-    };
-
-    const stopCamera = () => {
-        if (videoRef.current && videoRef.current.srcObject) {
-            videoRef.current.srcObject.getTracks().forEach(t => t.stop());
-            videoRef.current.srcObject = null;
-        }
-    };
+    }, [selectedBrand]);
 
     const sendFrame = useCallback((ws) => {
         if (!cameraOn || !videoRef.current || ws.readyState !== WebSocket.OPEN) return;
@@ -162,25 +146,67 @@ const TroubleshootPage = () => {
         if (cameraOn) requestAnimationFrame(() => sendFrame(ws));
     }, [autoAnalyze, cameraOn, sendFrame]);
 
-    const autoAnalyze = useCallback(async (code) => {
-        setLoading(true);
+    const connectWebSocket = useCallback(() => {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//localhost:8000/api/troubleshoot/ws/troubleshoot`;
+        console.log("Connecting to Troubleshoot WS:", wsUrl);
+
+        const socket = new WebSocket(wsUrl);
+        socket.onopen = () => {
+            console.log("Troubleshoot WS Connected");
+            setStreamStatus('connected');
+            sendFrame(socket);
+        };
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            handleWSMessage(data, socket);
+        };
+        socket.onclose = () => {
+            console.log("Troubleshoot WS Disconnected");
+            setStreamStatus('offline');
+        };
+        socket.onerror = (err) => {
+            console.error("Troubleshoot WS Error:", err);
+            setStreamStatus('error');
+        };
+        wsRef.current = socket;
+    }, [handleWSMessage, sendFrame]);
+
+    const startCamera = async () => {
         try {
-            const res = await fetch('http://localhost:8000/api/troubleshoot/diagnose/manual', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ brand: selectedBrand, code: code })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setResult(data);
-                setViewMode('dashboard');
-            }
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+            if (videoRef.current) videoRef.current.srcObject = stream;
         } catch (err) {
-            console.error("Auto analysis error:", err);
-        } finally {
-            setLoading(false);
+            console.error("Camera access error:", err);
+            setCameraOn(false);
         }
-    }, [selectedBrand]);
+    };
+
+    const stopCamera = () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+            videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+            videoRef.current.srcObject = null;
+        }
+    };
+
+    // Camera Logic
+    useEffect(() => {
+        if (cameraOn) {
+            startCamera();
+            connectWebSocket();
+        } else {
+            stopCamera();
+            if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
+            }
+            setStreamStatus('offline');
+        }
+        return () => {
+            stopCamera();
+            if (wsRef.current) wsRef.current.close();
+        };
+    }, [cameraOn, connectWebSocket]);
 
     // Diagnostic Dashboard Component
     const DiagnosticDashboard = () => (

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { XMarkIcon, ArrowLeftIcon, ShoppingCartIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import logo from '../assets/logo-white.png';

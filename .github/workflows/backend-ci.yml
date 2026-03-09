@@ -57,5 +57,5 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           PUTER_TOKEN: ${{ secrets.PUTER_TOKEN }}
-          SUPABASE_URL: ${{ secrets.MODEL_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.MODEL_SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_URL: ${{ secrets.MAIN_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.MAIN_SUPABASE_KEY }}
