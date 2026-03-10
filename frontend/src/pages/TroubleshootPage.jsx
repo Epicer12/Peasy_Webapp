@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const WS_BASE_URL = API_BASE_URL.replace(/^http/, "ws");
+
 const TroubleshootPage = () => {
     // viewMode: 'config' | 'dashboard'
     const [viewMode, setViewMode] = useState('config');
@@ -26,7 +29,7 @@ const TroubleshootPage = () => {
     const wsRef = useRef(null);
 
     useEffect(() => {
-        fetch('http://localhost:8000/api/troubleshoot/brands')
+        fetch(`${API_BASE_URL}/api/troubleshoot/brands`)
             .then(res => res.json())
             .then(data => setBrands(data))
             .catch(err => console.error("Error fetching brands:", err));
@@ -36,7 +39,7 @@ const TroubleshootPage = () => {
         if (!selectedBrand || !manualCode) return;
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:8000/api/troubleshoot/diagnose/manual', {
+            const res = await fetch(`${API_BASE_URL}/api/troubleshoot/diagnose/manual`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ brand: selectedBrand, code: manualCode })
@@ -62,7 +65,7 @@ const TroubleshootPage = () => {
 
         setAiLoading(prev => ({ ...prev, [key]: true }));
         try {
-            const res = await fetch(`http://localhost:8000/api/troubleshoot/analyze/${type}`, {
+            const res = await fetch(`${API_BASE_URL}/api/troubleshoot/analyze/${type}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -91,7 +94,7 @@ const TroubleshootPage = () => {
     const autoAnalyze = useCallback(async (code) => {
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:8000/api/troubleshoot/diagnose/manual', {
+            const res = await fetch(`${API_BASE_URL}/api/troubleshoot/diagnose/manual`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ brand: selectedBrand, code: code })
@@ -147,8 +150,7 @@ const TroubleshootPage = () => {
     }, [autoAnalyze, cameraOn, sendFrame]);
 
     const connectWebSocket = useCallback(() => {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//localhost:8000/api/troubleshoot/ws/troubleshoot`;
+        const wsUrl = `${WS_BASE_URL}/api/troubleshoot/ws/troubleshoot`;
         console.log("Connecting to Troubleshoot WS:", wsUrl);
 
         const socket = new WebSocket(wsUrl);
