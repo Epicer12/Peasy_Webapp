@@ -241,3 +241,5 @@ OPENAI_API_KEY=sk-your-actual-key-here
 - **WebSockets:** The backend exposes a `/ws/identify` endpoint for real-time inference.
 - **Vision API:** Optional but recommended for detailed brand/model identification.
 
+---
+**Deployment Note:** When deploying to Vercel Hobby accounts, ensure the pushing developer's `git config user.email` matches the Vercel account owner's email to prevent deployment blocks.

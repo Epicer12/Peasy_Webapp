@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const WS_BASE_URL = API_BASE_URL.replace(/^http/, "ws");
 
 const TroubleshootPage = () => {
     // viewMode: 'config' | 'dashboard'
@@ -26,7 +29,7 @@ const TroubleshootPage = () => {
     const wsRef = useRef(null);
 
     useEffect(() => {
-        fetch('http://localhost:8000/api/troubleshoot/brands')
+        fetch(`${API_BASE_URL}/api/troubleshoot/brands`)
             .then(res => res.json())
             .then(data => setBrands(data))
             .catch(err => console.error("Error fetching brands:", err));
@@ -36,7 +39,7 @@ const TroubleshootPage = () => {
         if (!selectedBrand || !manualCode) return;
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:8000/api/troubleshoot/diagnose/manual', {
+            const res = await fetch(`${API_BASE_URL}/api/troubleshoot/diagnose/manual`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ brand: selectedBrand, code: manualCode })
@@ -62,7 +65,7 @@ const TroubleshootPage = () => {
 
         setAiLoading(prev => ({ ...prev, [key]: true }));
         try {
-            const res = await fetch(`http://localhost:8000/api/troubleshoot/analyze/${type}`, {
+            const res = await fetch(`${API_BASE_URL}/api/troubleshoot/analyze/${type}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -88,60 +91,27 @@ const TroubleshootPage = () => {
         setCameraOn(false);
     };
 
-    // Camera Logic
-    useEffect(() => {
-        if (cameraOn) {
-            startCamera();
-            connectWebSocket();
-        } else {
-            stopCamera();
-            if (wsRef.current) {
-                wsRef.current.close();
-                wsRef.current = null;
-            }
-            setStreamStatus('offline');
-        }
-        return () => {
-            stopCamera();
-            if (wsRef.current) wsRef.current.close();
-        };
-    }, [cameraOn]);
-
-    const startCamera = async () => {
+    const autoAnalyze = useCallback(async (code) => {
+        setLoading(true);
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
-            if (videoRef.current) videoRef.current.srcObject = stream;
+            const res = await fetch(`${API_BASE_URL}/api/troubleshoot/diagnose/manual`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ brand: selectedBrand, code: code })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setResult(data);
+                setViewMode('dashboard');
+            }
         } catch (err) {
-            console.error("Camera access error:", err);
-            setCameraOn(false);
+            console.error("Auto analysis error:", err);
+        } finally {
+            setLoading(false);
         }
-    };
+    }, [selectedBrand]);
 
-    const stopCamera = () => {
-        if (videoRef.current && videoRef.current.srcObject) {
-            videoRef.current.srcObject.getTracks().forEach(t => t.stop());
-            videoRef.current.srcObject = null;
-        }
-    };
-
-    const connectWebSocket = () => {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//localhost:8000/api/troubleshoot/ws/troubleshoot`;
-        const ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-            console.log("Troubleshoot WS Connected");
-            sendFrame(ws);
-        };
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            handleWSMessage(data, ws);
-        };
-        ws.onclose = () => setStreamStatus('offline');
-        wsRef.current = ws;
-    };
-
-    const sendFrame = (ws) => {
+    const sendFrame = useCallback((ws) => {
         if (!cameraOn || !videoRef.current || ws.readyState !== WebSocket.OPEN) return;
         const canvas = canvasRef.current;
         const video = videoRef.current;
@@ -156,9 +126,9 @@ const TroubleshootPage = () => {
         canvas.toBlob((blob) => {
             if (blob && ws.readyState === WebSocket.OPEN) ws.send(blob);
         }, 'image/jpeg', 0.6);
-    };
+    }, [cameraOn]);
 
-    const handleWSMessage = (data, ws) => {
+    const handleWSMessage = useCallback((data, ws) => {
         if (data.status === 'calibrating') {
             setStreamStatus('calibrating');
             setCalibrationProgress(data.progress * 100);
@@ -177,27 +147,68 @@ const TroubleshootPage = () => {
             }
         }
         if (cameraOn) requestAnimationFrame(() => sendFrame(ws));
-    };
+    }, [autoAnalyze, cameraOn, sendFrame]);
 
-    const autoAnalyze = async (code) => {
-        setLoading(true);
+    const connectWebSocket = useCallback(() => {
+        const wsUrl = `${WS_BASE_URL}/api/troubleshoot/ws/troubleshoot`;
+        console.log("Connecting to Troubleshoot WS:", wsUrl);
+
+        const socket = new WebSocket(wsUrl);
+        socket.onopen = () => {
+            console.log("Troubleshoot WS Connected");
+            setStreamStatus('connected');
+            sendFrame(socket);
+        };
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            handleWSMessage(data, socket);
+        };
+        socket.onclose = () => {
+            console.log("Troubleshoot WS Disconnected");
+            setStreamStatus('offline');
+        };
+        socket.onerror = (err) => {
+            console.error("Troubleshoot WS Error:", err);
+            setStreamStatus('error');
+        };
+        wsRef.current = socket;
+    }, [handleWSMessage, sendFrame]);
+
+    const startCamera = async () => {
         try {
-            const res = await fetch('http://localhost:8000/api/troubleshoot/diagnose/manual', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ brand: selectedBrand, code: code })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                setResult(data);
-                setViewMode('dashboard');
-            }
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+            if (videoRef.current) videoRef.current.srcObject = stream;
         } catch (err) {
-            console.error("Auto analysis error:", err);
-        } finally {
-            setLoading(false);
+            console.error("Camera access error:", err);
+            setCameraOn(false);
         }
     };
+
+    const stopCamera = () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+            videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+            videoRef.current.srcObject = null;
+        }
+    };
+
+    // Camera Logic
+    useEffect(() => {
+        if (cameraOn) {
+            startCamera();
+            connectWebSocket();
+        } else {
+            stopCamera();
+            if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
+            }
+            setStreamStatus('offline');
+        }
+        return () => {
+            stopCamera();
+            if (wsRef.current) wsRef.current.close();
+        };
+    }, [cameraOn, connectWebSocket]);
 
     // Diagnostic Dashboard Component
     const DiagnosticDashboard = () => (
@@ -369,8 +380,8 @@ const TroubleshootPage = () => {
                                             setResult(null);
                                         }}
                                         className={`text-left px-5 py-4 font-mono text-lg border-2 transition-all ${selectedBrand === brand
-                                                ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
-                                                : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
+                                            ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
+                                            : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
                                             }`}
                                     >
                                         {brand}
