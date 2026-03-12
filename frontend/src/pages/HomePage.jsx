@@ -1,7 +1,9 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const HomePage = () => {
+    const navigate = useNavigate();
+
     // Mock Data
     const savedBuilds = [
         { id: 1, name: "GAMING_BEAST_24", status: "IN_PROGRESS", progress: 60, price: "$2,400" },
@@ -69,6 +71,25 @@ const HomePage = () => {
                         </div>
                     ))}
 
+                    {/* Build Your Own PC Card - Styled to match Neo-Brutalist design */}
+                    <div
+                        onClick={() => navigate('/build')}
+                        className="bg-[#050505] p-5 border border-[#333] hover:border-[#ccff00] transition-all group relative flex flex-col justify-center items-center cursor-pointer min-h-[200px]"
+                    >
+                        <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#333] group-hover:border-[#ccff00]"></div>
+                        <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-[#333] group-hover:border-[#ccff00]"></div>
+                        <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-[#333] group-hover:border-[#ccff00]"></div>
+                        <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#333] group-hover:border-[#ccff00]"></div>
+
+                        <div className="text-4xl mb-3 text-[#ccff00] group-hover:scale-110 transition-transform">🛠</div>
+                        <h3 className="font-mono text-base text-[#eeeeee] uppercase tracking-widest mb-2 group-hover:text-[#ccff00]">
+                            INITIATE_BUILD
+                        </h3>
+                        <p className="text-[10px] font-mono text-[#666] text-center uppercase tracking-tighter">
+                            GENERATE_CUSTOM_SPECIFICATIONS
+                        </p>
+                    </div>
+
                     {/* Add New Project Card */}
                     <Link to="/plan" className="bg-[#111] p-5 border border-[#333] border-dashed flex flex-col items-center justify-center text-[#666] hover:text-[#eeeeee] hover:border-[#eeeeee] transition-all cursor-pointer min-h-[200px] hover:bg-[#1a1a1a]">
                         <div className="text-4xl font-thin mb-3">+</div>
@@ -120,34 +141,28 @@ const HomePage = () => {
                 </div>
 
                 <div className="bg-[#050505] p-5 border border-[#333] space-y-4 max-w-xl hover:border-[#ccff00] transition-colors">
-                    {warrantyItems.map(item => {
-                        return (
-                            <div key={item.id} className="space-y-1">
-                                <div className="flex justify-between text-[10px] font-mono text-[#666] uppercase">
-                                    <span>{item.name}</span>
-                                    <span>{item.daysLeft} DAYS LEFT</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-[#1a1a1a]">
-                                    <div
-                                        className="h-full"
-                                        style={{
-                                            width: `${(item.daysLeft / item.totalDays) * 100}%`,
-                                            backgroundColor: item.color === '#00f3ff' ? '#ccff00' : (item.color === '#ff4400' ? '#ccff00' : item.color) // Force Lime theme for this section if generic colors were used
-                                        }}
-                                    ></div>
-                                </div>
+                    {warrantyItems.map(item => (
+                        <div key={item.id} className="space-y-1">
+                            <div className="flex justify-between text-[10px] font-mono text-[#666] uppercase">
+                                <span>{item.name}</span>
+                                <span>{item.daysLeft} DAYS LEFT</span>
                             </div>
-                        );
-                    })}
+                            <div className="w-full h-1.5 bg-[#1a1a1a]">
+                                <div
+                                    className="h-full"
+                                    style={{
+                                        width: `${(item.daysLeft / item.totalDays) * 100}%`,
+                                        backgroundColor: '#ccff00'
+                                    }}
+                                ></div>
+                            </div>
+                        </div>
+                    ))}
                     <button className="w-full py-3 mt-6 text-xs font-bold font-mono text-black bg-[#eeeeee] hover:bg-[#ccff00] transition-colors uppercase tracking-widest">
                         VIEW_FULL_LOG
                     </button>
                 </div>
             </section>
-            {/* Injected Styles (if needed for other things, marquee removed) */}
-            <style>{`
-                /* ... specific page styles ... */
-            `}</style>
         </div>
     );
 };

@@ -1,13 +1,17 @@
-fastapi
-uvicorn [standard]
-firebase-admin
-python-dotenv
-pydantic
-python-multipart
-aiofiles
-supabase
-opencv-python
-ultralytics
-websockets
-openai
-pillow
+fastapi==0.118.3
+uvicorn[standard]==0.31.0
+python-multipart==0.0.9
+python-dotenv==1.0.1
+pydantic==2.9.2
+pydantic-settings==2.5.2
+httpx==0.27.2
+websockets>=10.0,<15.0
+huggingface-hub==0.25.1
+onnxruntime==1.24.3
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+Pillow==10.4.0
+cog==0.16.12
+watchfiles==1.0.0
+# --- Testing (used by CI) ---
+pytest==8.3.5

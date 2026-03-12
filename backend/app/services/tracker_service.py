@@ -19,8 +19,9 @@ class ComponentTracker:
         self.gap_counts = defaultdict(int) 
         
         # Calibration: 3-Second Rule & Flicker Protection
+        # High-speed local inference allows for consistent visibility checks.
         self.LOCK_THRESHOLD = 45 # ~3 seconds at 15 FPS
-        self.MAX_GAP_TOLERANCE = 5 # Strict: must be visible consistently
+        self.MAX_GAP_TOLERANCE = 5 
         
         # Build Summary Persistence
         self.identified_details = {} # {class_name: identified_json}

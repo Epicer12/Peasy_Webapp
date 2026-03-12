@@ -14,8 +14,8 @@ _SUPABASE = None
 def _get_supabase():
     global _SUPABASE
     if _SUPABASE is None:
-        url = os.getenv("MODEL_SUPABASE_URL")
-        key = os.getenv("MODEL_SUPABASE_SERVICE_ROLE_KEY")
+        url = os.getenv("MODEL_SUPABASE_URL") or os.getenv("SUPABASE_URL")
+        key = os.getenv("MODEL_SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         if not url or not key:
             raise HTTPException(
                 status_code=503,
