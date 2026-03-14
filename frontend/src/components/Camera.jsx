@@ -1,6 +1,9 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const WS_BASE_URL = API_BASE_URL.replace(/^http/, "ws");
+
 const TARGET_COMPONENTS = [
   "CPU", "CPU_COOLER", "CASE_FAN", "GPU", "HDD", "SSD",
   "PC_CASE", "RAM", "PSU", "MOTHERBOARD"
@@ -180,7 +183,7 @@ function Camera() {
         const pool = Array.from(lockedItems).map(async (component) => {
           const quantity = MULTI_INSTANCE_ALLOWED.includes(component) ? quantities[component] : 1;
           const response = await fetch(
-            `/api/identify-details?component_type=${component}&quantity=${quantity}`,
+            `${API_BASE_URL}/api/identify-details?component_type=${component}&quantity=${quantity}`,
             { method: 'POST' }
           );
           const data = await response.json();
@@ -197,7 +200,7 @@ function Camera() {
           for (let i = 0; i < count; i++) {
             pool.push((async () => {
               const response = await fetch(
-                `/api/identify-details?component_type=${component}&instance=${i}`,
+                `${API_BASE_URL}/api/identify-details?component_type=${component}&instance=${i}`,
                 { method: 'POST' }
               );
               const data = await response.json();
@@ -218,7 +221,7 @@ function Camera() {
 
   const unlockComponent = async (component, instance = null) => {
     try {
-      const url = `/api/unlock-component?component_type=${component}${instance !== null ? `&instance=${instance}` : ''}`;
+      const url = `${API_BASE_URL}/api/unlock-component?component_type=${component}${instance !== null ? `&instance=${instance}` : ''}`;
       const response = await fetch(url, { method: 'POST' });
       const data = await response.json();
 
@@ -251,7 +254,7 @@ function Camera() {
     formData.append('file', file);
 
     try {
-      const response = await fetch('/api/identify-upload', {
+      const response = await fetch(`${API_BASE_URL}/api/identify-upload`, {
         method: 'POST',
         body: formData
       });
@@ -280,7 +283,7 @@ function Camera() {
   const addInstance = async (component) => {
     try {
       const response = await fetch(
-        `/api/add-instance?component_type=${component}`,
+        `${API_BASE_URL}/api/add-instance?component_type=${component}`,
         { method: 'POST' }
       );
       const data = await response.json();
@@ -303,9 +306,7 @@ function Camera() {
       startCamera();
 
       // Connect WebSocket - Use generic host handling
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const host = "localhost:8000"; // Hardcoded for local dev as per verify instructions
-      const wsUrl = `${protocol}//${host}/api/ws/identify?mode=${mode}`;
+      const wsUrl = `${WS_BASE_URL}/api/ws/identify?mode=${mode}`;
 
       console.log("Connecting to WS:", wsUrl);
       const socket = new WebSocket(wsUrl);
@@ -434,7 +435,7 @@ function Camera() {
 
                     {isFound && (
                       <img
-                        src={`/api/snapshot/${target}${mode === 'advanced' ? `?instance=${(instanceCounts[target] || 1) - 1}` : ''}`}
+                        src={`${API_BASE_URL}/api/snapshot/${target}${mode === 'advanced' ? `?instance=${(instanceCounts[target] || 1) - 1}` : ''}`}
                         alt={target}
                         className="w-12 h-8 object-cover border border-[#333] grayscale hover:grayscale-0 transition-all"
                         key={`${target}-${instanceCounts[target] || 0}`}
@@ -520,7 +521,7 @@ function Camera() {
                       <div key={i} className={`flex gap-4 ${i < instances.length - 1 ? "mb-6 border-b border-dashed border-[#333] pb-6" : ""}`}>
                         <div className="w-24">
                           <img
-                            src={`/api/snapshot/${component}${Array.isArray(details) ? `?instance=${i}` : ''}`}
+                            src={`${API_BASE_URL}/api/snapshot/${component}${Array.isArray(details) ? `?instance=${i}` : ''}`}
                             className="w-full border border-[#333] bg-[#111]"
                             alt="Reference"
                           />

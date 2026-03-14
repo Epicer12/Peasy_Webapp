@@ -132,7 +132,22 @@ async def diagnose_manual(req: DiagnoseRequest):
 
 @router.post("/analyze/deep-dive")
 async def deep_dive(req: AIRequest):
-    prompt = f"Explain the '{req.problem}' error on a {req.brand}. Why does it happen?"
+    prompt = f"""
+    Explain the '{req.problem}' error on a {req.brand} PC in a professional, technical diagnostic style.
+    
+    Structure your response using these exact markdown headers:
+    ### OVERVIEW
+    Briefly state what this error means.
+    
+    ### TECHNICAL_ROOT_CAUSE
+    Explain the hardware or firmware reason behind this blink code.
+    
+    ### IMPACT_ASSESSMENT
+    Describe how this affects the system's operation.
+    
+    Use **bold text** for critical hardware components (e.g. **Motherboard**, **RAM**, **BIOS**).
+    Keep the tone professional and concise, like a technical manual.
+    """
     ai_res = client.chat.completions.create(
         messages=[{"role":"user","content":prompt}], 
         model="llama-3.1-8b-instant"
@@ -141,7 +156,25 @@ async def deep_dive(req: AIRequest):
 
 @router.post("/analyze/fix-guide")
 async def fix_guide(req: AIRequest):
-    prompt = f"Provide a detailed repair guide for: {req.problem}. Base it on: {req.fix}. Include safety tips."
+    prompt = f"""
+    Provide a detailed, step-by-step repair guide for: {req.problem} on a {req.brand}.
+    Base it on this initial fix suggestion: {req.fix}
+    
+    Structure your response using:
+    ### PREPARATION
+    Required tools and environment.
+    
+    ### STEP_BY_STEP_RESOLUTION
+    Provide a numbered list (1., 2., 3.) of clear, actionable steps.
+    
+    ### VERIFICATION_PROCEDURE
+    How to confirm the fix worked.
+    
+    ### SAFETY_PROTOCOLS
+    Highlight critical safety warnings using "> [!IMPORTANT]" formatting.
+    
+    Keep instructions clear and professional.
+    """
     ai_res = client.chat.completions.create(
         messages=[{"role":"user","content":prompt}], 
         model="llama-3.1-8b-instant"
