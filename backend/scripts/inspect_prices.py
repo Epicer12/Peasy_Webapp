@@ -5,15 +5,17 @@ from dotenv import load_dotenv
 # Load env variables from backend/.env
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
-url = os.getenv("MAIN_SUPABASE_URL")
-key = os.getenv("MAIN_SUPABASE_KEY")
+# Merged environment variable resolution to support both naming conventions
+url = os.getenv("SUPABASE_URL") or os.getenv("MAIN_SUPABASE_URL")
+key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("MAIN_SUPABASE_KEY")
 
 if not url or not key:
-    print("Error: MAIN_SUPABASE_URL and MAIN_SUPABASE_KEY must be set in .env")
+    print("Error: Supabase credentials not found in env")
     exit(1)
 
 supabase = create_client(url, key)
 
+# Combined table list for inspecting component prices used by the build calculator
 tables = [
     "processors_prices", 
     "motherboards_prices",
@@ -27,7 +29,8 @@ for t in tables:
         res = supabase.table(t).select("*").limit(1).execute()
         if res.data:
             print(f"\nTable: {t}")
-            print("Keys:", res.data[0].keys())
+            # Standardized formatting for key inspection
+            print("Keys:",   res.data[0].keys())
             print("Sample:", res.data[0])
         else:
             print(f"\nTable: {t} is empty.")
@@ -35,6 +38,7 @@ for t in tables:
         print(f"\nError reading {t}: {e}")
 
 print("\n--- Inspecting Component Tables for Linkage ---")
+# Core hardware tables to verify price mapping capabilities
 comp_tables = ["cpu", "motherboard", "ram", "gpu"]
 for t in comp_tables:
     try:
