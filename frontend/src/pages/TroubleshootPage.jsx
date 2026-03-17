@@ -405,26 +405,27 @@ const TroubleshootPage = () => {
     );
 
     return (
-        <div className="max-w-7xl mx-auto p-6 space-y-10 animate-in fade-in duration-500">
+        <div className="flex flex-col h-full space-y-6 max-w-7xl mx-auto animate-in fade-in duration-500">
             {/* Header Section */}
-            <div className="space-y-2 border-b-4 border-[#ff4400] pb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                    <h1 className="text-6xl font-black text-[#eeeeee] flex items-center gap-4 italic uppercase tracking-tighter">
-                        <span className="text-[#ff4400]">DIAGNOSTIC</span> CONSOLE
-                    </h1>
-                    <p className="font-mono text-[#666] text-xs tracking-[0.3em] uppercase mt-1">
-                        // PC_HARDWARE_INTEGRITY_STATION
-                    </p>
-                </div>
-                {viewMode === 'dashboard' && (
-                    <button
-                        onClick={resetDiagnosis}
-                        className="mt-4 sm:mt-0 font-mono text-[10px] text-[#ff4400] uppercase border-b-2 border-[#ff4400]/20 hover:border-[#ff4400] transition-all"
-                    >
-                        // Purge_Current_Session
-                    </button>
-                )}
+
+            <div className="border-b-2 border-[#333] pb-4">
+
+                <h1 className="text-4xl md:text-6xl font-black text-[#eeeeee] tracking-tighter uppercase leading-none">
+                    DIAGNOSTIC_<span className="text-[#ff4400]">CONSOLE</span>
+                </h1>
+                <p className="text-sm font-mono text-[#666] mt-3 uppercase tracking-widest">
+                    // PC_HARDWARE_INTEGRITY_STATION
+                </p>
             </div>
+            {viewMode === 'dashboard' && (
+                <button
+                    onClick={resetDiagnosis}
+                    className="mt-4 sm:mt-0 font-mono text-[10px] text-[#ff4400] uppercase border-b-2 border-[#ff4400]/20 hover:border-[#ff4400] transition-all"
+                >
+                        // Purge_Current_Session
+                </button>
+            )}
+
 
             {viewMode === 'config' ? (
                 <div className="space-y-10">
@@ -445,8 +446,6 @@ const TroubleshootPage = () => {
                                             setResult(null);
                                         }}
                                         className={`text-left px-5 py-4 font-mono text-lg border-2 transition-all ${selectedBrand === brand
-                                            ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
-                                            : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
                                             ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
                                             : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
                                             }`}
