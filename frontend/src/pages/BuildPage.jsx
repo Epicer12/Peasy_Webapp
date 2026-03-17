@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from "react";
-import Navbar from "../components/layout/Navbar";
+import { useNavigate } from "react-router-dom";
 import Question from "../components/build/Question";
 import { searchComponents, submitBuildRequest } from "../services/componentService";
 
 export default function BuildPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("basic");
   const [showSummary, setShowSummary] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // State for managing active search dropdown
   const [activeSearchPart, setActiveSearchPart] = useState(null);
@@ -187,55 +189,73 @@ export default function BuildPage() {
 
   const pageWrapper = {
     padding: "40px 20px",
-    maxWidth: "800px",
+    maxWidth: "850px",
     margin: "0 auto",
   };
 
   const titleStyle = {
-    textAlign: "center",
-    fontSize: "36px",
-    fontWeight: "700",
-    marginBottom: "20px",
+    textAlign: "left",
+    fontSize: "42px",
+    fontWeight: "900",
+    marginBottom: "30px",
+    color: "#eeeeee",
+    textTransform: "uppercase",
+    letterSpacing: "-0.02em",
+    borderBottom: "2px solid #333",
+    paddingBottom: "15px",
   };
 
   const tabContainerStyle = {
     display: "flex",
-    justifyContent: "center",
-    gap: "20px",
+    justifyContent: "flex-start",
+    gap: "0px",
     marginBottom: "30px",
-    borderBottom: "1px solid #ddd",
+    borderBottom: "1px solid #1a1a1a",
   };
 
   const getTabStyle = (tabName) => ({
-    padding: "10px 20px",
+    padding: "12px 24px",
     cursor: "pointer",
-    borderBottom: activeTab === tabName ? "3px solid #4a7cff" : "3px solid transparent",
-    color: activeTab === tabName ? "#4a7cff" : "#666",
-    fontWeight: activeTab === tabName ? "700" : "500",
-    fontSize: "18px",
-    marginBottom: "-2px",
+    borderBottom: activeTab === tabName ? "2px solid #00f3ff" : "2px solid transparent",
+    color: activeTab === tabName ? "#00f3ff" : "#666",
+    fontWeight: "700",
+    fontSize: "14px",
+    textTransform: "uppercase",
+    letterSpacing: "0.1em",
+    marginBottom: "-1px",
+    transition: "all 0.2s ease",
+    backgroundColor: activeTab === tabName ? "rgba(0,243,255,0.05)" : "transparent",
   });
 
   const buttonStyle = {
-    padding: "12px 24px",
-    borderRadius: "8px",
-    border: "none",
+    padding: "16px 32px",
+    borderRadius: "0px",
+    border: "1px solid #00f3ff",
     cursor: "pointer",
-    backgroundColor: "#4a7cff",
-    color: "white",
-    fontWeight: "600",
-    fontSize: "16px",
-    marginTop: "30px",
+    backgroundColor: "transparent",
+    color: "#00f3ff",
+    fontWeight: "900",
+    fontSize: "14px",
+    textTransform: "uppercase",
+    letterSpacing: "0.15em",
+    marginTop: "40px",
     display: "block",
     width: "100%",
+    transition: "all 0.3s ease",
+  };
+
+  const secondaryButtonStyle = {
+    ...buttonStyle,
+    border: "1px solid #333",
+    color: "#666",
+    marginTop: "15px",
   };
 
   const toggleContainerStyle = {
-    marginTop: "40px",
-    padding: "20px",
-    border: "1px solid #e0e0e0",
-    borderRadius: "8px",
-    backgroundColor: "#f0f7ff",
+    marginTop: "60px",
+    padding: "30px",
+    border: "1px dashed #333",
+    backgroundColor: "#0a0a0a",
     textAlign: "center",
   };
 
@@ -257,13 +277,14 @@ export default function BuildPage() {
             padding: "8px 12px",
             borderRadius: "6px",
             border: "1px solid",
-            borderColor: activeSearchPart === part ? "#4a7cff" : "#ccc",
-            fontSize: "14px",
-            height: "38px",
+            borderColor: activeSearchPart === part ? "#00f3ff" : "#333",
+            fontSize: "12px",
+            height: "40px",
             outline: "none",
-            transition: "border-color 0.2s",
-            color: "black", // Enforce black text
-            backgroundColor: "white", // Ensure white background
+            transition: "all 0.2s ease",
+            color: "#eeeeee",
+            backgroundColor: "#0a0a0a",
+            fontFamily: "'Space Mono', monospace",
           }}
           onFocus={() => {
             setActiveSearchPart(part);
@@ -291,15 +312,15 @@ export default function BuildPage() {
               listStyle: "none",
               padding: "0",
               margin: "4px 0 0",
-              border: "1px solid #eee",
-              borderRadius: "6px",
+              border: "1px solid #333",
+              borderRadius: "0px",
               maxHeight: "220px",
               overflowY: "auto",
-              backgroundColor: "white",
+              backgroundColor: "#111",
               position: "absolute",
-              zIndex: 9999, // High z-index to ensure visibility above other elements
+              zIndex: 9999,
               width: "100%",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.12)"
+              boxShadow: "0 10px 30px rgba(0,0,0,0.5)"
             }}>
               {loadingState[part] ? (
                 <li style={{ padding: "10px 12px", color: "black", fontStyle: "italic", fontSize: "13px" }}>
@@ -319,19 +340,25 @@ export default function BuildPage() {
                           selectComponent(part, displayName);
                         }}
                         style={{
-                          padding: "10px 12px",
+                          padding: "12px 16px",
                           cursor: "pointer",
-                          borderBottom: "1px solid #f5f5f5",
-                          fontSize: "13px",
-                          color: "black",
+                          borderBottom: "1px solid #1a1a1a",
+                          fontSize: "11px",
+                          color: "#888",
                           lineHeight: "1.4",
-                          backgroundColor: isSelected ? "#f0f7ff" : "white"
+                          backgroundColor: isSelected ? "#1a1a1a" : "transparent",
+                          fontFamily: "'Space Mono', monospace",
+                          textTransform: "uppercase",
                         }}
                         onMouseEnter={(e) => {
-                          e.target.style.background = "#f0f7ff";
+                          e.target.style.background = "#1a1a1a";
+                          e.target.style.color = "#00f3ff";
                         }}
                         onMouseLeave={(e) => {
-                          if (!isSelected) e.target.style.background = "white";
+                          if (!isSelected) {
+                            e.target.style.background = "transparent";
+                            e.target.style.color = "#888";
+                          }
                         }}
                       >
                         {displayName}
@@ -420,7 +447,29 @@ export default function BuildPage() {
     const { success, error } = await submitBuildRequest({ payload: summaryData });
 
     if (success) {
-      alert("Build request submitted successfully! The developer has received your summary.");
+      // alert("Build request submitted successfully! The developer has received your summary.");
+
+      // Map basic answers to suggestions logic
+      const budgetVal = Number(answers.budget.max) || 200000;
+      const budgetCategory = budgetVal >= 450000 ? "high" : budgetVal >= 200000 ? "mid" : "low";
+
+      const primaryUse = (answers.purpose && answers.purpose.length > 0)
+        ? answers.purpose[0].toLowerCase().replace(/\s+/g, '')
+        : "gaming";
+
+      const aestheticsPref = answers.aesthetics?.includes("RGB") ? "RGB" : "Minimal";
+
+      setIsNavigating(true);
+      navigate('/build-suggestions', {
+        state: {
+          budget: budgetCategory,
+          use: primaryUse.includes("gaming") ? "gaming" :
+            (primaryUse.includes("edit") || primaryUse.includes("design") || primaryUse.includes("render")) ? "editing" :
+              (primaryUse.includes("program") || primaryUse.includes("machine")) ? "programming" : "general",
+          aesthetics: aestheticsPref,
+          summary: summaryData
+        }
+      });
     } else {
       console.error(error);
       alert("Failed to submit build request. Please try again.");
@@ -429,18 +478,28 @@ export default function BuildPage() {
 
   if (showSummary) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
+      <div className="min-h-screen bg-[#050505]">
         <div style={pageWrapper}>
-          <h1 style={{ ...titleStyle, fontSize: "28px", marginBottom: "15px" }}>{activeTab === "advanced" ? "Advanced Build Summary" : "Basic Build Summary"}</h1>
-          <div style={{ backgroundColor: "#f9f9f9", borderRadius: "12px", boxShadow: "0 10px 30px rgba(0,0,0,0.1)", padding: "25px" }}>
+          <button onClick={() => navigate(-1)} style={{ color: '#00f3ff', border: '1px solid #00f3ff', padding: '6px 12px', background: 'transparent', cursor: 'pointer', marginBottom: '20px', fontSize: '14px', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>←</span> BACK
+          </button>
+          <h1 style={{ ...titleStyle, fontSize: "40px", marginBottom: "30px" }}>
+            {activeTab === "advanced" ? "SUMMARY_ADVANCED" : "SUMMARY_BASIC"}
+          </h1>
+          <div style={{ backgroundColor: "#0a0a0a", border: "1px solid #333", padding: "40px", position: "relative" }}>
 
-            <div style={{ marginBottom: "20px" }}>
-              <h3 style={{ borderBottom: "2px solid #eee", paddingBottom: "8px", marginBottom: "15px", color: "#333", fontSize: "1.1rem" }}>Basic Preferences</h3>
+            {/* Design accents */}
+            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#00f3ff]"></div>
+            <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-[#00f3ff]"></div>
+            <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-[#00f3ff]"></div>
+            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#00f3ff]"></div>
+
+            <div style={{ marginBottom: "40px" }}>
+              <h3 style={{ borderBottom: "1px solid #1a1a1a", paddingBottom: "12px", marginBottom: "20px", color: "#00f3ff", fontSize: "1rem", letterSpacing: "0.2em" }}>// PREFERENCES_BLOCK</h3>
               {Object.entries(answers).map(([key, value]) => (
-                <div key={key} style={{ marginBottom: "8px", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f0f0f0", paddingBottom: "4px" }}>
-                  <strong style={{ textTransform: "capitalize", color: "#333", fontSize: "14px" }}>{key.replace(/([A-Z])/g, " $1").trim()}:</strong>
-                  <span style={{ fontWeight: "normal", color: "#555", textAlign: "right", maxWidth: "60%", fontSize: "14px" }}>
+                <div key={key} style={{ marginBottom: "12px", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #111", paddingBottom: "8px" }}>
+                  <strong style={{ textTransform: "uppercase", color: "#666", fontSize: "12px", letterSpacing: "0.05em" }}>{key.replace(/([A-Z])/g, " $1")}:</strong>
+                  <span style={{ fontWeight: "bold", color: "#eeeeee", textAlign: "right", maxWidth: "60%", fontSize: "13px", fontFamily: "'Space Mono', monospace" }}>
                     {key === "budget" && typeof value === 'object' ? `LKR ${value?.min || 0} - LKR ${value?.max || "∞"}` :
                       Array.isArray(value) ? (value.length > 0 ? value.join(", ") : "None") : (value || "Not selected")}
                   </span>
@@ -448,11 +507,12 @@ export default function BuildPage() {
               ))}
 
               {Object.keys(ownedDetails).length > 0 && (
-                <div style={{ marginTop: "15px", backgroundColor: "#f8f9fa", padding: "12px", borderRadius: "8px" }}>
-                  <h4 style={{ marginTop: "0", marginBottom: "8px", color: "#444", fontSize: "1rem" }}>Owned Components Details:</h4>
+                <div style={{ marginTop: "30px", backgroundColor: "#0f0f0f", padding: "20px", border: "1px solid #1a1a1a" }}>
+                  <h4 style={{ marginTop: "0", marginBottom: "15px", color: "#ccff00", fontSize: "0.9rem", letterSpacing: "0.1em" }}>// OWNED_INVENTORY:</h4>
                   {Object.entries(ownedDetails).map(([part, detail]) => (
-                    <div key={part} style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px", fontSize: "14px" }}>
-                      <strong style={{ color: "#333" }}>{part}:</strong> <span style={{ color: "#555" }}>{detail}</span>
+                    <div key={part} style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "13px" }}>
+                      <strong style={{ color: "#666", textTransform: "uppercase" }}>{part}:</strong>
+                      <span style={{ color: "#00f3ff", fontFamily: "'Space Mono', monospace" }}>{detail}</span>
                     </div>
                   ))}
                 </div>
@@ -460,12 +520,12 @@ export default function BuildPage() {
             </div>
 
             {activeTab === "advanced" && (
-              <div style={{ marginTop: "30px" }}>
-                <h3 style={{ borderBottom: "2px solid #eee", paddingBottom: "8px", marginBottom: "15px", color: "#333", fontSize: "1.1rem" }}>Advanced Preferences</h3>
+              <div style={{ marginTop: "40px" }}>
+                <h3 style={{ borderBottom: "1px solid #1a1a1a", paddingBottom: "12px", marginBottom: "20px", color: "#00f3ff", fontSize: "1rem", letterSpacing: "0.2em" }}>// ADVANCED_METRICS</h3>
                 {Object.entries(advAnswers).map(([key, value]) => (
-                  <div key={key} style={{ marginBottom: "8px", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f0f0f0", paddingBottom: "4px" }}>
-                    <strong style={{ textTransform: "capitalize", color: "#333", fontSize: "14px" }}>{key.replace(/([A-Z])/g, " $1").trim()}:</strong>
-                    <span style={{ fontWeight: "normal", color: "#555", textAlign: "right", maxWidth: "60%", fontSize: "14px" }}>
+                  <div key={key} style={{ marginBottom: "12px", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #111", paddingBottom: "8px" }}>
+                    <strong style={{ textTransform: "uppercase", color: "#666", fontSize: "12px" }}>{key.replace(/([A-Z])/g, " $1")}:</strong>
+                    <span style={{ fontWeight: "bold", color: "#eeeeee", textAlign: "right", maxWidth: "60%", fontSize: "13px", fontFamily: "'Space Mono', monospace" }}>
                       {Array.isArray(value) ? (value.length > 0 ? value.join(", ") : "None") : (value || "Not selected")}
                     </span>
                   </div>
@@ -473,21 +533,26 @@ export default function BuildPage() {
               </div>
             )}
 
-            <div style={{ marginTop: "30px", textAlign: "center" }}>
+            <div style={{ marginTop: "50px", display: "flex", flexDirection: "column", gap: "10px" }}>
               <button
-                style={{ ...buttonStyle, backgroundColor: "#4a7cff", color: "white", width: "auto", minWidth: "220px", marginTop: "0", fontSize: "14px", padding: "10px 20px" }}
+                style={{ ...buttonStyle, backgroundColor: "#00f3ff", color: "#000", marginTop: "0", display: "flex", justifyContent: "center", alignItems: "center" }}
                 onClick={handleSubmitBuild}
+                disabled={isNavigating}
+                onMouseEnter={(e) => { if (!isNavigating) { e.target.style.backgroundColor = "#ccff00"; e.target.style.borderColor = "#ccff00"; } }}
+                onMouseLeave={(e) => { if (!isNavigating) { e.target.style.backgroundColor = "#00f3ff"; e.target.style.borderColor = "#00f3ff"; } }}
               >
-                Submit Build Request
+                Submit Build Request & Calculate
               </button>
               <button
-                style={{ ...buttonStyle, backgroundColor: "#f0f0f0", color: "#333", border: "1px solid #ccc", width: "auto", minWidth: "220px", marginTop: "10px", fontSize: "14px", padding: "10px 20px" }}
+                style={secondaryButtonStyle}
                 onClick={() => {
                   setShowSummary(false);
                   handleTabChange("basic");
                 }}
+                onMouseEnter={(e) => { e.target.style.borderColor = "#eeeeee"; e.target.style.color = "#eeeeee"; }}
+                onMouseLeave={(e) => { e.target.style.borderColor = "#333"; e.target.style.color = "#666"; }}
               >
-                Edit Answers
+                Return to Configurator
               </button>
             </div>
           </div>
@@ -497,10 +562,12 @@ export default function BuildPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
+    <div className="min-h-screen bg-[#050505] selection:bg-[#00f3ff] selection:text-black">
       <div style={pageWrapper}>
-        <h1 style={titleStyle}>Build Your Own PC</h1>
+        <button onClick={() => navigate(-1)} style={{ color: '#00f3ff', border: '1px solid #00f3ff', padding: '6px 12px', background: 'transparent', cursor: 'pointer', marginBottom: '20px', fontSize: '14px', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>←</span> BACK
+        </button>
+        <h1 style={titleStyle}>BUILD_PROTOCOL</h1>
 
         <div style={tabContainerStyle}>
           <div style={getTabStyle("basic")} onClick={() => handleTabChange("basic")}>
@@ -546,48 +613,56 @@ export default function BuildPage() {
               <Question title="14. Do you need WiFi & Bluetooth built-in?" options={["Yes", "No", "Doesn’t matter"]} selected={answers.wifi} onSelect={(val) => updateAnswer("wifi", val)} layout="row" />
 
               <div style={toggleContainerStyle}>
-                <p style={{ marginBottom: "10px", fontWeight: "600" }}>Want more control? Switch to Advanced Mode!</p>
+                <p style={{ marginBottom: "15px", fontWeight: "900", color: "#eeeeee", fontSize: "10px", letterSpacing: "0.1em" }}>// OPTIMIZATION_AVAILABLE</p>
                 <button
                   onClick={() => handleTabChange("advanced")}
-                  onMouseEnter={(e) => { e.target.style.backgroundColor = "#4a7cff"; e.target.style.color = "white"; }}
-                  onMouseLeave={(e) => { e.target.style.backgroundColor = "white"; e.target.style.color = "#4a7cff"; }}
+                  onMouseEnter={(e) => { e.target.style.backgroundColor = "#00f3ff"; e.target.style.color = "black"; }}
+                  onMouseLeave={(e) => { e.target.style.backgroundColor = "transparent"; e.target.style.color = "#00f3ff"; }}
                   style={{
-                    padding: "10px 20px",
-                    borderRadius: "6px",
-                    border: "1px solid #4a7cff",
-                    background: "white",
-                    color: "#4a7cff",
+                    padding: "12px 24px",
+                    borderRadius: "0px",
+                    border: "1px solid #00f3ff",
+                    background: "transparent",
+                    color: "#00f3ff",
                     cursor: "pointer",
-                    fontWeight: "600",
-                    transition: "all 0.2s ease"
+                    fontWeight: "900",
+                    fontSize: "10px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.2em",
+                    transition: "all 0.3s ease"
                   }}
                 >
-                  Go to Advanced Settings
+                  Switch to Advanced Mode
                 </button>
               </div>
 
-              <button style={buttonStyle} onClick={() => {
-                setShowSummary(true);
-                window.scrollTo(0, 0);
-              }}>
-                View Summary
+              <button
+                style={buttonStyle}
+                onClick={() => {
+                  setShowSummary(true);
+                  window.scrollTo(0, 0);
+                }}
+                onMouseEnter={(e) => { e.target.style.backgroundColor = "#00f3ff"; e.target.style.color = "black"; }}
+                onMouseLeave={(e) => { e.target.style.backgroundColor = "transparent"; e.target.style.color = "#00f3ff"; }}
+              >
+                Generate Summary View
               </button>
-              <div style={{ marginTop: "15px", textAlign: "center" }}>
+              <div style={{ marginTop: "20px", textAlign: "center" }}>
                 <span
                   onClick={handleClearAll}
-                  style={{ color: "#d32f2f", cursor: "pointer", fontSize: "14px", textDecoration: "underline" }}
+                  style={{ color: "#ff4400", cursor: "pointer", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: "bold" }}
                 >
-                  Clear all selections
+                  [ reset_terminal ]
                 </span>
               </div>
             </div>
           ) : (
             <div>
-              <div style={{ marginBottom: "30px", padding: "15px", backgroundColor: "#fff3cd", borderRadius: "8px", border: "1px solid #ffeeba", color: "#856404" }}>
-                <strong>Note:</strong> Please ensure you have answered the <span
+              <div style={{ marginBottom: "30px", padding: "15px", backgroundColor: "rgba(204,255,0,0.05)", border: "1px solid #ccff00", color: "#ccff00", fontSize: "10px", letterSpacing: "0.05em" }}>
+                <strong style={{ fontWeight: "900" }}>NOTICE:</strong> ENSURE BASIC PARAMETERS ARE DEFINED BEFORE ADVANCED OPTIMIZATION. <span
                   onClick={() => handleTabChange("basic")}
-                  style={{ textDecoration: "underline", cursor: "pointer", fontWeight: "bold" }}
-                >Basic</span> questions before finalizing your build here.
+                  style={{ textDecoration: "underline", cursor: "pointer", fontWeight: "900" }}
+                >GO_BASIC</span>
               </div>
 
               {/* Advanced Q1 merged into Basic Q1. RENUMBERING START */}
@@ -612,18 +687,23 @@ export default function BuildPage() {
               <Question title="13. How important is Ray Tracing and Upscaling technology?" options={["Must have Ray Tracing", "DLSS/FSR is essential", "Native Rasterization", "Don't care"]} selected={advAnswers.rayTracing} onSelect={(val) => updateAdvAnswer("rayTracing", val)} />
               <Question title="14. Do you have a preferred RGB ecosystem?" options={["Motherboard Sync", "Corsair iCUE", "NZXT CAM", "Razer Chroma", "Lian Li L-Connect", "No preference"]} selected={advAnswers.rgbSoftware} onSelect={(val) => updateAdvAnswer("rgbSoftware", val)} />
 
-              <button style={buttonStyle} onClick={() => {
-                setShowSummary(true);
-                window.scrollTo(0, 0);
-              }}>
-                View Full Summary
+              <button
+                style={buttonStyle}
+                onClick={() => {
+                  setShowSummary(true);
+                  window.scrollTo(0, 0);
+                }}
+                onMouseEnter={(e) => { e.target.style.backgroundColor = "#00f3ff"; e.target.style.color = "black"; }}
+                onMouseLeave={(e) => { e.target.style.backgroundColor = "transparent"; e.target.style.color = "#00f3ff"; }}
+              >
+                Compile Final Summary
               </button>
-              <div style={{ marginTop: "15px", textAlign: "center" }}>
+              <div style={{ marginTop: "20px", textAlign: "center" }}>
                 <span
                   onClick={handleClearAll}
-                  style={{ color: "#d32f2f", cursor: "pointer", fontSize: "14px", textDecoration: "underline" }}
+                  style={{ color: "#ff4400", cursor: "pointer", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: "bold" }}
                 >
-                  Clear all selections
+                  [ wipe_configuration ]
                 </span>
               </div>
             </div>

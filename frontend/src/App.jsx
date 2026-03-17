@@ -3,12 +3,13 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/auth/LoginPage';
 import SignUpPage from './pages/auth/SignUpPage';
 import HomePage from './pages/HomePage';
+import BuildPage from './pages/BuildPage';
+import BuildSuggestions from './pages/BuildSuggestions';
 import CameraPage from './pages/CameraPage';
 import ResultsPage from './pages/ResultsPage';
 import ModelViewerPage from './pages/ModelViewerPage';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
-import BuildPage from './pages/BuildPage';
 import PlanningPage from './pages/PlanningPage';
 import AssemblePage from './pages/AssemblePage';
 import TroubleshootPage from './pages/TroubleshootPage';
@@ -23,11 +24,11 @@ function App() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
 
-        {/* Proteted Routes wrapped in MainLayout */}
-        <Route path="/build" element={<ProtectedRoute><BuildPage /></ProtectedRoute>} />
-
+        {/* Protected Routes wrapped in MainLayout */}
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path="/home" element={<HomePage />} />
+          <Route path="/build" element={<BuildPage />} />
+          <Route path="/build-suggestions" element={<BuildSuggestions />} />
           <Route path="/plan" element={<PlanningPage />} />
           <Route path="/assemble" element={<AssemblePage />} />
           <Route path="/troubleshoot" element={<TroubleshootPage />} />

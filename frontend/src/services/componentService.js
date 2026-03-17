@@ -58,3 +58,65 @@ export const submitBuildRequest = async (payload) => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     return { success: true };
 };
+
+export const generateBuilds = async (payload) => {
+    console.log("Generating builds for payload:", payload);
+    try {
+        const response = await fetch('/api/generate-builds', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ summary: payload })
+        });
+        if (!response.ok) {
+            throw new Error('Failed to generate builds');
+        }
+        return await response.json();
+    } catch (e) {
+        console.error(e);
+        return { builds: [], warning: "" };
+    }
+};
+
+export const generateBuildSummary = async (builds) => {
+    try {
+        const response = await fetch('/api/generate-summary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ builds })
+        });
+        if (!response.ok) throw new Error('Failed to generate summary');
+        return await response.json();
+    } catch (e) {
+        console.error(e);
+        return { summaries: [] };
+    }
+};
+
+export const saveProject = async (projectData) => {
+    try {
+        const response = await fetch('/api/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(projectData)
+        });
+        if (!response.ok) throw new Error('Failed to save project');
+        return await response.json();
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
+};
+
+export const getProjects = async (email) => {
+    try {
+        const url = email ? `/api/projects?user_email=${email}` : '/api/projects';
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch projects');
+        return await response.json();
+    } catch (e) {
+        console.error(e);
+        return [];
+    }
+};
