@@ -42,15 +42,17 @@ export default function Question({
     multi ? selected?.includes(option) : selected === option;
 
   const inputStyle = {
+    // Reconciled styling: Kept feature branch's dark theme and tight padding
     padding: "10px",
     borderRadius: "8px",
     border: "1px solid #333",
     width: "100%",
-    fontSize: "1rem",
+    fontSize: "14px",
     outline: "none",
     transition: "border-color 0.2s",
     backgroundColor: "#000",
-    color: "#fff"
+    color: "#eeeeee",
+    fontFamily: "'Space Mono', monospace" // Integrated font from development for consistency
   };
 
   return (
@@ -62,6 +64,7 @@ export default function Question({
         backgroundColor: "#0a0a0a",
       }}
     >
+      {/* Kept Oswald font/uppercase style from feature branch for premium look */}
       <h3 style={{
         marginBottom: "15px",
         fontSize: "16px",
@@ -104,7 +107,7 @@ export default function Question({
             </span>
             <input
               type="number"
-              placeholder="Min"
+              placeholder="MIN"
               value={selected?.min || ""}
               onChange={(e) =>
                 onSelect({ ...selected, min: e.target.value })
@@ -140,7 +143,7 @@ export default function Question({
             </span>
             <input
               type="number"
-              placeholder="Max"
+              placeholder="MAX"
               value={selected?.max || ""}
               onChange={(e) =>
                 onSelect({ ...selected, max: e.target.value })
@@ -160,19 +163,22 @@ export default function Question({
 
         </div>
       ) : (
-        <div style={{
-          display: layout === "grid" ? "grid" : "flex",
-          gridTemplateColumns: layout === "grid" ? "repeat(2, 1fr)" : "none",
-          flexDirection: layout === "row" ? "row" : "column",
-          gap: "10px",
-          flexWrap: "wrap"
-        }}>
+        <div
+          style={{
+            display: layout === "grid" ? "grid" : "flex",
+            gridTemplateColumns:
+              layout === "grid" ? "repeat(2, 1fr)" : "none",
+            flexDirection: layout === "row" ? "row" : "column",
+            gap: "10px",
+            flexWrap: "wrap"
+          }}
+        >
           {options.map((option) => (
             <div
               key={option}
               style={{
                 display: "flex",
-                alignItems: "center",
+                flexDirection: "column",
                 gap: "10px",
                 padding: "10px 15px",
                 borderRadius: "4px",
@@ -182,10 +188,7 @@ export default function Question({
                   ? "rgba(0, 243, 255, 0.1)"
                   : "#000",
                 cursor: "pointer",
-                transition: "all 0.2s ease",
-                flex: layout === "row" ? "1 1 auto" : "initial",
-                width: layout === "row" ? "auto" : "100%",
-                boxSizing: "border-box"
+                transition: "all 0.2s"
               }}
               onClick={() => handleClick(option)}
             >
