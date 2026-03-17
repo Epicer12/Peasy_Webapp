@@ -11,3 +11,4 @@ ultralytics
 websockets
 openai
 pillow
+groq
