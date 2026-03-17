@@ -30,3 +30,201 @@
         letter-spacing: 0.05em;
     }
 }
+
+/* Diagnostic Console Scrollbar Utilities */
+.diagnostic-scrollbar-cyan::-webkit-scrollbar {
+    width: 6px;
+}
+
+.diagnostic-scrollbar-cyan::-webkit-scrollbar-track {
+    background: rgba(0, 243, 255, 0.05);
+}
+
+.diagnostic-scrollbar-cyan::-webkit-scrollbar-thumb {
+    background: rgba(0, 243, 255, 0.3);
+    border-radius: 10px;
+}
+
+.diagnostic-scrollbar-cyan::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 243, 255, 0.5);
+}
+
+.diagnostic-scrollbar-orange::-webkit-scrollbar {
+    width: 6px;
+}
+
+.diagnostic-scrollbar-orange::-webkit-scrollbar-track {
+    background: rgba(255, 68, 0, 0.05);
+}
+
+.diagnostic-scrollbar-orange::-webkit-scrollbar-thumb {
+    background: rgba(255, 68, 0, 0.3);
+    border-radius: 10px;
+}
+
+.diagnostic-scrollbar-orange::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 68, 0, 0.5);
+}
+
+/* AI Content Formatting */
+.ai-content-section {
+    margin-bottom: 2rem;
+}
+
+.ai-content-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+}
+
+.ai-content-header::before {
+    content: "";
+    display: block;
+    width: 4px;
+    height: 16px;
+    background: currentColor;
+}
+
+.ai-content-p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.ai-content-list {
+    margin-bottom: 1.5rem;
+    padding-left: 0.5rem;
+}
+
+.ai-content-list-item {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+}
+
+.ai-content-list-num {
+    font-weight: 900;
+    opacity: 0.5;
+    min-width: 1.5rem;
+}
+
+.ai-content-bold {
+    color: #fff;
+    font-weight: 900;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.ai-content-important {
+    background: rgba(255, 0, 0, 0.1);
+    border-left: 4px solid #ff0000;
+    padding: 1rem;
+    margin: 1.5rem 0;
+    font-weight: 700;
+    color: #ff6666;
+}
+
+/* Diagnostic Console Scrollbar Utilities */
+.diagnostic-scrollbar-cyan::-webkit-scrollbar {
+    width: 6px;
+}
+
+.diagnostic-scrollbar-cyan::-webkit-scrollbar-track {
+    background: rgba(0, 243, 255, 0.05);
+}
+
+.diagnostic-scrollbar-cyan::-webkit-scrollbar-thumb {
+    background: rgba(0, 243, 255, 0.3);
+    border-radius: 10px;
+}
+
+.diagnostic-scrollbar-cyan::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 243, 255, 0.5);
+}
+
+.diagnostic-scrollbar-orange::-webkit-scrollbar {
+    width: 6px;
+}
+
+.diagnostic-scrollbar-orange::-webkit-scrollbar-track {
+    background: rgba(255, 68, 0, 0.05);
+}
+
+.diagnostic-scrollbar-orange::-webkit-scrollbar-thumb {
+    background: rgba(255, 68, 0, 0.3);
+    border-radius: 10px;
+}
+
+.diagnostic-scrollbar-orange::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 68, 0, 0.5);
+}
+
+/* AI Content Formatting */
+.ai-content-section {
+    margin-bottom: 2rem;
+}
+
+.ai-content-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem; /* Equivalent to text-xl */
+}
+
+.ai-content-header::before {
+    content: "";
+    display: block;
+    width: 6px;
+    height: 20px;
+    background: currentColor;
+}
+
+.ai-content-p {
+    margin-bottom: 1.25rem;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.ai-content-list {
+    margin-bottom: 1.5rem;
+    padding-left: 0.5rem;
+}
+
+.ai-content-list-item {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.ai-content-list-num {
+    font-weight: 900;
+    opacity: 0.7;
+    min-width: 1.5rem;
+    color: currentColor;
+}
+
+.ai-content-bold {
+    color: #fff;
+    font-weight: 900;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.ai-content-important {
+    background: rgba(255, 0, 0, 0.15);
+    border-left: 4px solid #ff0000;
+    padding: 1.25rem;
+    margin: 2rem 0;
+    font-weight: 700;
+    color: #ff6666;
+    letter-spacing: 0.05em;
+}

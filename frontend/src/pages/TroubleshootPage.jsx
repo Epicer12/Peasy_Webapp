@@ -210,6 +210,67 @@ const TroubleshootPage = () => {
         };
     }, [cameraOn, connectWebSocket]);
 
+    // Markdown-lite renderer for AI content
+    const FormattedAIContent = ({ content, colorClass }) => {
+        if (!content) return null;
+
+        const lines = content.split('\n');
+        const formatted = [];
+        let currentList = [];
+
+        lines.forEach((line, index) => {
+            const trimmed = line.trim();
+
+            // Headers
+            if (trimmed.startsWith('###')) {
+                formatted.push(
+                    <div key={`h-${index}`} className={`ai-content-header ${colorClass} mt-6`}>
+                        {trimmed.replace(/^###\s*/, '')}
+                    </div>
+                );
+            }
+            // Important blocks
+            else if (trimmed.startsWith('> [!IMPORTANT]')) {
+                formatted.push(
+                    <div key={`imp-${index}`} className="ai-content-important">
+                        {trimmed.replace(/^>\s*\[!IMPORTANT\]\s*/, '')}
+                    </div>
+                );
+            }
+            // Numbered lists
+            else if (/^\d+\./.test(trimmed)) {
+                const num = trimmed.match(/^\d+/)[0];
+                const text = trimmed.replace(/^\d+\.\s*/, '');
+                formatted.push(
+                    <div key={`li-${index}`} className="ai-content-list-item">
+                        <span className="ai-content-list-num">{num}.</span>
+                        <span>{parseBold(text)}</span>
+                    </div>
+                );
+            }
+            // Paragraphs
+            else if (trimmed) {
+                formatted.push(
+                    <p key={`p-${index}`} className="ai-content-p">
+                        {parseBold(trimmed)}
+                    </p>
+                );
+            }
+        });
+
+        function parseBold(text) {
+            const parts = text.split(/(\*\*.*?\*\*)/);
+            return parts.map((part, i) => {
+                if (part.startsWith('**') && part.endsWith('**')) {
+                    return <span key={i} className="ai-content-bold">{part.slice(2, -2)}</span>;
+                }
+                return part;
+            });
+        }
+
+        return <div className="space-y-2">{formatted}</div>;
+    };
+
     // Diagnostic Dashboard Component
     const DiagnosticDashboard = () => (
         <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-500">
@@ -278,13 +339,13 @@ const TroubleshootPage = () => {
                 {/* Technical Deep Dive Panel */}
                 <div className={`bg-[#050505] border-2 transition-all duration-700 flex flex-col ${aiAnalysis.deepDive || aiLoading.deepDive ? 'border-cyan-400/50' : 'border-[#111] opacity-30 grayscale'}`}>
                     <div className="bg-cyan-400/5 p-4 border-b border-cyan-400/20 flex justify-between items-center">
-                        <span className="text-cyan-400 font-black text-[11px] uppercase tracking-widest flex items-center gap-2">
+                        <span className="text-cyan-400 font-black text-sm uppercase tracking-widest flex items-center gap-2">
                             {aiLoading.deepDive && <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>}
                             NEURAL_LINK [DEEP_ANALYSIS]
                         </span>
                         <span className="text-cyan-950 font-mono text-[9px]">L4_PRIORITY</span>
                     </div>
-                    <div className="flex-1 p-8 font-mono text-xs leading-relaxed text-cyan-50/80 overflow-y-auto max-h-[600px] scrollbar-thin scrollbar-thumb-cyan-900">
+                    <div className="flex-1 p-8 font-mono text-sm leading-relaxed text-cyan-50/80 overflow-y-auto max-h-[600px] diagnostic-scrollbar-cyan">
                         {aiLoading.deepDive ? (
                             <div className="h-full flex flex-col items-center justify-center space-y-6 py-20">
                                 <div className="w-10 h-10 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
@@ -294,7 +355,9 @@ const TroubleshootPage = () => {
                                 </div>
                             </div>
                         ) : aiAnalysis.deepDive ? (
-                            <div className="whitespace-pre-wrap animate-in fade-in duration-1000 slide-in-from-top-2">{aiAnalysis.deepDive}</div>
+                            <div className="animate-in fade-in duration-1000 slide-in-from-top-2">
+                                <FormattedAIContent content={aiAnalysis.deepDive} colorClass="text-cyan-400" />
+                            </div>
                         ) : (
                             <div className="h-full flex items-center justify-center text-[#111] select-none py-24 uppercase font-black text-center text-2xl tracking-tighter opacity-10">
                                 Modules_Inactive
@@ -306,13 +369,13 @@ const TroubleshootPage = () => {
                 {/* Repair Protocol Panel */}
                 <div className={`bg-[#050505] border-2 transition-all duration-700 flex flex-col ${aiAnalysis.fixGuide || aiLoading.fixGuide ? 'border-[#ff4400]/50' : 'border-[#111] opacity-30 grayscale'}`}>
                     <div className="bg-[#ff4400]/5 p-4 border-b border-[#ff4400]/20 flex justify-between items-center">
-                        <span className="text-[#ff4400] font-black text-[11px] uppercase tracking-widest flex items-center gap-2">
+                        <span className="text-[#ff4400] font-black text-sm uppercase tracking-widest flex items-center gap-2">
                             {aiLoading.fixGuide && <span className="w-2 h-2 rounded-full bg-[#ff4400] animate-pulse"></span>}
                             REPAIR_PROTOCOLS [SOP_01]
                         </span>
                         <span className="text-[#ff4400]/20 font-mono text-[9px]">SECURE_FEED</span>
                     </div>
-                    <div className="flex-1 p-8 font-mono text-xs leading-relaxed text-orange-50/80 overflow-y-auto max-h-[600px] scrollbar-thin scrollbar-thumb-orange-900">
+                    <div className="flex-1 p-8 font-mono text-sm leading-relaxed text-orange-50/80 overflow-y-auto max-h-[600px] diagnostic-scrollbar-orange">
                         {aiLoading.fixGuide ? (
                             <div className="h-full flex flex-col items-center justify-center space-y-6 py-20">
                                 <div className="w-10 h-10 border-2 border-[#ff4400] border-t-transparent rounded-full animate-spin"></div>
@@ -322,7 +385,9 @@ const TroubleshootPage = () => {
                                 </div>
                             </div>
                         ) : aiAnalysis.fixGuide ? (
-                            <div className="whitespace-pre-wrap animate-in fade-in duration-1000 slide-in-from-top-2">{aiAnalysis.fixGuide}</div>
+                            <div className="animate-in fade-in duration-1000 slide-in-from-top-2">
+                                <FormattedAIContent content={aiAnalysis.fixGuide} colorClass="text-[#ff4400]" />
+                            </div>
                         ) : (
                             <div className="h-full flex items-center justify-center text-[#111] select-none py-24 uppercase font-black text-center text-2xl tracking-tighter opacity-10">
                                 Modules_Inactive
@@ -380,6 +445,8 @@ const TroubleshootPage = () => {
                                             setResult(null);
                                         }}
                                         className={`text-left px-5 py-4 font-mono text-lg border-2 transition-all ${selectedBrand === brand
+                                            ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
+                                            : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
                                             ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
                                             : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
                                             }`}
