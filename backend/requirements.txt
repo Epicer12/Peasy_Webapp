@@ -1,14 +1,21 @@
-fastapi
-uvicorn [standard]
-firebase-admin
-python-dotenv
-pydantic
-python-multipart
-aiofiles
-supabase
-opencv-python
-ultralytics
-websockets
-openai
-pillow
-groq
+fastapi==0.118.3
+uvicorn[standard]==0.40.0
+firebase-admin==7.1.0
+python-dotenv==1.2.1
+pydantic==2.12.3
+python-multipart==0.0.22
+aiofiles==25.1.0
+supabase==2.27.2
+httpx==0.28.1
+websockets>=10.0,<15.0
+openai==2.17.0
+Pillow==12.0.0
+groq==1.0.0
+onnxruntime
+opencv-python-headless
+numpy
+cog==0.16.12
+watchfiles==1.0.0
+ultralytics # Kept from feature branch for AI component logic
+# --- Testing (used by CI) ---
+pytest==8.3.5 # Integrated from development branch
