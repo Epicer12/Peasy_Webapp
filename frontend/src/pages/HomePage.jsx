@@ -1,12 +1,22 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { getProjects } from '../services/componentService';
+import { auth } from '../firebase';
 
 const HomePage = () => {
-    // Mock Data
-    const savedBuilds = [
-        { id: 1, name: "GAMING_BEAST_24", status: "IN_PROGRESS", progress: 60, price: "$2,400" },
-        { id: 2, name: "OFFICE_WRKSTN", status: "COMPLETED", progress: 100, price: "$800" },
-    ];
+    const navigate = useNavigate();
+    const [savedBuilds, setSavedBuilds] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProjects = async () => {
+            const user = auth.currentUser;
+            const projects = await getProjects(user?.email);
+            setSavedBuilds(projects);
+            setLoading(false);
+        };
+        fetchProjects();
+    }, []);
 
     const warrantyItems = [
         { id: 1, name: "RTX 3080", daysLeft: 450, totalDays: 1095, color: "#00f3ff" },
@@ -32,42 +42,52 @@ const HomePage = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {savedBuilds.map(build => (
-                        <div key={build.id} className="bg-[#050505] p-5 border border-[#333] hover:border-[#00f3ff] transition-colors group relative flex flex-col">
-                            {/* Corner Brackets */}
-                            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#333] group-hover:border-[#00f3ff]"></div>
-                            <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-[#333] group-hover:border-[#00f3ff]"></div>
-                            <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-[#333] group-hover:border-[#00f3ff]"></div>
-                            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#333] group-hover:border-[#00f3ff]"></div>
-
-                            {/* Image Placeholder */}
-                            <div className="w-full h-32 bg-[#1a1a1a] mb-4 flex items-center justify-center border border-[#333] group-hover:border-[#00f3ff] transition-colors">
-                                <span className="font-mono text-[10px] text-[#666] uppercase">[BUILD_IMG]</span>
-                            </div>
-
-                            <div className="flex justify-between items-start mb-3">
-                                <h3 className="font-mono text-base text-[#eeeeee] group-hover:text-[#00f3ff] transition-colors">{build.name}</h3>
-                                <span className={`px-2 py-0.5 text-[10px] font-bold font-mono border ${build.progress === 100 ? 'border-[#00f3ff] text-[#00f3ff]' : 'border-[#333] text-[#666]'}`}>
-                                    {build.status}
-                                </span>
-                            </div>
-
-                            {/* Segmented Progress Bar */}
-                            <div className="w-full flex gap-1 mb-3">
-                                {[...Array(10)].map((_, i) => (
-                                    <div
-                                        key={i}
-                                        className={`h-2 flex-1 ${i < (build.progress / 10) ? 'bg-[#00f3ff]' : 'bg-[#1a1a1a]'}`}
-                                    ></div>
-                                ))}
-                            </div>
-
-                            <div className="flex justify-between text-[10px] font-mono text-[#666] mt-auto">
-                                <span>PRG: {build.progress}%</span>
-                                <span>EST: {build.price}</span>
-                            </div>
+                    {loading ? (
+                        <div className="col-span-full py-10 text-center text-[#666] font-mono animate-pulse uppercase tracking-widest">
+                            SYNCHRONIZING_PROJECTS...
                         </div>
-                    ))}
+                    ) : savedBuilds.length === 0 ? (
+                        <div className="col-span-full py-10 border border-dashed border-[#333] text-center text-[#444] font-mono uppercase text-xs">
+                            NO_PROJECTS_FOUND
+                        </div>
+                    ) : (
+                        savedBuilds.map(build => (
+                            <div key={build.id} className="bg-[#050505] p-5 border border-[#333] hover:border-[#00f3ff] transition-colors group relative flex flex-col">
+                                {/* Corner Brackets */}
+                                <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#333] group-hover:border-[#00f3ff]"></div>
+                                <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-[#333] group-hover:border-[#00f3ff]"></div>
+                                <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-[#333] group-hover:border-[#00f3ff]"></div>
+                                <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#333] group-hover:border-[#00f3ff]"></div>
+
+                                {/* Image Placeholder */}
+                                <div className="w-full h-32 bg-[#1a1a1a] mb-4 flex items-center justify-center border border-[#333] group-hover:border-[#00f3ff] transition-colors">
+                                    <span className="font-mono text-[10px] text-[#666] uppercase">[BUILD_IMG]</span>
+                                </div>
+
+                                <div className="flex justify-between items-start mb-3">
+                                    <h3 className="font-mono text-base text-[#eeeeee] group-hover:text-[#00f3ff] transition-colors uppercase">{build.name}</h3>
+                                    <span className={`px-2 py-0.5 text-[10px] font-bold font-mono border ${build.progress === 100 ? 'border-[#00f3ff] text-[#00f3ff]' : 'border-[#333] text-[#666]'}`}>
+                                        {build.status.toUpperCase()}
+                                    </span>
+                                </div>
+
+                                {/* Segmented Progress Bar */}
+                                <div className="w-full flex gap-1 mb-3">
+                                    {[...Array(10)].map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className={`h-2 flex-1 ${i < (build.progress / 10) ? 'bg-[#00f3ff]' : 'bg-[#1a1a1a]'}`}
+                                        ></div>
+                                    ))}
+                                </div>
+
+                                <div className="flex justify-between text-[10px] font-mono text-[#666] mt-auto">
+                                    <span>PRG: {build.progress}%</span>
+                                    <span>LKR {Number(build.total_price).toLocaleString()}</span>
+                                </div>
+                            </div>
+                        ))
+                    )}
 
                     {/* Add New Project Card */}
                     <Link to="/plan" className="bg-[#111] p-5 border border-[#333] border-dashed flex flex-col items-center justify-center text-[#666] hover:text-[#eeeeee] hover:border-[#eeeeee] transition-all cursor-pointer min-h-[200px] hover:bg-[#1a1a1a]">
