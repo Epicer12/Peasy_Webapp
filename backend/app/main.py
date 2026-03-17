@@ -16,7 +16,7 @@ app.add_middleware(
 
 # --- Routers ---
 # --- Routers ---
-from .routers import models, components, component_identification, assembly_instructions, troubleshoot, builder, warranty, build_suggestions, projects
+from .routers import models, components, component_identification, components, build_suggestions, projects, build_suggestions, projects, troubleshoot, assembly_instructions, builder, warranty
 
 app.include_router(models.router, prefix="/api")
 app.include_router(component_identification.router, prefix="/api")
@@ -28,7 +28,6 @@ app.include_router(components.router, prefix="/api")
 app.include_router(build_suggestions.router, prefix="/api")
 app.include_router(projects.router, prefix="/api")
 
-# --- Routes ---
 @app.get("/")
 def root():
     return {"message": "Peasy backend is running 🚀"}
@@ -39,3 +38,5 @@ def health_check():
         "status": "ok",
         "service": "peasy-backend"
     }
+
+

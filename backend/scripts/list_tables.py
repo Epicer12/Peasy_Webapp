@@ -1,7 +1,6 @@
 import os
-import asyncio
 from dotenv import load_dotenv
-from app.dependencies import get_warranty_supabase
+from supabase import create_client
 
 # Load env variables from backend/.env
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
