@@ -1,18 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import Navbar from "../components/layout/Navbar";
 import Question from "../components/build/Question";
-import Navbar from "../components/layout/Navbar"; // Integrated from development
 import { searchComponents, submitBuildRequest } from "../services/componentService";
 
 export default function BuildPage() {
-  const navigate = useNavigate();
-  // State from both branches reconciled
+  // Tabs & Step
   const [activeTab, setActiveTab] = useState("basic");
   const [step, setStep] = useState(1);
   const [showSummary, setShowSummary] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const navigate = useNavigate();
 
-  // Core configuration answers preserved from feature branch
+  // Basic Answers
   const [answers, setAnswers] = useState({
     purpose: [],
     resolution: "",
@@ -30,7 +30,7 @@ export default function BuildPage() {
     expansion: [],
   });
 
-  // Advanced metrics preserved from feature branch
+  // Advanced Answers
   const [advAnswers, setAdvAnswers] = useState({
     refreshRate: "",
     priority: "",
@@ -48,7 +48,7 @@ export default function BuildPage() {
     rgbSoftware: "",
   });
 
-  // Hardware search state preserved for hardware verification feature
+  // Owned Component Details & search
   const [ownedDetails, setOwnedDetails] = useState({});
   const [searchResults, setSearchResults] = useState({});
   const [activeSearchPart, setActiveSearchPart] = useState(null);
@@ -150,7 +150,7 @@ export default function BuildPage() {
     }
   };
 
-  // UI Handlers
+
   const handleTabChange = (tab) => { setActiveTab(tab); window.scrollTo(0, 0); };
 
   const handleClearAll = () => {
@@ -265,7 +265,8 @@ export default function BuildPage() {
 
   if (showSummary) {
     return (
-      <div className="min-h-screen bg-[#050505]">
+      <div className="min-h-screen bg-[#050505] text-[#eeeeee] font-mono">
+        <Navbar />
         <div style={pageWrapper}>
           <button onClick={() => setShowSummary(false)} style={{ color: '#00f3ff', border: '1px solid #00f3ff', padding: '6px 12px', background: 'transparent', cursor: 'pointer', marginBottom: '20px', fontSize: '14px', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>←</span> BACK
@@ -278,41 +279,23 @@ export default function BuildPage() {
             <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-[#00f3ff]"></div>
             <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-[#00f3ff]"></div>
             <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#00f3ff]"></div>
+          </div>
 
-            <div style={{ marginBottom: "40px" }}>
-              <h3 style={{ borderBottom: "1px solid #1a1a1a", paddingBottom: "12px", marginBottom: "20px", color: "#00f3ff", fontSize: "1rem", letterSpacing: "0.2em" }}>// PREFERENCES_BLOCK</h3>
-              {Object.entries(answers).map(([key, value]) => (
-                <div key={key} style={{ marginBottom: "12px", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #111", paddingBottom: "8px" }}>
-                  <strong style={{ textTransform: "uppercase", color: "#666", fontSize: "12px", letterSpacing: "0.05em" }}>{key.replace(/([A-Z])/g, " $1")}:</strong>
-                  <span style={{ fontWeight: "bold", color: "#eeeeee", textAlign: "right", maxWidth: "60%", fontSize: "13px", fontFamily: "'Space Mono', monospace" }}>
-                    {key === "budget" && typeof value === 'object' ? `LKR ${value?.min || 0} - LKR ${value?.max || "∞"}` :
-                      Array.isArray(value) ? (value.length > 0 ? value.join(", ") : "None") : (value || "Not selected")}
-                  </span>
-                </div>
-              ))}
+          <div style={{ backgroundColor: "#111", border: "2px solid #333", padding: "40px" }}>
+            <h3 style={{ color: "#00f3ff", marginBottom: "20px", borderBottom: "1px solid #333", paddingBottom: "10px" }}>CORE_PREFERENCES</h3>
+            {Object.entries(answers).map(([key, value]) => (
+              <div key={key} style={{ marginBottom: "12px", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #222", paddingBottom: "4px" }}>
+                <strong style={{ color: "#666", fontSize: "10px" }}>{key.toUpperCase()}:</strong>
+                <span style={{ fontSize: "12px" }}>{Array.isArray(value) ? value.join(", ") : (typeof value === "object" ? `LKR ${value.min || 0} - ${value.max || "INF"}` : value || "NULL")}</span>
+              </div>
+            ))}
 
-              {Object.keys(ownedDetails).length > 0 && (
-                <div style={{ marginTop: "30px", backgroundColor: "#0f0f0f", padding: "20px", border: "1px solid #1a1a1a" }}>
-                  <h4 style={{ marginTop: "0", marginBottom: "15px", color: "#ccff00", fontSize: "0.9rem", letterSpacing: "0.1em" }}>// OWNED_INVENTORY:</h4>
-                  {Object.entries(ownedDetails).map(([part, detail]) => (
-                    <div key={part} style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "13px" }}>
-                      <strong style={{ color: "#666", textTransform: "uppercase" }}>{part}:</strong>
-                      <span style={{ color: "#00f3ff", fontFamily: "'Space Mono', monospace" }}>{detail}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {activeTab === "advanced" && (
-              <div style={{ marginTop: "40px" }}>
-                <h3 style={{ borderBottom: "1px solid #1a1a1a", paddingBottom: "12px", marginBottom: "20px", color: "#00f3ff", fontSize: "1rem", letterSpacing: "0.2em" }}>// ADVANCED_METRICS</h3>
-                {Object.entries(advAnswers).map(([key, value]) => (
-                  <div key={key} style={{ marginBottom: "12px", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #111", paddingBottom: "8px" }}>
-                    <strong style={{ textTransform: "uppercase", color: "#666", fontSize: "12px" }}>{key.replace(/([A-Z])/g, " $1")}:</strong>
-                    <span style={{ fontWeight: "bold", color: "#eeeeee", textAlign: "right", maxWidth: "60%", fontSize: "13px", fontFamily: "'Space Mono', monospace" }}>
-                      {Array.isArray(value) ? (value.length > 0 ? value.join(", ") : "None") : (value || "Not selected")}
-                    </span>
+            {Object.keys(ownedDetails).length > 0 && (
+              <div style={{ marginTop: "30px" }}>
+                <h3 style={{ color: "#ccff00", marginBottom: "20px", borderBottom: "1px solid #333", paddingBottom: "10px" }}>OWNED_HARDWARE</h3>
+                {Object.entries(ownedDetails).map(([part, detail]) => (
+                  <div key={part} style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", borderBottom: "1px solid #222", paddingBottom: "4px" }}>
+                    <strong style={{ color: "#666", fontSize: "10px" }}>{part.toUpperCase()}:</strong> <span style={{ fontSize: "12px" }}>{detail}</span>
                   </div>
                 ))}
               </div>
@@ -336,17 +319,14 @@ export default function BuildPage() {
     <div className="min-h-screen bg-[#050505] selection:bg-[#00f3ff] selection:text-black">
       <Navbar />
       <div style={pageWrapper}>
-        <button onClick={() => navigate(-1)} style={{ color: '#00f3ff', border: '1px solid #00f3ff', padding: '6px 12px', background: 'transparent', cursor: 'pointer', marginBottom: '20px', fontSize: '14px', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span>←</span> BACK
-        </button>
-        <h1 style={titleStyle}>BUILD_PROTOCOL</h1>
+        <h1 style={titleStyle}>SYSTEM_BUILDER</h1>
 
         <div style={tabContainerStyle}>
           <button style={getTabStyle("basic")} onClick={() => handleTabChange("basic")}>01_BASIC</button>
           <button style={getTabStyle("advanced")} onClick={() => handleTabChange("advanced")}>02_ADVANCED</button>
         </div>
 
-        <div style={{ backgroundColor: "#0a0a0a", border: "1px solid #333", padding: "40px", marginBottom: "100px" }}>
+        <div style={{ backgroundColor: "#111", border: "2px solid #333", padding: "40px", marginBottom: "100px" }}>
           {activeTab === "basic" ? (
             <div className="space-y-8">
               <Question title="PRIMARY_OBJECTIVE" options={["Gaming", "Video Editing", "Graphic Design", "3D Rendering", "Programming", "AI / Machine Learning", "Streaming", "Office / General Use", "Heavy Multitasking", "Mixed Use"]} selected={answers.purpose} onSelect={(val) => updateAnswer("purpose", val)} multi={true} layout="grid" />
@@ -354,15 +334,12 @@ export default function BuildPage() {
               <Question title="PERFORMANCE_TIER" options={["Entry Level", "Mid-Range", "High-End", "Enthusiast"]} selected={answers.performance} onSelect={(val) => updateAnswer("performance", val)} />
               <Question title="BUDGET_THRESHOLD" type="range" selected={answers.budget} onSelect={(val) => updateAnswer("budget", val)} min={100000} />
               <Question title="EXISTING_HARDWARE" options={["CPU", "GPU", "RAM", "Storage", "PSU", "Case", "None"]} selected={answers.ownedParts} onSelect={(val) => handleOwnedPartsSelect(val)} multi={true} renderOptionExtra={(option) => option !== "None" && renderComponentSearch(option)} />
-
               <Question title="PROCESSOR_PREFERENCE" subtitle={isPartOwned("CPU") ? "SECTOR_OWNED: CPU" : null} options={["Intel", "AMD", "No preference", isPartOwned("CPU") ? "ALREADY_OWNED" : null].filter(Boolean)} selected={answers.cpuBrand} onSelect={(val) => updateAnswer("cpuBrand", val)} layout="row" />
               <Question title="GRAPHICS_PREFERENCE" subtitle={isPartOwned("GPU") ? "SECTOR_OWNED: GPU" : null} options={["NVIDIA", "AMD", "No preference", isPartOwned("GPU") ? "ALREADY_OWNED" : null].filter(Boolean)} selected={answers.gpuBrand} onSelect={(val) => updateAnswer("gpuBrand", val)} layout="row" />
               <Question title="FUTURE_EXPANSION" options={["More RAM slots", "Extra storage slots", "Space for GPU upgrades", "No preference"]} selected={answers.expansion} onSelect={(val) => updateAnswer("expansion", val)} multi={true} exclusiveOption="No preference" />
               <Question title="FORM_FACTOR" subtitle={isPartOwned("Case") ? "SECTOR_OWNED: CASE" : null} options={["Mini ITX", "Micro ATX", "ATX", "No preference", isPartOwned("Case") ? "ALREADY_OWNED" : null].filter(Boolean)} selected={answers.caseSize} onSelect={(val) => updateAnswer("caseSize", val)} />
               <Question title="AESTHETIC_PROFILE" options={["Performance only", "Minimal build", "RGB build", "White themed build", "No preference"]} selected={answers.aesthetics} onSelect={(val) => updateAnswer("aesthetics", val)} />
               <Question title="UPGRADE_PRIORITY" options={["Not important", "Somewhat important", "Very important"]} selected={answers.upgrade} onSelect={(val) => updateAnswer("upgrade", val)} />
-              <Question title="OVERCLOCKING_INTENT" options={["Yes", "No", "Not sure"]} selected={answers.overclock} onSelect={(val) => updateAnswer("overclock", val)} layout="row" />
-              <Question title="CONNECTIVITY" options={["Yes", "No", "Doesn’t matter"]} selected={answers.wifi} onSelect={(val) => updateAnswer("wifi", val)} layout="row" />
 
               <div style={toggleContainerStyle}>
                 <p style={{ marginBottom: "15px", fontWeight: "900", color: "#666", fontSize: "10px", letterSpacing: "0.1em" }}>// OPTIMIZATION_AVAILABLE</p>
@@ -382,20 +359,19 @@ export default function BuildPage() {
             </div>
           ) : (
             <div className="space-y-8">
-              <div style={{ marginBottom: "30px", padding: "15px", backgroundColor: "rgba(204,255,0,0.05)", border: "1px solid #ccff00", color: "#ccff00", fontSize: "10px" }}>
-                <strong style={{ fontWeight: "900" }}>NOTICE:</strong> ENSURE BASIC PARAMETERS ARE DEFINED BEFORE ADVANCED OPTIMIZATION. <span onClick={() => handleTabChange("basic")} style={{ textDecoration: "underline", cursor: "pointer", fontWeight: "900" }}>GO_BASIC</span>
+              <div style={{ marginBottom: "30px", padding: "15px", backgroundColor: "rgba(255,180,0,0.1)", border: "1px solid #ff4400", color: "#ff4400", fontSize: "10px" }}>
+                <strong>SYSTEM_NOTE:</strong> ENSURE BASIC_TELEMETRY (TAB_01) IS COMPLETE BEFORE ANALYZING ADVANCED_METRICS.
               </div>
               <Question title="REFRESH_RATE" options={["60Hz", "75Hz", "120Hz", "144Hz", "165Hz+", "Not sure"]} selected={advAnswers.refreshRate} onSelect={(val) => updateAdvAnswer("refreshRate", val)} layout="row" />
               <Question title="PRIMARY_FOCUS" options={["Maximum gaming FPS", "Rendering performance", "Smooth multitasking", "Balanced performance"]} selected={advAnswers.priority} onSelect={(val) => updateAdvAnswer("priority", val)} />
               <Question title="BUDGET_OPTIMIZATION" options={["Lowest cost possible", "Best performance for money", "Long-term value"]} selected={advAnswers.budgetOpt} onSelect={(val) => updateAdvAnswer("budgetOpt", val)} />
               <Question title="WORKLOAD_RATIO" options={["GPU is more important", "CPU is more important", "Both equally important", "Not sure"]} selected={advAnswers.workloadFocus} onSelect={(val) => updateAdvAnswer("workloadFocus", val)} />
-              <Question title="STORAGE_CONFIG" options={["NVMe SSD (FastEST)", "SSD + HDD combo", "Large HDD storage", "Not sure"]} selected={advAnswers.storageSetup} onSelect={(val) => updateAdvAnswer("storageSetup", val)} />
+              <Question title="STORAGE_CONFIG" options={["NVMe SSD (Fastish)", "SSD + HDD combo", "Large HDD storage", "Not sure"]} selected={advAnswers.storageSetup} onSelect={(val) => updateAdvAnswer("storageSetup", val)} />
               <Question title="STORAGE_CAPACITY" options={["500GB", "1TB", "2TB", "4TB+", "Not sure"]} selected={advAnswers.storageSize} onSelect={(val) => updateAdvAnswer("storageSize", val)} layout="row" />
               <Question title="COOLING_PROFILE" options={["Air cooling", "Liquid cooling (AIO)", "Custom water cooling", "No preference"]} selected={advAnswers.coolingType} onSelect={(val) => updateAdvAnswer("coolingType", val)} />
               <Question title="ACOUSTIC_PROFILE" options={["Silent build", "Balanced", "Performance over noise"]} selected={advAnswers.noise} onSelect={(val) => updateAdvAnswer("noise", val)} layout="row" />
               <Question title="POWER_EFFICIENCY" options={["Yes", "Somewhat", "Not important"]} selected={advAnswers.powerEff} onSelect={(val) => updateAdvAnswer("powerEff", val)} layout="row" />
               <Question title="INTELLIGENT_TECH" options={["Must have Ray Tracing", "DLSS/FSR focus", "Native Rasterization", "Don't care"]} selected={advAnswers.rayTracing} onSelect={(val) => updateAdvAnswer("rayTracing", val)} />
-              <Question title="RGB_ECOSYSTEM" options={["Motherboard Sync", "Corsair iCUE", "NZXT CAM", "Razer Chroma", "Lian Li L-Connect", "No preference"]} selected={advAnswers.rgbSoftware} onSelect={(val) => updateAdvAnswer("rgbSoftware", val)} />
 
               <button style={buttonStyle} onClick={() => { setShowSummary(true); window.scrollTo(0, 0); }}>
                 Compile Final Summary

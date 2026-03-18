@@ -5,18 +5,22 @@ from dotenv import load_dotenv
 # Load env variables from backend/.env
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
-# Merged environment variable resolution to support both naming conventions
-url = os.getenv("SUPABASE_URL") or os.getenv("MAIN_SUPABASE_URL")
-key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("MAIN_SUPABASE_KEY")
+url = os.getenv("MAIN_SUPABASE_URL")
+key = os.getenv("MAIN_SUPABASE_KEY")
 
 if not url or not key:
-    print("Error: Supabase credentials not found in env")
+    print("Error: MAIN_SUPABASE_URL and MAIN_SUPABASE_KEY must be set in .env")
     exit(1)
 
 supabase = create_client(url, key)
 
 print("Listing tables...")
-# Combined logic: checking likely peripheral table candidates as established in both branches
+# Creating a dummy query to some known table to verify connection
+# Supabase-py doesn't have a direct "list_tables" method exposing API, 
+# but we can try to infer or just check specific likely names.
+# Alternatively, we can use the PostgREST introspection if accessible, but usually not via this client easily without raw SQL.
+# Let's try to check likely candidates.
+
 candidates = [
     "keyboards", "keyboard_prices", "keyboards_prices",
     "mice", "mouse_prices", "mice_prices",
@@ -28,12 +32,11 @@ candidates = [
 found = []
 for table in candidates:
     try:
-        # Check if table exists by attempting a limited select
         res = supabase.table(table).select("*").limit(1).execute()
         print(f"✅ Found table: {table}")
         found.append(table)
-    except Exception:
-        # Silent pass if table doesn't exist, as intended in both versions
+    except Exception as e:
+        # print(f"❌ Table not found: {table}")
         pass
 
 if not found:

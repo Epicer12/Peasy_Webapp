@@ -15,6 +15,7 @@ app.add_middleware(
 )
 
 # --- Routers ---
+<<<<<<< HEAD
 from .routers import (
     models, 
     components, 
@@ -26,16 +27,22 @@ from .routers import (
     builder, 
     warranty
 )
+=======
+from .routers import models, component_identification, assembly_instructions, troubleshoot, builder
+>>>>>>> 83323ce (Recovering)
 
 app.include_router(models.router, prefix="/api")
 app.include_router(component_identification.router, prefix="/api")
 app.include_router(troubleshoot.router, prefix="/api/troubleshoot", tags=["troubleshoot"])
 app.include_router(assembly_instructions.router, prefix="/api")  # new router
 app.include_router(builder.router, prefix="/api")
+<<<<<<< HEAD
 app.include_router(warranty.router, prefix="/api")
 app.include_router(components.router, prefix="/api")
 app.include_router(build_suggestions.router, prefix="/api")
 app.include_router(projects.router, prefix="/api")
+=======
+>>>>>>> 83323ce (Recovering)
 
 @app.get("/")
 def root():

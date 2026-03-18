@@ -6,17 +6,15 @@ import json
 # Load env variables from backend/.env
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
-# Merged environment variable resolution to support both naming conventions
-url = os.getenv("SUPABASE_URL") or os.getenv("MAIN_SUPABASE_URL")
-key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("MAIN_SUPABASE_KEY")
+url = os.getenv("MAIN_SUPABASE_URL")
+key = os.getenv("MAIN_SUPABASE_KEY")
 
 if not url or not key:
-    print("Error: Supabase credentials not found in env")
+    print("Error: MAIN_SUPABASE_URL and MAIN_SUPABASE_KEY must be set in .env")
     exit(1)
 
 supabase = create_client(url, key)
 
-# List of recently added tables to verify they were correctly populated from scraping/imports
 tables = [
     "desktop_pcs_prices",
     "desktop_systems_prices",
@@ -35,15 +33,13 @@ for table in tables:
     try:
         response = supabase.table(table).select("*").limit(1).execute()
         if response.data and len(response.data) > 0:
-            # Combined logic: standardized column extraction and validation
+            # Get keys from first row
             columns = list(response.data[0].keys())
             results[table] = columns
             print(f"✅ {table}: Found {len(columns)} columns")
-            
-            # Check for critical identification columns to ensure feature branch can use this data
-            has_name  = any(c.lower() in ['name', 'title', 'product_name', 'component', 'model'] for c in columns)
+            # Check for critical columns
+            has_name = any(c.lower() in ['name', 'title', 'product_name', 'component', 'model'] for c in columns)
             has_price = any(c.lower() in ['price', 'cost', 'current_price'] for c in columns)
-            
             if not has_name:
                 print(f"   ⚠️  WARNING: No obvious 'name' column in {table}")
             if not has_price:
