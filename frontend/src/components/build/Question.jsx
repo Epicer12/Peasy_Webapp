@@ -3,13 +3,13 @@ import React from "react";
 export default function Question({
   title,
   subtitle,
-  options = [],
+  options,
   selected,
   onSelect,
   multi = false,
   layout = "column",
   exclusiveOption = null,
-  type = "selection",
+  type = "selection", // "selection" or "range"
   min = 0,
   renderOptionExtra
 }) {
@@ -39,20 +39,19 @@ export default function Question({
   };
 
   const isSelected = (option) =>
-    multi ? selected?.includes(option) : selected === option;
+    multi ? selected.includes(option) : selected === option;
 
   const inputStyle = {
-    // Reconciled styling: Kept feature branch's dark theme and tight padding
-    padding: "10px",
-    borderRadius: "8px",
-    border: "1px solid #333",
+    padding: "12px",
+    borderRadius: "4px",
+    border: "2px solid #333",
     width: "100%",
     fontSize: "14px",
     outline: "none",
-    transition: "border-color 0.2s",
-    backgroundColor: "#000",
+    backgroundColor: "#050505",
     color: "#eeeeee",
-    fontFamily: "'Space Mono', monospace" // Integrated font from development for consistency
+    transition: "border-color 0.2s",
+    fontFamily: "'Space Mono', monospace"
   };
 
   return (
@@ -64,45 +63,40 @@ export default function Question({
         backgroundColor: "#0a0a0a",
       }}
     >
-      {/* Kept Oswald font/uppercase style from feature branch for premium look */}
-      <h3 style={{
-        marginBottom: "15px",
-        fontSize: "16px",
-        color: "#eeeeee",
-        textTransform: "uppercase",
-        letterSpacing: "0.1em",
-        fontWeight: "900"
-      }}>
+      <h3 style={{ marginBottom: "15px", fontSize: "14px", color: "#eeeeee", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: "900" }}>
         {title}
       </h3>
 
       {subtitle && (
-        <p style={{
-          marginTop: "-10px",
-          marginBottom: "15px",
-          color: "#ccff00",
-          fontSize: "12px",
-          fontWeight: "500",
-          fontStyle: "italic",
-          textTransform: "uppercase"
-        }}>
+        <p
+          style={{
+            marginTop: "-10px",
+            marginBottom: "15px",
+            color: "#ccff00",
+            fontSize: "10px",
+            fontWeight: "500",
+            fontStyle: "italic",
+            textTransform: "uppercase"
+          }}
+        >
           {subtitle}
         </p>
       )}
 
       {type === "range" ? (
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          
-          {/* MIN */}
           <div style={{ position: "relative", flex: 1 }}>
-            <span style={{
-              position: "absolute",
-              left: "12px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "#666",
-              fontSize: "0.9rem"
-            }}>
+            <span
+              style={{
+                position: "absolute",
+                left: "12px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#666",
+                fontSize: "10px",
+                fontWeight: "bold"
+              }}
+            >
               LKR
             </span>
             <input
@@ -113,32 +107,24 @@ export default function Question({
                 onSelect({ ...selected, min: e.target.value })
               }
               style={{ ...inputStyle, paddingLeft: "45px" }}
-              onFocus={(e) => (e.target.style.borderColor = "#00f3ff")}
-              onBlur={(e) => {
-                e.target.style.borderColor = "#333";
-                const val = Number(e.target.value);
-                if (!e.target.value || val < min) {
-                  onSelect({ ...selected, min });
-                }
-              }}
               min={min}
             />
           </div>
 
-          <span style={{ fontWeight: "bold", color: "#444", fontSize: "1.2rem" }}>
-            —
-          </span>
+          <span style={{ fontWeight: "bold", color: "#333" }}>//</span>
 
-          {/* MAX */}
           <div style={{ position: "relative", flex: 1 }}>
-            <span style={{
-              position: "absolute",
-              left: "12px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "#666",
-              fontSize: "0.9rem"
-            }}>
+            <span
+              style={{
+                position: "absolute",
+                left: "12px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#666",
+                fontSize: "10px",
+                fontWeight: "bold"
+              }}
+            >
               LKR
             </span>
             <input
@@ -149,18 +135,9 @@ export default function Question({
                 onSelect({ ...selected, max: e.target.value })
               }
               style={{ ...inputStyle, paddingLeft: "45px" }}
-              onFocus={(e) => (e.target.style.borderColor = "#00f3ff")}
-              onBlur={(e) => {
-                e.target.style.borderColor = "#333";
-                const val = Number(e.target.value);
-                if (!e.target.value || val < min) {
-                  onSelect({ ...selected, max: min });
-                }
-              }}
               min={min}
             />
           </div>
-
         </div>
       ) : (
         <div
@@ -180,7 +157,7 @@ export default function Question({
                 display: "flex",
                 flexDirection: "column",
                 gap: "10px",
-                padding: "10px 15px",
+                padding: "12px 15px",
                 borderRadius: "4px",
                 border: "1px solid",
                 borderColor: isSelected(option) ? "#00f3ff" : "#222",
@@ -212,5 +189,5 @@ export default function Question({
         </div>
       )}
     </div>
-  );
+  )
 }

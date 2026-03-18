@@ -4,17 +4,14 @@ import LoginPage from './pages/auth/LoginPage';
 import SignUpPage from './pages/auth/SignUpPage';
 import HomePage from './pages/HomePage';
 import BuildPage from './pages/BuildPage';
-import BuildSuggestions from './pages/BuildSuggestions'; // Kept from feature branch
+import BuildSuggestions from './pages/BuildSuggestions';
 import CameraPage from './pages/CameraPage';
 import ResultsPage from './pages/ResultsPage';
 import ModelViewerPage from './pages/ModelViewerPage';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
-
-// New pages integrated from development branch
 import ManualBuildPage from './pages/ManualBuildPage';
 import PurchaseSummaryPage from './pages/PurchaseSummaryPage';
-
 import PlanningPage from './pages/PlanningPage';
 import AssemblePage from './pages/AssemblePage';
 import TroubleshootPage from './pages/TroubleshootPage';
@@ -25,7 +22,6 @@ import EditBuildPage from './pages/EditBuildPage';
 import MyBuildsPage from './pages/MyBuildsPage';
 import BuildDetailPage from './pages/BuildDetailPage';
 import GuidePage from './pages/GuidePage';
-
 import WarrantyPage from './pages/WarrantyPage';
 import ProfilePage from './pages/ProfilePage';
 
@@ -37,17 +33,11 @@ function App() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
 
-        {/* 
-            Protected Routes directly accessible
-            Integrated Manual Build and Purchase Summary from development branch
-        */}
+        {/* Protected Routes directly accessible (Build process) */}
         <Route path="/manual-build" element={<ProtectedRoute><ManualBuildPage /></ProtectedRoute>} />
         <Route path="/purchase-summary" element={<ProtectedRoute><PurchaseSummaryPage /></ProtectedRoute>} />
 
-        {/* 
-            Protected Routes wrapped in MainLayout
-            MainLayout provides the navigation sidebar required for the feature branch UI
-        */}
+        {/* Protected Routes wrapped in MainLayout */}
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path="/home" element={<HomePage />} />
           <Route path="/build" element={<BuildPage />} />
@@ -75,4 +65,4 @@ function App() {
   );
 }
 
-export default App;
+export default App;

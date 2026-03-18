@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
 
@@ -16,24 +15,28 @@ app.add_middleware(
 )
 
 # --- Routers ---
-from .routers import models, component_identification, components, build_suggestions, projects, assembly_instructions, troubleshoot, builder, warranty
+from .routers import (
+    models, 
+    components, 
+    component_identification, 
+    build_suggestions, 
+    projects, 
+    troubleshoot, 
+    assembly_instructions, 
+    builder, 
+    warranty
+)
 
-# Core routers present in both
 app.include_router(models.router, prefix="/api")
 app.include_router(component_identification.router, prefix="/api")
-
-# Feature branch routers (AI Suggested Planning feature)
-app.include_router(components.router, prefix="/api") # Kept for component search logic
-app.include_router(build_suggestions.router, prefix="/api") # Kept for AI build suggestions
-app.include_router(projects.router) # Kept for project management
-
-# Development branch routers (New features)
-app.include_router(troubleshoot.router, prefix="/api/troubleshoot", tags=["troubleshoot"]) # Integrated from development
-app.include_router(assembly_instructions.router, prefix="/api") # Integrated from development
-app.include_router(builder.router, prefix="/api") # Integrated from development
+app.include_router(troubleshoot.router, prefix="/api/troubleshoot", tags=["troubleshoot"])
+app.include_router(assembly_instructions.router, prefix="/api")  # new router
+app.include_router(builder.router, prefix="/api")
 app.include_router(warranty.router, prefix="/api")
+app.include_router(components.router, prefix="/api")
+app.include_router(build_suggestions.router, prefix="/api")
+app.include_router(projects.router, prefix="/api")
 
-# --- Routes ---
 @app.get("/")
 def root():
     return {"message": "Peasy backend is running 🚀"}

@@ -2,6 +2,9 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
 import os
 from supabase import create_client
+from dotenv import load_dotenv
+
+load_dotenv()
 
 router = APIRouter(
     prefix="/components",
@@ -14,12 +17,12 @@ _SUPABASE = None
 def get_supabase():
     global _SUPABASE
     if _SUPABASE is None:
-        url = os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        url = os.getenv("MAIN_SUPABASE_URL") or os.getenv("SUPABASE_URL")
+        key = os.getenv("MAIN_SUPABASE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         if not url or not key:
             raise HTTPException(
                 status_code=503,
-                detail="Supabase credentials not configured",
+                detail="Supabase credentials not configured (MAIN)",
             )
         _SUPABASE = create_client(url, key)
     return _SUPABASE
@@ -35,18 +38,32 @@ async def search_components(
     # Frontend: "CPU", "GPU", "RAM", "Storage", "PSU", "Case" (from BuildPage.jsx)
     table_map = {
         "cpu": "cpu",
-        "gpu": "gpu",
+        "mobo": "motherboard",
         "ram": "ram",
-        "storage": "storage_devices",
-        "psu": "power_supplies",
-        "case": "cases"
+        "ssd": "ssd",
+        "hdd": "hdd",
+        "gpu": "gpu",
+        "psu": "psu",
+        "case": "case",
+        "cooler": "cooler",
+        "os": "os",
+        "monitors": "monitors",
+        "keyboards": "keyboards",
+        "mice": "mice",
+        # New Enpoint Mappings (keep these since Frontend sidebar references them)
+        "all_in_one": "all_in_one_systems_prices",
+        "desktop": "desktop_pcs_prices",
+        "system": "desktop_systems_prices",
+        "expansion": "expansion_cards_networking_prices",
+        "connector": "cable_connector_prices",
+        "converter": "cable_converter_prices",
+        "console": "console_handheld_gaming_prices",
+        "party": "party_box_pricing"
     }
     
     table_name = table_map.get(type.lower())
     
     if not table_name:
-        # Fallback or error if type is unknown
-        # For now, if we can't map it, we might return empty or try a generic approach
         print(f"Unknown component type: {type}")
         return []
         
@@ -55,17 +72,14 @@ async def search_components(
         query = supabase.table(table_name).select("*")
         
         # Add search filter (partial match on name, case-insensitive)
-        # Only apply if q is provided and not empty
         if q and q.strip():
             query = query.ilike("name", f"%{q}%")
             
         # Execute query with a limit
         response = query.limit(50).execute()
         
-        # Standardize output for frontend
         return response.data
         
     except Exception as e:
         print(f"Search error on table {table_name}: {e}")
-        # If 'name' column doesn't exist, we might get an error. 
         raise HTTPException(status_code=500, detail=str(e))
