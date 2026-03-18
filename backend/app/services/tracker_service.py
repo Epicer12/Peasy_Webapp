@@ -19,31 +19,8 @@ class ComponentTracker:
         self.gap_counts = defaultdict(int) 
         
         # Calibration: 3-Second Rule & Flicker Protection
-        # High-speed local inference allows for consistent visibility checks.
         self.LOCK_THRESHOLD = 45 # ~3 seconds at 15 FPS
-        self.MAX_GAP_TOLERANCE = 5 
-        
-        # Build Summary Persistence
-        self.identified_details = {} # {class_name: identified_json}
-
-    def update_details(self, class_name, details):
-        """Store VLM/DB identification results for the build summary"""
-        self.identified_details[class_name] = details
-
-    def get_summary(self):
-        """Return the consolidated build summary in KV format with quantities"""
-        summary_obj = {}
-        for class_name, details in self.identified_details.items():
-            # Use the component_type or class_name as the key, standardized to uppercase
-            c_type = details.get("component_type", class_name).upper()
-            model = details.get("model", "Unknown")
-            quantity = details.get("quantity", 1)
-            
-            summary_obj[c_type] = model
-            if quantity > 1:
-                summary_obj[f"{c_type}_quantity"] = quantity
-                
-        return [summary_obj]
+        self.MAX_GAP_TOLERANCE = 5 # Strict: must be visible consistently
 
     def process_frame(self, current_objects, frame_bytes):
         detected_classes_this_frame = set()

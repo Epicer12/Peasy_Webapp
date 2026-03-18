@@ -15,7 +15,7 @@ const AssemblePage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-[40vh]">
                 {/* Guided Assembly */}
-                <Link to="/guide" className="group relative bg-[#050505] border border-[#333] hover:border-[#00ff88] transition-all cursor-pointer flex flex-col justify-between p-6 overflow-hidden block">
+                <Link to="#" className="group relative bg-[#050505] border border-[#333] hover:border-[#00ff88] transition-all cursor-pointer flex flex-col justify-between p-6 overflow-hidden block">
                     <div className="absolute inset-0 bg-[#00ff88] transform translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-in-out z-0 opacity-10"></div>
 
                     {/* Corner Markers */}
@@ -31,12 +31,13 @@ const AssemblePage = () => {
                         </h3>
                         <p className="font-mono text-[#888] text-[10px] max-w-sm group-hover:text-[#eeeeee] transition-colors">
                             STEP_BY_STEP_INSTRUCTIONS. BLUEPRINT_VISUALIZATION.
+                            <br /><span className="bg-[#333] px-1 text-[#00ff88] text-[10px] mt-2 inline-block">[MODULE_OFFLINE]</span>
                         </p>
                     </div>
 
                     <div className="relative z-10 mt-8 w-full">
-                        <div className="py-3 border border-[#00ff88] text-[#00ff88] font-black font-mono uppercase tracking-widest text-center text-xs group-hover:bg-[#00ff88] group-hover:text-black transition-all">
-                            GET_GUIDENCE
+                        <div className="py-3 border border-[#00ff88] text-[#00ff88] font-black font-mono uppercase tracking-widest text-center text-xs opacity-50 cursor-not-allowed">
+                            COMING_SOON
                         </div>
                     </div>
                 </Link>

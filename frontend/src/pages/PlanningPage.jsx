@@ -35,10 +35,7 @@ const PlanningPage = () => {
                     </div>
 
                     <div className="relative z-10 mt-8">
-                        <button
-                            onClick={() => navigate('/manual-build')}
-                            className="w-full py-3 border border-[#ff4400] text-[#ff4400] font-black font-mono uppercase tracking-widest hover:bg-[#ff4400] hover:text-black transition-all text-xs"
-                        >
+                        <button className="w-full py-3 border border-[#ff4400] text-[#ff4400] font-black font-mono uppercase tracking-widest hover:bg-[#ff4400] hover:text-black transition-all text-xs">
                             EXECUTE_MANUAL_PLAN
                         </button>
                     </div>

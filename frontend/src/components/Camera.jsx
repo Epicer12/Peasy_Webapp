@@ -1,8 +1,5 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-const WS_BASE_URL = API_BASE_URL.replace(/^http/, "ws");
 
 const TARGET_COMPONENTS = [
   "CPU", "CPU_COOLER", "CASE_FAN", "GPU", "HDD", "SSD",
@@ -33,106 +30,61 @@ function Camera() {
   });
   const [instanceCounts, setInstanceCounts] = useState({}); // Advanced mode: {GPU: 2, RAM: 3, ...}
 
-  const sendFrame = useCallback(() => {
-    if (!ws.current || ws.current.readyState !== WebSocket.OPEN) return;
-    if (!videoRef.current || !captureCanvasRef.current) {
-      // Retry shortly if video not ready (e.g. initial load)
-      requestAnimationFrame(sendFrame);
-      return;
-    }
-    if (allFound) return;
+  // Start/Stop Camera & WebSocket
+  useEffect(() => {
+    if (cameraOn) {
+      startCamera();
 
-    const video = videoRef.current;
+      // Connect WebSocket - Use generic host handling
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const host = "localhost:8000"; // Hardcoded for local dev as per verify instructions
+      const wsUrl = `${protocol}//${host}/api/ws/identify?mode=${mode}`;
 
-    // Safety check: video must have dimensions
-    if (video.videoWidth === 0 || video.videoHeight === 0) {
-      requestAnimationFrame(sendFrame);
-      return;
-    }
+      console.log("Connecting to WS:", wsUrl);
+      const socket = new WebSocket(wsUrl);
 
-    const canvas = captureCanvasRef.current;
+      socket.onopen = () => {
+        console.log("WS Connected");
+        setConnectionStatus("connected");
+        // Kick off the loop
+        sendFrame();
+      };
+      socket.onclose = () => {
+        console.log("WS Disconnected");
+        setConnectionStatus("disconnected");
+      };
+      socket.onerror = (err) => {
+        console.error("WS Error:", err);
+        setConnectionStatus("error");
+      };
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0);
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        handleDetectionResult(data);
+      };
 
-    canvas.toBlob((blob) => {
-      if (blob && ws.current && ws.current.readyState === WebSocket.OPEN) {
-        ws.current.send(blob);
-      } else {
-        // If send failed, maybe retry or just stop? 
-        // In ping-pong, if we fail to send, the loop dies. 
-        // So better to retry or log.
-        console.warn("Frame send skipped/failed");
+      ws.current = socket;
+
+    } else {
+      stopCamera();
+      if (ws.current) {
+        ws.current.close();
+        ws.current = null;
       }
-    }, "image/jpeg", 0.7);
-  }, [allFound]);
+      setConnectionStatus("disconnected");
 
-  const handleDetectionResult = useCallback((data) => {
-    // data: { objects: [...], locked_count: n, locked_items: [...] }
-
-    // Update Locked Items State
-    if (data.locked_items) {
-      const newLocked = new Set(data.locked_items);
-      setLockedItems(newLocked);
-
-      // Check if all targets found
-      const foundCount = TARGET_COMPONENTS.filter(t => newLocked.has(t)).length;
-      if (foundCount >= TARGET_COMPONENTS.length) {
-        setAllFound(true);
-        return; // Stop loop
+      // Clear overlay
+      if (overlayCanvasRef.current) {
+        const ctx = overlayCanvasRef.current.getContext("2d");
+        ctx.clearRect(0, 0, overlayCanvasRef.current.width, overlayCanvasRef.current.height);
       }
     }
 
-    // Draw Overlay
-    drawOverlay(data.objects || []);
-
-    // PING-PONG: Trigger next frame
-    // Use requestAnimationFrame to yield to UI thread if needed, or just call directly.
-    // requestAnimationFrame ensures smoother UI interaction.
-    requestAnimationFrame(() => sendFrame());
-  }, [sendFrame]);
-
-  const drawOverlay = (objects) => {
-    const canvas = overlayCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    objects.forEach(obj => {
-      const [x1, y1, x2, y2] = obj.box;
-      const isLocked = obj.status === "LOCKED";
-      const color = isLocked ? "#00ff00" : "#ffaa00";
-
-      // Draw Box
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 3;
-      ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-
-      // Draw Label Background
-      const labelText = `${obj.class} ${(obj.prob * 100).toFixed(0)}%`;
-      ctx.font = "bold 16px 'Space Mono', monospace";
-      const textWidth = ctx.measureText(labelText).width;
-
-      ctx.fillStyle = color;
-      ctx.fillRect(x1, y1 - 25, textWidth + 10, 25);
-
-      // Draw Label Text
-      ctx.fillStyle = "#000000";
-      ctx.fillText(labelText, x1 + 5, y1 - 7);
-
-      // Draw Confidence Bar (Visual Indicator)
-      const barWidth = (x2 - x1) * obj.prob;
-      ctx.fillStyle = color;
-      ctx.fillRect(x1, y2 + 5, barWidth, 6);
-
-      // Draw Bar Background (Gray)
-      ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-      ctx.fillRect(x1 + barWidth, y2 + 5, (x2 - x1) - barWidth, 6);
-    });
-  };
-
+    return () => {
+      stopCamera();
+      if (ws.current) ws.current.close();
+    };
+  }, [cameraOn]);
 
   const isProcessing = useRef(false); // Flow control flag
 
@@ -183,7 +135,7 @@ function Camera() {
         const pool = Array.from(lockedItems).map(async (component) => {
           const quantity = MULTI_INSTANCE_ALLOWED.includes(component) ? quantities[component] : 1;
           const response = await fetch(
-            `${API_BASE_URL}/api/identify-details?component_type=${component}&quantity=${quantity}`,
+            `http://localhost:8000/api/identify-details?component_type=${component}&quantity=${quantity}`,
             { method: 'POST' }
           );
           const data = await response.json();
@@ -200,7 +152,7 @@ function Camera() {
           for (let i = 0; i < count; i++) {
             pool.push((async () => {
               const response = await fetch(
-                `${API_BASE_URL}/api/identify-details?component_type=${component}&instance=${i}`,
+                `http://localhost:8000/api/identify-details?component_type=${component}&instance=${i}`,
                 { method: 'POST' }
               );
               const data = await response.json();
@@ -221,7 +173,7 @@ function Camera() {
 
   const unlockComponent = async (component, instance = null) => {
     try {
-      const url = `${API_BASE_URL}/api/unlock-component?component_type=${component}${instance !== null ? `&instance=${instance}` : ''}`;
+      const url = `http://localhost:8000/api/unlock-component?component_type=${component}${instance !== null ? `&instance=${instance}` : ''}`;
       const response = await fetch(url, { method: 'POST' });
       const data = await response.json();
 
@@ -254,7 +206,7 @@ function Camera() {
     formData.append('file', file);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/identify-upload`, {
+      const response = await fetch('http://localhost:8000/api/identify-upload', {
         method: 'POST',
         body: formData
       });
@@ -283,7 +235,7 @@ function Camera() {
   const addInstance = async (component) => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/add-instance?component_type=${component}`,
+        `http://localhost:8000/api/add-instance?component_type=${component}`,
         { method: 'POST' }
       );
       const data = await response.json();
@@ -300,59 +252,105 @@ function Camera() {
     }
   };
 
-  // Start/Stop Camera & WebSocket
-  useEffect(() => {
-    if (cameraOn) {
-      startCamera();
+  const sendFrame = () => {
+    if (!ws.current || ws.current.readyState !== WebSocket.OPEN) return;
+    if (!videoRef.current || !captureCanvasRef.current) {
+      // Retry shortly if video not ready (e.g. initial load)
+      requestAnimationFrame(sendFrame);
+      return;
+    }
+    if (allFound) return;
 
-      // Connect WebSocket - Use generic host handling
-      const wsUrl = `${WS_BASE_URL}/api/ws/identify?mode=${mode}`;
+    const video = videoRef.current;
 
-      console.log("Connecting to WS:", wsUrl);
-      const socket = new WebSocket(wsUrl);
+    // Safety check: video must have dimensions
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      requestAnimationFrame(sendFrame);
+      return;
+    }
 
-      socket.onopen = () => {
-        console.log("WS Connected");
-        setConnectionStatus("connected");
-        // Kick off the loop
-        sendFrame();
-      };
-      socket.onclose = () => {
-        console.log("WS Disconnected");
-        setConnectionStatus("disconnected");
-      };
-      socket.onerror = (err) => {
-        console.error("WS Error:", err);
-        setConnectionStatus("error");
-      };
+    const canvas = captureCanvasRef.current;
 
-      socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        handleDetectionResult(data);
-      };
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
 
-      ws.current = socket;
-
-    } else {
-      stopCamera();
-      if (ws.current) {
-        ws.current.close();
-        ws.current = null;
+    canvas.toBlob((blob) => {
+      if (blob && ws.current && ws.current.readyState === WebSocket.OPEN) {
+        ws.current.send(blob);
+      } else {
+        // If send failed, maybe retry or just stop? 
+        // In ping-pong, if we fail to send, the loop dies. 
+        // So better to retry or log.
+        console.warn("Frame send skipped/failed");
       }
-      setConnectionStatus("disconnected");
+    }, "image/jpeg", 0.7);
+  };
 
-      // Clear overlay
-      if (overlayCanvasRef.current) {
-        const ctx = overlayCanvasRef.current.getContext("2d");
-        ctx.clearRect(0, 0, overlayCanvasRef.current.width, overlayCanvasRef.current.height);
+  const handleDetectionResult = (data) => {
+    // data: { objects: [...], locked_count: n, locked_items: [...] }
+
+    // Update Locked Items State
+    if (data.locked_items) {
+      const newLocked = new Set(data.locked_items);
+      setLockedItems(newLocked);
+
+      // Check if all targets found
+      const foundCount = TARGET_COMPONENTS.filter(t => newLocked.has(t)).length;
+      if (foundCount >= TARGET_COMPONENTS.length) {
+        setAllFound(true);
+        return; // Stop loop
       }
     }
 
-    return () => {
-      stopCamera();
-      if (ws.current) ws.current.close();
-    };
-  }, [cameraOn, handleDetectionResult, mode, sendFrame]);
+    // Draw Overlay
+    drawOverlay(data.objects || []);
+
+    // PING-PONG: Trigger next frame
+    // Use requestAnimationFrame to yield to UI thread if needed, or just call directly.
+    // requestAnimationFrame ensures smoother UI interaction.
+    requestAnimationFrame(() => sendFrame());
+  };
+
+  const drawOverlay = (objects) => {
+    const canvas = overlayCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    objects.forEach(obj => {
+      const [x1, y1, x2, y2] = obj.box;
+      const isLocked = obj.status === "LOCKED";
+      const color = isLocked ? "#00ff00" : "#ffaa00";
+
+      // Draw Box
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+      // Draw Label Background
+      const labelText = `${obj.class} ${(obj.prob * 100).toFixed(0)}%`;
+      ctx.font = "bold 16px 'Space Mono', monospace";
+      const textWidth = ctx.measureText(labelText).width;
+
+      ctx.fillStyle = color;
+      ctx.fillRect(x1, y1 - 25, textWidth + 10, 25);
+
+      // Draw Label Text
+      ctx.fillStyle = "#000000";
+      ctx.fillText(labelText, x1 + 5, y1 - 7);
+
+      // Draw Confidence Bar (Visual Indicator)
+      const barWidth = (x2 - x1) * obj.prob;
+      ctx.fillStyle = color;
+      ctx.fillRect(x1, y2 + 5, barWidth, 6);
+
+      // Draw Bar Background (Gray)
+      ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+      ctx.fillRect(x1 + barWidth, y2 + 5, (x2 - x1) - barWidth, 6);
+    });
+  };
 
   return (
     <div className="flex flex-col h-full bg-[#050505] text-[#eeeeee] font-mono overflow-hidden">
@@ -435,7 +433,7 @@ function Camera() {
 
                     {isFound && (
                       <img
-                        src={`${API_BASE_URL}/api/snapshot/${target}${mode === 'advanced' ? `?instance=${(instanceCounts[target] || 1) - 1}` : ''}`}
+                        src={`http://localhost:8000/api/snapshot/${target}${mode === 'advanced' ? `?instance=${(instanceCounts[target] || 1) - 1}` : ''}`}
                         alt={target}
                         className="w-12 h-8 object-cover border border-[#333] grayscale hover:grayscale-0 transition-all"
                         key={`${target}-${instanceCounts[target] || 0}`}
@@ -521,7 +519,7 @@ function Camera() {
                       <div key={i} className={`flex gap-4 ${i < instances.length - 1 ? "mb-6 border-b border-dashed border-[#333] pb-6" : ""}`}>
                         <div className="w-24">
                           <img
-                            src={`${API_BASE_URL}/api/snapshot/${component}${Array.isArray(details) ? `?instance=${i}` : ''}`}
+                            src={`http://localhost:8000/api/snapshot/${component}${Array.isArray(details) ? `?instance=${i}` : ''}`}
                             className="w-full border border-[#333] bg-[#111]"
                             alt="Reference"
                           />

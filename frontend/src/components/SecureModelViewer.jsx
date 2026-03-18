@@ -42,8 +42,7 @@ export default function SecureModelViewer({ modelId }) {
 
     async function fetchModel() {
       try {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-        const response = await axios.get(`${API_BASE_URL}/api/models/${modelId}`, {
+        const response = await axios.get(`/api/models/${modelId}`, {
           headers: { Authorization: `Bearer ${userToken}` },
         });
         const { url } = response.data;
