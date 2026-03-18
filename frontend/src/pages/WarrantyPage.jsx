@@ -26,90 +26,89 @@ const WarrantyPage = () => {
     const navigate = useNavigate();
 
     // Calculate warranty statistics as the user types
-    // Calculate warranty statistics as the user types
     useEffect(() => {
-        const calculateWarranty = () => {
-            const info = editableData.warranty_info || {};
-
-            // 1. Calculate Completeness
-            const fields = [
-                info.product_name,
-                info.brand,
-                info.model,
-                info.purchase_date,
-                info.warranty_period
-            ];
-            const filledFields = fields.filter(f => f && f !== "Not Detected" && f.trim() !== "").length;
-            const completeness = (filledFields / fields.length) * 100;
-
-            const purchaseDateStr = info.purchase_date;
-            const periodStr = info.warranty_period;
-
-            // Reset if data is missing or invalid for date calculation
-            if (!purchaseDateStr || !periodStr || purchaseDateStr === "Not Detected" || periodStr === "Not Detected" || purchaseDateStr.trim() === "") {
-                setWarrantyStats({ percentage: 0, daysLeft: 0, status: 'calculating', completeness });
-                return;
-            }
-
-            try {
-                const cleanDateStr = purchaseDateStr.replace(/[^\d\-\/]/g, ' ').trim().split(' ')[0];
-                const purchaseDate = new Date(cleanDateStr);
-
-                if (isNaN(purchaseDate.getTime())) {
-                    setWarrantyStats({ percentage: 0, daysLeft: '?', status: 'calculating', completeness });
-                    return;
-                }
-
-                let totalMonths = 0;
-                const periodLower = periodStr.toLowerCase().replace(/[\s\-_]/g, '');
-                const numMatch = periodLower.match(/\d+/);
-
-                if (numMatch) {
-                    const num = parseInt(numMatch[0]);
-                    if (periodLower.includes('year') || periodLower.includes('yr')) {
-                        totalMonths = num * 12;
-                    } else if (periodLower.includes('month') || periodLower.includes('mo')) {
-                        totalMonths = num;
-                    } else if (num > 0) {
-                        totalMonths = num;
-                    }
-                }
-
-                if (totalMonths <= 0) {
-                    setWarrantyStats({ percentage: 0, daysLeft: '?', status: 'calculating', completeness });
-                    return;
-                }
-
-                const expiryDate = new Date(purchaseDate);
-                expiryDate.setMonth(expiryDate.getMonth() + totalMonths);
-
-                const today = new Date();
-                const totalDurationTime = expiryDate.getTime() - purchaseDate.getTime();
-                const remainingDurationTime = expiryDate.getTime() - today.getTime();
-
-                const percentage = Math.max(0, Math.min(100, (remainingDurationTime / totalDurationTime) * 100));
-                const daysLeft = Math.max(0, Math.floor(remainingDurationTime / (1000 * 60 * 60 * 24)));
-
-                let status = '#00ff88'; // Green
-                if (daysLeft <= 0) status = '#ff4444'; // Red
-                else if (percentage < 20) status = '#ff4444'; // Red
-                else if (percentage < 50) status = '#ffbb00'; // Amber/Yellow
-
-                setWarrantyStats({
-                    percentage: isNaN(percentage) ? 0 : percentage,
-                    daysLeft: isNaN(daysLeft) ? 0 : daysLeft,
-                    status,
-                    completeness
-                });
-            } catch (e) {
-                setWarrantyStats({ percentage: 0, daysLeft: '!', status: 'calculating', completeness });
-            }
-        };
-
         if (editableData) {
             calculateWarranty();
         }
     }, [editableData]);
+
+    const calculateWarranty = () => {
+        const info = editableData.warranty_info || {};
+
+        // 1. Calculate Completeness
+        const fields = [
+            info.product_name,
+            info.brand,
+            info.model,
+            info.purchase_date,
+            info.warranty_period
+        ];
+        const filledFields = fields.filter(f => f && f !== "Not Detected" && f.trim() !== "").length;
+        const completeness = (filledFields / fields.length) * 100;
+
+        const purchaseDateStr = info.purchase_date;
+        const periodStr = info.warranty_period;
+
+        // Reset if data is missing or invalid for date calculation
+        if (!purchaseDateStr || !periodStr || purchaseDateStr === "Not Detected" || periodStr === "Not Detected" || purchaseDateStr.trim() === "") {
+            setWarrantyStats({ percentage: 0, daysLeft: 0, status: 'calculating', completeness });
+            return;
+        }
+
+        try {
+            const cleanDateStr = purchaseDateStr.replace(/[^\d\-\/]/g, ' ').trim().split(' ')[0];
+            const purchaseDate = new Date(cleanDateStr);
+
+            if (isNaN(purchaseDate.getTime())) {
+                setWarrantyStats({ percentage: 0, daysLeft: '?', status: 'calculating', completeness });
+                return;
+            }
+
+            let totalMonths = 0;
+            const periodLower = periodStr.toLowerCase().replace(/[\s\-_]/g, '');
+            const numMatch = periodLower.match(/\d+/);
+
+            if (numMatch) {
+                const num = parseInt(numMatch[0]);
+                if (periodLower.includes('year') || periodLower.includes('yr')) {
+                    totalMonths = num * 12;
+                } else if (periodLower.includes('month') || periodLower.includes('mo')) {
+                    totalMonths = num;
+                } else if (num > 0) {
+                    totalMonths = num;
+                }
+            }
+
+            if (totalMonths <= 0) {
+                setWarrantyStats({ percentage: 0, daysLeft: '?', status: 'calculating', completeness });
+                return;
+            }
+
+            const expiryDate = new Date(purchaseDate);
+            expiryDate.setMonth(expiryDate.getMonth() + totalMonths);
+
+            const today = new Date();
+            const totalDurationTime = expiryDate.getTime() - purchaseDate.getTime();
+            const remainingDurationTime = expiryDate.getTime() - today.getTime();
+
+            const percentage = Math.max(0, Math.min(100, (remainingDurationTime / totalDurationTime) * 100));
+            const daysLeft = Math.max(0, Math.floor(remainingDurationTime / (1000 * 60 * 60 * 24)));
+
+            let status = '#00ff88'; // Green
+            if (daysLeft <= 0) status = '#ff4444'; // Red
+            else if (percentage < 20) status = '#ff4444'; // Red
+            else if (percentage < 50) status = '#ffbb00'; // Amber/Yellow
+
+            setWarrantyStats({
+                percentage: isNaN(percentage) ? 0 : percentage,
+                daysLeft: isNaN(daysLeft) ? 0 : daysLeft,
+                status,
+                completeness
+            });
+        } catch (e) {
+            setWarrantyStats({ percentage: 0, daysLeft: '!', status: 'calculating', completeness });
+        }
+    };
 
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
