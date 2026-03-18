@@ -29,6 +29,7 @@ const MainLayout = () => {
         const path = location.pathname;
         const activeNav = navigation.find(n => n.href === path);
         if (activeNav) return activeNav.name;
+        if (path.startsWith('/community')) return 'COMMUNITY';
         if (path === '/camera') return 'SCANNER';
         if (path.startsWith('/model')) return 'MODEL_VIEW';
         return 'DASHBOARD';
@@ -78,13 +79,35 @@ const MainLayout = () => {
                 </nav>
 
                 {/* User Profile / Footer */}
-                <div className="h-16 flex flex-col justify-end items-center pb-4 border-t-2 border-[#333333]">
-                    <div className="w-full px-4 flex items-center justify-between">
-                        <span className="text-[10px] text-[#666]">USER: 8829</span>
-                        <div className="w-6 h-6 border-2 border-[#eeeeee] flex items-center justify-center font-bold text-[10px]">
-                            US
+                <div className="border-t-2 border-[#333333] flex flex-col">
+                    <NavLink
+                        to="/profile"
+                        className={({ isActive }) => `
+                            flex flex-col justify-center items-center py-3 transition-all duration-200
+                            ${isActive ? 'bg-[#00f3ff] text-[#050505]' : 'hover:bg-[#1a1a1a]'}
+                        `}
+                    >
+                        <div className="w-full px-4 flex items-center justify-between">
+                            <span className={`text-[10px] ${location.pathname.startsWith('/profile') ? 'text-black' : 'text-[#666]'}`}>USER: 8829</span>
+                            <div className={`w-6 h-6 border-2 ${location.pathname.startsWith('/profile') ? 'border-black' : 'border-[#eeeeee]'} flex items-center justify-center font-bold text-[10px]`}>
+                                US
+                            </div>
                         </div>
-                    </div>
+                    </NavLink>
+
+                    {/* Nested Scan Link - Visible when on Profile or Warranty */}
+                    {(location.pathname === '/profile' || location.pathname === '/warranty') && (
+                        <NavLink
+                            to="/warranty"
+                            className={({ isActive }) => `
+                                py-3 px-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-200 text-center
+                                ${isActive ? 'text-[#00f3ff] bg-[#0a0a0a]' : 'text-[#555] hover:text-[#cf0] hover:bg-[#0a0a0a]'}
+                                border-t border-[#1a1a1a] border-dashed
+                            `}
+                        >
+                            {">"} Scan Warranty
+                        </NavLink>
+                    )}
                 </div>
             </aside>
 

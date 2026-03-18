@@ -16,17 +16,7 @@ app.add_middleware(
 )
 
 # --- Routers ---
-# Combined imports from both feature branch and development branch
-from .routers import (
-    models, 
-    component_identification, 
-    components, 
-    build_suggestions, 
-    projects, 
-    assembly_instructions, 
-    troubleshoot, 
-    builder
-)
+from .routers import models, component_identification, assembly_instructions, troubleshoot, builder, warranty
 
 # Core routers present in both
 app.include_router(models.router, prefix="/api")
@@ -41,6 +31,7 @@ app.include_router(projects.router) # Kept for project management
 app.include_router(troubleshoot.router, prefix="/api/troubleshoot", tags=["troubleshoot"]) # Integrated from development
 app.include_router(assembly_instructions.router, prefix="/api") # Integrated from development
 app.include_router(builder.router, prefix="/api") # Integrated from development
+app.include_router(warranty.router, prefix="/api")
 
 # --- Routes ---
 @app.get("/")
