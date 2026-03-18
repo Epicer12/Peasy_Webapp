@@ -1,11 +1,18 @@
 import os
 import asyncio
 import json
+import sys
 from dotenv import load_dotenv
-from app.services.openrouter_service import extract_warranty_info
-from app.dependencies import get_supabase
 
-load_dotenv()
+# Load from backend/.env relative to this file
+dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+load_dotenv(dotenv_path)
+
+# Ensure app is in path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from app.services.openrouter_service import extract_warranty_info
+from app.dependencies import get_warranty_supabase
 
 async def test_ocr_and_storage():
     print("--- Starting Warranty Feature Test ---")
@@ -22,7 +29,7 @@ async def test_ocr_and_storage():
     # 2. Test Supabase Storage Link
     print("[2/2] Verifying Supabase Storage Client...")
     try:
-        supabase = get_supabase()
+        supabase = get_warranty_supabase()
         bucket_name = "warranties"
         
         # Test getting public URL logic
