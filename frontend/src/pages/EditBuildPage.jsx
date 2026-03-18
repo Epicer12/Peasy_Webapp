@@ -18,11 +18,20 @@ const EditBuildPage = () => {
     useEffect(() => {
         // Mock fetching data for the build
         const build = mockBuilds.find(b => b.id === id) || mockBuilds[0];
-        setFormData({
+        const newFormData = {
             userName: build.userName,
             buildName: build.buildName,
-            story: build.story
-        });
+            story: build.story,
+        };
+        // Only update state if data has changed
+        if (
+            formData.userName !== newFormData.userName ||
+            formData.buildName !== newFormData.buildName ||
+            formData.story !== newFormData.story
+        ) {
+            setFormData(newFormData);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
     const handleSubmit = (e) => {
