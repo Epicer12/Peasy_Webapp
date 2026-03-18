@@ -34,3 +34,6 @@ yarn-error.log*
 lint_errors.json
 docs/
 vision_model/
+
+
+git

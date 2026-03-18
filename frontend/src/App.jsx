@@ -16,6 +16,10 @@ import AssemblePage from './pages/AssemblePage';
 import TroubleshootPage from './pages/TroubleshootPage';
 import MarketplacePage from './pages/MarketplacePage';
 import CommunityPage from './pages/CommunityPage';
+import UploadBuildPage from './pages/UploadBuildPage';
+import EditBuildPage from './pages/EditBuildPage';
+import MyBuildsPage from './pages/MyBuildsPage';
+import BuildDetailPage from './pages/BuildDetailPage';
 import GuidePage from './pages/GuidePage';
 
 import WarrantyPage from './pages/WarrantyPage';
@@ -42,6 +46,10 @@ function App() {
           <Route path="/troubleshoot" element={<TroubleshootPage />} />
           <Route path="/marketplace" element={<MarketplacePage />} />
           <Route path="/community" element={<CommunityPage />} />
+          <Route path="/community/upload" element={<UploadBuildPage />} />
+          <Route path="/community/edit/:id" element={<EditBuildPage />} />
+          <Route path="/community/my-builds" element={<MyBuildsPage />} />
+          <Route path="/community/build/:id" element={<BuildDetailPage />} />
           <Route path="/guide" element={<GuidePage />} />
           <Route path="/warranty" element={<WarrantyPage />} />
           <Route path="/profile" element={<ProfilePage />} />
