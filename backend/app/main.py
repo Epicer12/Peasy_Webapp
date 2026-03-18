@@ -16,7 +16,7 @@ app.add_middleware(
 )
 
 # --- Routers ---
-from .routers import models, component_identification, assembly_instructions, troubleshoot, builder, warranty
+from .routers import models, component_identification, components, assembly_instructions, troubleshoot, builder, warranty
 
 # Core routers present in both
 app.include_router(models.router, prefix="/api")
