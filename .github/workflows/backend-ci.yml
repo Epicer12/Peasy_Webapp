@@ -59,5 +59,3 @@ jobs:
           PUTER_TOKEN: ${{ secrets.PUTER_TOKEN }}
           SUPABASE_URL: ${{ secrets.MAIN_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.MAIN_SUPABASE_KEY }}
-          WARRANTY_SUPABASE_URL: ${{ secrets.WARRANTY_SUPABASE_URL }}
-          WARRANTY_SUPABASE_KEY: ${{ secrets.WARRANTY_SUPABASE_KEY }}

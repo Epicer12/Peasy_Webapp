@@ -16,12 +16,6 @@ function SignUpPage() {
     setError('');
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      // Get ID token and store it
-      const token = await user.getIdToken();
-      localStorage.setItem('token', token);
-
       // Redirect to home page after successful signup
       navigate('/home');
     } catch (error) {

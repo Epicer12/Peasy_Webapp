@@ -237,7 +237,9 @@ OPENAI_API_KEY=sk-your-actual-key-here
 
 ## 📄 Notes
 
-- **AI Features:** The backend uses YOLOv8 for component identification. Ensure you have the `best.pt` model file in `backend/app/routers/` or root `backend/`.
+- **AI Features:** Component identification is powered by YOLOv8 hosted on Hugging Face Spaces. The backend proxies requests to the Space API, keeping the model deployment private and the backend lightweight.
 - **WebSockets:** The backend exposes a `/ws/identify` endpoint for real-time inference.
 - **Vision API:** Optional but recommended for detailed brand/model identification.
 
+---
+**Deployment Note:** When deploying to Vercel Hobby accounts, ensure the pushing developer's `git config user.email` matches the Vercel account owner's email to prevent deployment blocks.
