@@ -23,6 +23,8 @@ const MainLayout = () => {
         { name: 'TROUBLESHOOT', href: '/troubleshoot', icon: QuestionMarkCircleIcon },
         { name: 'MARKET', href: '/marketplace', icon: ShoppingBagIcon },
         { name: 'COMMUNITY', href: '/community', icon: UserGroupIcon },
+        { name: 'WARRANTY', href: '/warranty', icon: WrenchScrewdriverIcon },
+        { name: 'PROFILE', href: '/profile', icon: UserGroupIcon },
     ];
 
     const getPageTitle = () => {
@@ -31,6 +33,7 @@ const MainLayout = () => {
         if (activeNav) return activeNav.name;
         if (path === '/camera') return 'SCANNER';
         if (path.startsWith('/model')) return 'MODEL_VIEW';
+        if (path.startsWith('/community/')) return 'COMMUNITY_HUB';
         return 'DASHBOARD';
     };
 
