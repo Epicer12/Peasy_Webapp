@@ -4,13 +4,20 @@ import LoginPage from './pages/auth/LoginPage';
 import SignUpPage from './pages/auth/SignUpPage';
 import HomePage from './pages/HomePage';
 import BuildPage from './pages/BuildPage';
+<<<<<<< HEAD
+=======
+import BuildSuggestions from './pages/BuildSuggestions';
+>>>>>>> 6c8128b (Add frontend BuildSuggestions page and interactive question components)
 import CameraPage from './pages/CameraPage';
 import ResultsPage from './pages/ResultsPage';
 import ModelViewerPage from './pages/ModelViewerPage';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
+<<<<<<< HEAD
 import ManualBuildPage from './pages/ManualBuildPage';
 import PurchaseSummaryPage from './pages/PurchaseSummaryPage';
+=======
+>>>>>>> 6c8128b (Add frontend BuildSuggestions page and interactive question components)
 import PlanningPage from './pages/PlanningPage';
 import AssemblePage from './pages/AssemblePage';
 import TroubleshootPage from './pages/TroubleshootPage';
@@ -33,14 +40,19 @@ function App() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
 
+<<<<<<< HEAD
         {/* Protected Routes directly accessible (Build process) */}
         <Route path="/build" element={<ProtectedRoute><BuildPage /></ProtectedRoute>} />
         <Route path="/manual-build" element={<ProtectedRoute><ManualBuildPage /></ProtectedRoute>} />
         <Route path="/purchase-summary" element={<ProtectedRoute><PurchaseSummaryPage /></ProtectedRoute>} />
 
+=======
+>>>>>>> 6c8128b (Add frontend BuildSuggestions page and interactive question components)
         {/* Protected Routes wrapped in MainLayout */}
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path="/home" element={<HomePage />} />
+          <Route path="/build" element={<BuildPage />} />
+          <Route path="/build-suggestions" element={<BuildSuggestions />} />
           <Route path="/plan" element={<PlanningPage />} />
           <Route path="/assemble" element={<AssemblePage />} />
           <Route path="/troubleshoot" element={<TroubleshootPage />} />
