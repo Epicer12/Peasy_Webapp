@@ -8,8 +8,11 @@ from datetime import datetime
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
 # Initialize Supabase
-url = os.getenv("SUPABASE_URL")
-key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+# Initialize Supabase
+url = os.getenv("MAIN_SUPABASE_URL") or os.getenv("SUPABASE_URL")
+key = os.getenv("MAIN_SUPABASE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
+if not url or not key:
+    print("Warning: Supabase credentials not found in projects.py")
 supabase = create_client(url, key)
 
 class ProjectCreate(BaseModel):

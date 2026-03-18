@@ -9,13 +9,16 @@ from openai import OpenAI
 
 router = APIRouter()
 
-url = os.getenv("SUPABASE_URL")
-key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+# Initialize Supabase
+url = os.getenv("MAIN_SUPABASE_URL") or os.getenv("SUPABASE_URL")
+key = os.getenv("MAIN_SUPABASE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY")
 
 supabase = None
 try:
     if url and key:
         supabase = create_client(url, key)
+    else:
+        print("Warning: Supabase credentials not found in build_suggestions.py")
 except Exception as e:
     print(f"Supabase init error: {e}")
 

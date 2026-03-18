@@ -18,3 +18,5 @@ cog==0.16.12
 watchfiles==1.0.0
 # --- Testing (used by CI) ---
 pytest==8.3.5
+
+ultralytics==8.3.70

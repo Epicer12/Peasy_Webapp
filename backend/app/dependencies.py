@@ -21,46 +21,51 @@ except ImportError:
     FIREBASE_ENABLED = False
 
 
+from supabase import create_client
+
 class User:
     """User class with access control"""
-    def __init__(self, uid: str, email: str = None):
+    def __init__(self, uid: str, email: str = None, name: str = None, supabase_uid: str = None, supabase_token: str = None):
         self.uid = uid
         self.email = email
+        self.name = name
+        self.supabase_uid = supabase_uid
+        self.supabase_token = supabase_token
     
     def has_access(self, model_id: str) -> bool:
-        """
-        Check if user has access to a specific model.
-        Currently allows all authenticated users to access all models.
-        Implement custom logic here based on your requirements.
-        """
         return True
 
+_WARRANTY_SUPABASE = None
+
+def get_warranty_supabase():
+    global _WARRANTY_SUPABASE
+    if _WARRANTY_SUPABASE is None:
+        url = os.getenv("WARRANTY_SUPABASE_URL") or os.getenv("SUPABASE_URL")
+        key = os.getenv("WARRANTY_SUPABASE_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        if not url or not key:
+            print("Warning: Warranty Supabase credentials not found")
+        _WARRANTY_SUPABASE = create_client(url, key)
+    return _WARRANTY_SUPABASE
 
 async def get_current_user(authorization: str = Header(None)):
     """
     Verify Firebase ID token and return authenticated user.
-    Falls back to basic token validation if Firebase Admin is not configured.
     """
     if not authorization:
-        raise HTTPException(status_code=403, detail="Missing Authorization Header")
+        # Fallback for development if no header
+        return User(uid="dev_user", email="dev@example.com", name="Dev User", supabase_uid="00000000-0000-0000-0000-000000000000")
 
     token = authorization.replace("Bearer ", "").strip()
-    if not token:
-        raise HTTPException(status_code=403, detail="Invalid Token")
-
+    
     if FIREBASE_ENABLED:
         try:
-            # Verify Firebase ID token
             decoded_token = auth.verify_id_token(token)
             uid = decoded_token.get("uid")
             email = decoded_token.get("email")
-            return User(uid=uid, email=email)
+            name = decoded_token.get("name", "User")
+            # In a real app, you'd map Firebase UID to Supabase UID here
+            return User(uid=uid, email=email, name=name, supabase_uid=uid, supabase_token=token)
         except Exception as e:
-            raise HTTPException(
-                status_code=403,
-                detail=f"Invalid Firebase token: {str(e)}"
-            )
+            raise HTTPException(status_code=403, detail=f"Invalid Firebase token: {str(e)}")
     else:
-        # Fallback: Basic token validation (for development)
-        # WARNING: This is not secure for production use
-        return User(uid="dev_user", email="dev@example.com")
+        return User(uid="dev_user", email="dev@example.com", name="Dev User", supabase_uid="00000000-0000-0000-0000-000000000000", supabase_token=token)
