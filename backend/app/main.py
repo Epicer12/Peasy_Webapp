@@ -15,13 +15,14 @@ app.add_middleware(
 )
 
 # --- Routers ---
-from .routers import models, component_identification, assembly_instructions, troubleshoot, builder
+from .routers import models, component_identification, assembly_instructions, troubleshoot, builder, warranty
 
 app.include_router(models.router, prefix="/api")
 app.include_router(component_identification.router, prefix="/api")
 app.include_router(troubleshoot.router, prefix="/api/troubleshoot", tags=["troubleshoot"])
 app.include_router(assembly_instructions.router, prefix="/api")  # new router
 app.include_router(builder.router, prefix="/api")
+app.include_router(warranty.router, prefix="/api")
 
 # --- Routes ---
 @app.get("/")
