@@ -438,7 +438,9 @@ const TroubleshootPage = () => {
                                 1. Target Brand
                             </h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {brands.map((brand) => (
+                                {brands
+                                    .filter(brand => method === 'camera' ? (!brand.includes('ASUS LED') && !brand.includes('Lenovo (Amber LED + Beeps)')) : true)
+                                    .map((brand) => (
                                     <button
                                         key={brand}
                                         onClick={() => {
@@ -475,6 +477,9 @@ const TroubleshootPage = () => {
                                 </button>
                                 <button
                                     onClick={() => {
+                                        if (selectedBrand.includes('ASUS LED') || selectedBrand.includes('Lenovo (Amber LED + Beeps)')) {
+                                            setSelectedBrand('');
+                                        }
                                         setMethod('camera');
                                         setResult(null);
                                     }}
