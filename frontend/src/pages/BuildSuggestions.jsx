@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { generateBuilds, generateBuildSummary, saveProject } from "../services/componentService";
 import { auth } from "../firebase"; // For user email if needed
@@ -123,17 +123,18 @@ export default function BuildSuggestions() {
         fetchBuilds();
     }, [location.state]);
 
-    const getBuild = (keyword) =>
-        builds.find((b) => b.name.toLowerCase().includes(keyword));
+    const getBuild = useCallback((keyword) =>
+        builds.find((b) => b.name.toLowerCase().includes(keyword)), [builds]);
 
     const balancedBuild = getBuild("balance");
     const unlockedExtras = BUILD_TYPES.filter((bt) => shownExtras.has(bt.key));
 
     // Final comparable list
-    const comparableBuilds = [
+    const comparableBuilds = useMemo(() => [
         balancedBuild,
         ...unlockedExtras.map((bt) => getBuild(bt.nameKeyword)),
-    ].filter(Boolean);
+    ].filter(Boolean), [balancedBuild, unlockedExtras, getBuild]);
+    // Added builds to deps as getBuild uses builds.find
 
     const totalVisible = comparableBuilds.length;
     const allUnlocked = shownExtras.size === BUILD_TYPES.length;
@@ -155,7 +156,7 @@ export default function BuildSuggestions() {
             }
         };
         fetchSummary();
-    }, [comparing, comparableBuilds.length]);
+    }, [comparing, comparableBuilds]);
 
     function handleSelectType(key) {
         setShownExtras((prev) => new Set([...prev, key]));

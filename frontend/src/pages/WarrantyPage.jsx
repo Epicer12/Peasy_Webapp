@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     CloudArrowUpIcon,
@@ -30,9 +30,10 @@ const WarrantyPage = () => {
         if (editableData) {
             calculateWarranty();
         }
-    }, [editableData]);
+    }, [editableData, calculateWarranty]);
 
-    const calculateWarranty = () => {
+    const calculateWarranty = useCallback(() => {
+        if (!editableData) return;
         const info = editableData.warranty_info || {};
 
         // 1. Calculate Completeness
@@ -108,7 +109,7 @@ const WarrantyPage = () => {
         } catch (e) {
             setWarrantyStats({ percentage: 0, daysLeft: '!', status: 'calculating', completeness });
         }
-    };
+    }, [editableData]);
 
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
