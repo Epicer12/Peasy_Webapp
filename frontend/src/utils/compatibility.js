@@ -1,101 +1,133 @@
 
-// Utility to check compatibility between components
+// Utility to check compatibility between selected build components.
+// Uses the actual DB field names as stored in item.specs by parseSpecs().
+
+// Fuzzy socket match — handles compound sockets e.g. "AM3+/AM3", short-form "1150" vs "LGA1150"
+const socketMatches = (sock1, sock2) => {
+    if (!sock1 || !sock2) return true; // unknown → assume ok
+    const a = sock1.toUpperCase().replace(/\s/g, '');
+    const variants = sock2.toUpperCase().replace(/\s/g, '').split(/[,/]/);
+    return variants.some(v => v === a || v.includes(a) || a.includes(v));
+};
+
+const isUnknown = (v) => !v || v.toString().toUpperCase() === 'UNKNOWN' || v.toString().trim() === '';
 
 export const checkCompatibility = (parts) => {
     const issues = [];
     const warnings = [];
 
-    const { cpu, motherboard, ram, gpu, psu, case: pcCase, cooler, storage } = parts;
+    const { cpu, motherboard, ram, gpu, psu, case: pcCase, cooler, ssd, hdd } = parts;
 
-    // 1. CPU <-> Motherboard (Socket & Brand)
+    // ─── 1. CPU ↔ Motherboard  (Socket) ─────────────────────────────────────
     if (cpu && motherboard) {
-        if (cpu.specs?.socket && motherboard.specs?.socket) {
-            if (cpu.specs.socket !== "Unknown" && motherboard.specs.socket !== "Unknown") {
-                if (cpu.specs.socket !== motherboard.specs.socket) {
-                    issues.push(`Incompatible CPU Socket: ${cpu.name} (${cpu.specs.socket}) vs ${motherboard.name} (${motherboard.specs.socket})`);
-                }
+        const cpuSock = cpu.specs?.socket || cpu.cpu_socket || '';
+        const moboSock = motherboard.specs?.socket || motherboard.socket || '';
+        if (!isUnknown(cpuSock) && !isUnknown(moboSock)) {
+            if (!socketMatches(cpuSock, moboSock)) {
+                issues.push(`CPU socket mismatch: ${cpu.name} uses ${cpuSock} but ${motherboard.name} has ${moboSock}`);
             }
         }
     }
 
-    // 2. Motherboard <-> RAM (Type)
-    if (motherboard && ram) {
-        if (motherboard.specs?.ram_type && ram.specs?.type) {
-            if (motherboard.specs.ram_type !== "Unknown" && ram.specs.type !== "Unknown") {
-                if (motherboard.specs.ram_type !== ram.specs.type) {
-                    issues.push(`Incompatible RAM Type: ${motherboard.specs.ram_type} board vs ${ram.specs.type} RAM.`);
-                }
+    // ─── 2. RAM ↔ Motherboard  (Memory type DDR3/DDR4/DDR5) ─────────────────
+    if (ram && motherboard) {
+        const moboRam = motherboard.specs?.ram_type || motherboard.memory_type || '';
+        const ramType = ram.specs?.type || ram.type || '';
+        if (!isUnknown(moboRam) && !isUnknown(ramType)) {
+            if (!moboRam.toUpperCase().includes(ramType.toUpperCase()) && !ramType.toUpperCase().includes(moboRam.toUpperCase())) {
+                issues.push(`RAM type mismatch: ${motherboard.name} requires ${moboRam} but selected RAM is ${ramType}`);
             }
         }
     }
 
-    // 3. GPU <-> PSU (Wattage)
-    if (gpu && psu) {
-        let neededWattage = 500; // Baseline
-
-        // Use parsed chipset if available, else heuristic
-        const gpuChipset = gpu.specs?.chipset || gpu.name;
-        const lowName = gpuChipset.toLowerCase();
-
-        if (lowName.includes("5090") || lowName.includes("4090") || lowName.includes("3090") || lowName.includes("7900 xtx")) neededWattage = 850;
-        else if (lowName.includes("5080") || lowName.includes("4080") || lowName.includes("3080") || lowName.includes("7900 xt")) neededWattage = 750;
-        else if (lowName.includes("5070") || lowName.includes("4070") || lowName.includes("3070") || lowName.includes("7800")) neededWattage = 650;
-        else if (lowName.includes("5060") || lowName.includes("4060") || lowName.includes("3060") || lowName.includes("7600")) neededWattage = 550;
-
-        if (psu.specs?.wattage && psu.specs.wattage !== "Unknown") {
-            const psuW = parseInt(psu.specs.wattage);
-            if (psuW < neededWattage) {
-                warnings.push(`Low Power Warning: Recommended for this build is ${neededWattage}W+, but PSU is ${psuW}W.`);
+    // ─── 3. RAM ↔ CPU  (if no motherboard selected yet) ─────────────────────
+    if (ram && cpu && !motherboard) {
+        const cpuMem = cpu.specs?.mem_type || cpu.sys_mem_type || '';
+        const ramType = ram.specs?.type || ram.type || '';
+        if (!isUnknown(cpuMem) && !isUnknown(ramType)) {
+            if (!cpuMem.toUpperCase().includes(ramType.toUpperCase()) && !ramType.toUpperCase().includes(cpuMem.toUpperCase())) {
+                warnings.push(`RAM type advisory: CPU supports ${cpuMem} but selected RAM is ${ramType}`);
             }
         }
     }
 
-    // 4. Case <-> Motherboard (Form Factor)
+    // ─── 4. PSU ↔ System TDP  (CPU + GPU + 100W overhead) ───────────────────
+    if (psu) {
+        const gpuTdp = gpu ? (gpu.specs?.tdp || parseInt(gpu.tdp || '0')) : 0;
+        const cpuTdp = cpu ? (cpu.specs?.tdp || parseInt(cpu.default_tdp || '0')) : 0;
+        const systemTdp = (gpuTdp || 0) + (cpuTdp || 0) + 100;
+        const psuW = psu.specs?.wattage || parseInt((psu.wattage || '').toString().replace(/[^\d]/g, '') || '0');
+
+        if (psuW > 0 && systemTdp > 100) {
+            if (psuW < systemTdp) {
+                issues.push(`Insufficient PSU: System requires ~${systemTdp}W (CPU ${cpuTdp}W + GPU ${gpuTdp}W + 100W overhead) but PSU is only ${psuW}W`);
+            } else if (psuW < systemTdp * 1.2) {
+                warnings.push(`Low PSU headroom: ${psuW}W PSU for ~${systemTdp}W system — recommend at least ${Math.ceil(systemTdp * 1.2 / 50) * 50}W`);
+            }
+        }
+    }
+
+    // ─── 5. Case ↔ Motherboard  (Form factor) ────────────────────────────────
     if (pcCase && motherboard) {
-        const moboFF = motherboard.specs?.form_factor;
-        const caseFF = pcCase.specs?.form_factor;
+        // motherboard stores form_factor in specs (normalised by parseSpecs)
+        const moboFF = (motherboard.specs?.form_factor || motherboard.form_factor || '').toLowerCase();
+        // case stores its mobo support as mobo_support (set by parseSpecs) OR raw motherboard_support
+        const caseSupp = (pcCase.specs?.mobo_support || pcCase.motherboard_support || '').toLowerCase();
 
-        if (moboFF && caseFF && moboFF !== "Unknown" && caseFF !== "Unknown") {
-            // E-ATX needs E-ATX case
-            if (moboFF === "E-ATX" && caseFF !== "E-ATX") {
-                issues.push(`Case Size Mismatch: E-ATX Motherboard requires an E-ATX/Full Tower case.`);
-            }
-            // ATX needs ATX or larger
-            else if (moboFF === "ATX" && (caseFF === "Micro-ATX" || caseFF === "ITX")) {
-                issues.push(`Case Size Mismatch: ATX Motherboard will not fit in a ${caseFF} case.`);
-            }
-            // Micro-ATX needs Micro-ATX or larger (ITX is smaller)
-            else if (moboFF === "Micro-ATX" && caseFF === "ITX") {
-                issues.push(`Case Size Mismatch: Micro-ATX Motherboard will not fit in an ITX case.`);
+        if (!isUnknown(moboFF) && !isUnknown(caseSupp)) {
+            if (moboFF.includes('e-atx') && !caseSupp.includes('e-atx')) {
+                issues.push(`Form factor mismatch: E-ATX motherboard won't fit in this case (supports ${caseSupp})`);
+            } else if (moboFF.includes('atx') && !moboFF.includes('micro') && !moboFF.includes('e-atx')
+                && (caseSupp.includes('micro') || caseSupp.includes('itx'))) {
+                issues.push(`Form factor mismatch: ATX motherboard won't fit in this case (supports ${caseSupp})`);
+            } else if (moboFF.includes('micro') && caseSupp.includes('itx') && !caseSupp.includes('micro')) {
+                issues.push(`Form factor mismatch: Micro-ATX motherboard won't fit in this ITX case`);
             }
         }
     }
 
-    // 5. CPU Cooler <-> CPU (Socket)
-    if (cpu && cooler) {
-        const cpuSocket = cpu.specs?.socket;
-        const coolerSockets = cooler.specs?.socket_support; // Array
+    // ─── 6. Case ↔ GPU  (Clearance - length) ─────────────────────────────────
+    if (pcCase && gpu) {
+        const gpuLen = gpu.specs?.length_mm || parseInt(gpu.length || '0');
+        const caseClear = pcCase.specs?.gpu_clearance_mm
+            || parseInt((pcCase.supported_gpu_length_mm || '').toString().replace(/[^\d]/g, '') || '0');
+        if (gpuLen && caseClear && gpuLen > caseClear) {
+            issues.push(`GPU won't fit: ${gpu.name} is ${gpuLen}mm but case supports up to ${caseClear}mm`);
+        }
+    }
 
-        if (cpuSocket && coolerSockets && cpuSocket !== "Unknown" && Array.isArray(coolerSockets)) {
-            // If array is populated and doesn't include the socket
-            if (coolerSockets.length > 0 && !coolerSockets.includes(cpuSocket)) {
-                // Check if it supports Threadripper specifically
-                if (cpuSocket === "TR4" && !coolerSockets.includes("TR4")) {
-                    issues.push(`Cooler Incompatible: Selected cooler does not support the TR4 (Threadripper) socket.`);
-                }
-                // General check, but be lenient as parser is heuristic
-                else if (!coolerSockets.some(s => cpuSocket.includes(s) || s.includes(cpuSocket))) {
-                    // warnings.push(`Cooler Compatibility Note: Ensure cooler supports ${cpuSocket}.`);
-                }
+    // ─── 7. Case ↔ CPU Cooler  (Height clearance) ───────────────────────────
+    if (pcCase && cooler) {
+        const coolerH = cooler.specs?.height_mm
+            || parseInt((cooler.height_size || '').toString().replace(/[^\d]/g, '') || '0');
+        const caseH = pcCase.specs?.cooler_clearance_mm
+            || parseInt((pcCase.supported_cpu_cooler_height_mm || '').toString().replace(/[^\d]/g, '') || '0');
+        if (coolerH && caseH && coolerH > caseH) {
+            issues.push(`Cooler too tall: ${cooler.name} is ${coolerH}mm but case supports up to ${caseH}mm`);
+        }
+    }
+
+    // ─── 8. CPU Cooler ↔ CPU  (Socket) ───────────────────────────────────────
+    if (cooler && cpu) {
+        const cpuSock = (cpu.specs?.socket || cpu.cpu_socket || '').toUpperCase();
+        // supported_sockets is parsed as an array by parseSpecs (cooler type)
+        const coolerSocks = cooler.specs?.supported_sockets
+            || (cooler.supported_sockets ? cooler.supported_sockets.split(',').map(s => s.trim().toUpperCase()) : []);
+
+        if (!isUnknown(cpuSock) && coolerSocks.length > 0) {
+            const fits = coolerSocks.some(sock => sock === cpuSock || sock.includes(cpuSock) || cpuSock.includes(sock));
+            if (!fits) {
+                issues.push(`Cooler socket mismatch: ${cooler.name} does not support ${cpuSock} socket`);
             }
         }
     }
 
-    // 6. Storage <-> Motherboard (Basic Interface Check)
-    if (storage && motherboard) {
-        const moboRam = motherboard.specs?.ram_type; // Heuristic for age
-        if (moboRam === "DDR3" && (storage.specs?.interface === "M.2" || storage.name.includes("NVMe"))) {
-            issues.push(`Legacy Board Warning: ${motherboard.name} (DDR3 era) likely does not support M.2 NVMe drives.`);
+    // ─── 9. CPU Cooler ↔ CPU  (TDP) ──────────────────────────────────────────
+    if (cooler && cpu) {
+        const cpuTdp = cpu.specs?.tdp || parseInt(cpu.default_tdp || '0');
+        const coolerTdp = cooler.specs?.tdp_rating || parseInt((cooler.tdp || '').toString().replace(/[^\d]/g, '') || '0');
+        if (cpuTdp && coolerTdp && cpuTdp > coolerTdp) {
+            warnings.push(`Thermal warning: CPU TDP is ${cpuTdp}W but cooler is only rated for ${coolerTdp}W`);
         }
     }
 

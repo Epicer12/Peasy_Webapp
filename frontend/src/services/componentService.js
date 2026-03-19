@@ -12,7 +12,10 @@ const cleanPrice = (priceStr) => {
 const getBestPrice = (item) => {
     const priceFields = [
         'computerzone_price', 'nanotek_price', 'pcbuilders_price',
-        'winsoft_price', 'laptops_price', 'price'
+        'winsoft_price', 'laptops_price', 'price',
+        'price_computerzone', 'price_nanotek', 'price_pcbuilders', 'price_winsoft', 'estimated_price',
+        'pc_builders_price', 'estimated_lkr_price', 'estimated_price_lkr', 'cz_price',
+        'computerzone_price_lkr', 'nanotek_price_lkr', 'pc_builders_price_lkr', 'winsoft_price_lkr'
     ];
     let minPrice = Infinity;
     let found = false;
@@ -26,78 +29,88 @@ const getBestPrice = (item) => {
     return found ? minPrice : null;
 };
 
-const parseSpecs = (name, type) => {
+const parseSpecs = (item, type) => {
     const specs = {};
+    const name = (item.name || item.final_model_name || item.model_name || '');
     const n = name.toUpperCase();
 
     if (type === 'cpu') {
-        if (n.includes('INTEL')) specs.brand = 'Intel';
-        else if (n.includes('AMD')) specs.brand = 'AMD';
-
-        // Socket Inference
-        if (specs.brand === 'Intel') {
-            if (n.includes('ULTRA') || n.includes('1851')) specs.socket = "LGA1851"; // Core Ultra 15th+
-            else if (n.match(/1[234]\d{3}/)) specs.socket = "LGA1700"; // 12th, 13th, 14th Gen
-            else if (n.match(/1[01]\d{3}/)) specs.socket = "LGA1200"; // 10th, 11th Gen
-        } else if (specs.brand === 'AMD') {
-            if (n.includes('AM5') || n.match(/RYZEN.(7|9|5|3).(7|8|9)\d{3}/)) specs.socket = "AM5"; // Ryzen 7000/8000/9000
-            else if (n.includes('AM4') || n.match(/RYZEN.(7|9|5|3).(1|2|3|4|5)\d{3}/)) specs.socket = "AM4"; // Ryzen 1000-5000
-        }
+        // Brand
+        specs.brand = item.brand || (n.includes('INTEL') ? 'Intel' : n.includes('AMD') ? 'AMD' : null);
+        // Socket — use the native cpu_socket column directly from the DB
+        specs.socket = item.cpu_socket || null;
+        // Memory type the CPU supports (DDR3/DDR4/DDR5)
+        specs.mem_type = item.sys_mem_type || null;
+        // TDP in watts
+        specs.tdp = item.default_tdp ? parseInt(item.default_tdp) : null;
     }
 
     if (type === 'mobo' || type === 'motherboard') {
-        const nUpper = n.toUpperCase();
+        // Socket — use native socket column directly
+        specs.socket = item.socket || null;
+        // Form factor from DB; normalise casing
+        const ff = (item.form_factor || '').toLowerCase();
+        if (ff.includes('itx')) specs.form_factor = 'ITX';
+        else if (ff.includes('micro') || ff.includes('matx') || ff.includes('m-atx')) specs.form_factor = 'Micro-ATX';
+        else if (ff.includes('e-atx') || ff.includes('eatx')) specs.form_factor = 'E-ATX';
+        else specs.form_factor = 'ATX';
+        // RAM type supported by mobo
+        specs.ram_type = item.memory_type || null;
+    }
 
-        // Socket Inference via Chipset
-        // AMD AM5 (600 & 800 series)
-        if (nUpper.match(/X870|X670|B650|B850|B840|A620/)) specs.socket = "AM5";
-        // AMD AM4 (300, 400, 500 series)
-        else if (nUpper.match(/X570|B550|A520|X470|B450|B350|A320/)) specs.socket = "AM4";
-        // Intel LGA1851 (800 series)
-        else if (nUpper.match(/Z890|B860|H810/)) specs.socket = "LGA1851";
-        // Intel LGA1700 (600 & 700 series)
-        else if (nUpper.match(/Z790|B760|H770|Z690|B660|H610/)) specs.socket = "LGA1700";
-        // Intel LGA1200 (400 & 500 series)
-        else if (nUpper.match(/Z590|B560|H510|Z490|H410/)) specs.socket = "LGA1200";
+    if (type === 'ram') {
+        // RAM type (DDR4/DDR5) from the DB 'type' column
+        specs.type = item.type || null;
+        specs.speed_mhz = item.speed_mhz || null;
+    }
 
-        // Explicit overrides
-        if (nUpper.includes('LGA1700')) specs.socket = "LGA1700";
-        if (nUpper.includes('LGA1851')) specs.socket = "LGA1851";
-        if (nUpper.includes('AM5')) specs.socket = "AM5";
-        if (nUpper.includes('AM4')) specs.socket = "AM4";
+    if (type === 'gpu') {
+        // Physical length in mm so we can check against case clearance
+        specs.length_mm = item.length ? parseInt(item.length) : null;
+        specs.tdp = item.tdp ? parseInt(item.tdp) : null;
+        specs.manufacturer = item.manufacturer || null;
+    }
 
-        // RAM Type
-        if (nUpper.includes('DDR5')) specs.ram_type = "DDR5";
-        else if (nUpper.includes('DDR4')) specs.ram_type = "DDR4";
-        else {
-            // Inference based on chipset/socket if explicit DDR label missing
-            if (specs.socket === "AM5" || specs.socket === "LGA1851") specs.ram_type = "DDR5";
-            // LGA1700/LGA1200 can be mixed, safe to leave undefined or assume DDR4 for older? 
-            // Leaving undefined means strict check might fail or pass depending on logic.
-            // Better to assume DDR5 for Z790? No, many are D4.
+    if (type === 'psu') {
+        // Wattage from native DB column
+        const wattVal = item.wattage ? parseInt(item.wattage) : null;
+        specs.wattage = (wattVal && wattVal > 0) ? wattVal : null;
+        // If wattage is 0 or unknown, try parsing from name string
+        if (!specs.wattage) {
+            const wMatch = n.match(/(\d{3,4})\s?W/);
+            if (wMatch) specs.wattage = parseInt(wMatch[1]);
         }
-
-        // Form Factor
-        if (nUpper.includes('ITX')) specs.form_factor = "ITX";
-        else if (nUpper.includes('MICRO') || nUpper.includes('MATX') || nUpper.includes('M-ATX')) specs.form_factor = "Micro-ATX";
-        else if (nUpper.includes('E-ATX') || nUpper.includes('EATX')) specs.form_factor = "E-ATX";
-        else specs.form_factor = "ATX";
-    }
-
-    if (type === 'ram' || type === 'memory') {
-        if (n.includes('DDR5')) specs.type = "DDR5";
-        else if (n.includes('DDR4')) specs.type = "DDR4";
-    }
-
-    if (type === 'psu' || type === 'power_supply') {
-        const wattage = n.match(/(\d{3,4})\s?W/);
-        if (wattage) specs.wattage = wattage[1];
+        specs.form_factor = item.form_factor || 'ATX';
     }
 
     if (type === 'case') {
-        if (n.includes('ITX')) specs.form_factor = "ITX";
-        else if (n.includes('MICRO') || n.includes('MATX')) specs.form_factor = "Micro-ATX";
-        else specs.form_factor = "ATX"; // Most cases are ATX
+        // Motherboard form factor support from DB column
+        const ms = (item.motherboard_support || '').toLowerCase();
+        if (ms.includes('itx')) specs.mobo_support = 'ITX';
+        else if (ms.includes('micro') || ms.includes('matx')) specs.mobo_support = 'Micro-ATX';
+        else if (ms.includes('e-atx') || ms.includes('eatx')) specs.mobo_support = 'E-ATX';
+        else specs.mobo_support = 'ATX';
+        // GPU clearance
+        const gpuClearanceStr = (item.supported_gpu_length_mm || '').replace(/[^\d]/g, '');
+        specs.gpu_clearance_mm = gpuClearanceStr ? parseInt(gpuClearanceStr) : null;
+        // CPU cooler clearance
+        const coolerClearanceStr = (item.supported_cpu_cooler_height_mm || '').replace(/[^\d]/g, '');
+        specs.cooler_clearance_mm = coolerClearanceStr ? parseInt(coolerClearanceStr) : null;
+        // PSU form factor the case accepts
+        specs.psu_form_factor = item.psu_form_factor || 'ATX';
+    }
+
+    if (type === 'cooler') {
+        // Supported sockets is a comma-separated string e.g. "LGA1155, LGA1150, AM4"
+        specs.supported_sockets = item.supported_sockets
+            ? item.supported_sockets.split(',').map(s => s.trim().toUpperCase())
+            : [];
+        // TDP the cooler can handle e.g "65W"
+        const tdpStr = (item.tdp || '').replace(/[^\d]/g, '');
+        specs.tdp_rating = tdpStr ? parseInt(tdpStr) : null;
+        // Physical height
+        const heightStr = (item.height_size || '').replace(/[^\d]/g, '');
+        specs.height_mm = heightStr ? parseInt(heightStr) : null;
     }
 
     return specs;
@@ -105,14 +118,17 @@ const parseSpecs = (name, type) => {
 
 const transformData = (items, type) => {
     return items.map(item => {
-        const name = item.component_name || item.processor_name || item.name || "Unknown Component";
+        const name = item.component_name || item.processor_name || item.name || item.final_model_name || item.model_name ||
+            (item.brand && item.line && item.model ? `${item.brand} ${item.line} ${item.model}` : "Unknown Component");
+        const specs = parseSpecs(item, type);
         return {
             ...item,
             id: item.id || item.component_name || Math.random().toString(36).substr(2, 9),
             name: name,
             price: getBestPrice(item),
+            image_url: item.image_url || null,
             image: item.image || null,
-            specs: { ...item, ...parseSpecs(name, type) } // Merge raw + parsed
+            specs: specs
         };
     });
 };
@@ -123,16 +139,17 @@ export const searchComponents = async (query, type) => {
 
         // Correct mappings based on Database Inspection
         const tableMap = {
-            "cpu": "processors_prices",
-            "motherboard": "motherboards_prices", // Added for clarity
-            "mobo": "motherboards_prices",
-            "ram": "memory_prices",
-            "gpu": "graphic_cards_prices",
-            "ssd": "storage_prices",
-            "hdd": "storage_prices",
-            "psu": "power_supply_units_prices",
-            "case": "case_prices",
-            "cooler": "cooling_prices",
+            "cpu": "cpu_final",
+            "motherboard": "motherboard_final", // Added for clarity
+            "mobo": "motherboard_final",
+            "ram": "ram_final",
+            "gpu": "gpu_final",
+            "ssd": "ssd_final",
+            "hdd": "hdd_final",
+            "psu": "psu_final",
+            "case": "cases_final",
+            "cooler": "cpu_coolers_final",
+            "case_fans": "case_fans_final", // Mapped newly provided table
             "software": "os_software_prices",
             "os": "os_software_prices", // Keep for backward compat
             "mice": "peripherals_prices",
@@ -193,8 +210,16 @@ export const searchComponents = async (query, type) => {
             .select('*');
 
         if (query && query.trim()) {
-            // Most _prices tables use 'component_name'
-            queryBuilder = queryBuilder.ilike('component_name', `%${query}%`);
+            if (tableName === 'cpu_final') {
+                queryBuilder = queryBuilder.or(`brand.ilike.%${query}%,line.ilike.%${query}%,model.ilike.%${query}%`);
+            } else {
+                let searchColumn = 'component_name';
+                if (['gpu_final', 'cases_final', 'motherboard_final', 'ram_final'].includes(tableName)) searchColumn = 'name';
+                else if (['ssd_final', 'hdd_final', 'psu_final'].includes(tableName)) searchColumn = 'final_model_name';
+                else if (tableName === 'cpu_coolers_final') searchColumn = 'model_name';
+
+                queryBuilder = queryBuilder.ilike(searchColumn, `%${query}%`);
+            }
         }
 
         // Strict Filtering for Peripherals (Keyboards vs Mice vs Others)

@@ -8,12 +8,20 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 
 const CATEGORIES = [
     // Core Components
-    { id: 'cpu', name: 'Processor', icon: 'cpu', backendKey: 'cpu', section: 'CORE COMPONENTS' },
+    { id: 'cpu', name: 'CPU', icon: 'cpu', backendKey: 'cpu', section: 'CORE COMPONENTS' },
+    { id: 'gpu', name: 'GPU', icon: 'monitor', backendKey: 'gpu', section: 'CORE COMPONENTS' },
     { id: 'motherboard', name: 'Motherboard', icon: 'server', backendKey: 'mobo', section: 'CORE COMPONENTS' },
     { id: 'ram', name: 'Memory', icon: 'grid', backendKey: 'ram', section: 'CORE COMPONENTS' },
-    { id: 'gpu', name: 'Graphics Card', icon: 'monitor', backendKey: 'gpu', section: 'CORE COMPONENTS' },
-    { id: 'ssd', name: 'Storage (SSD)', icon: 'hard-drive', backendKey: 'ssd', section: 'CORE COMPONENTS' },
-    { id: 'hdd', name: 'Storage (HDD)', icon: 'database', backendKey: 'hdd', section: 'CORE COMPONENTS' },
+    {
+        id: 'storage_group',
+        name: 'Storage',
+        icon: 'database',
+        section: 'CORE COMPONENTS',
+        subCategories: [
+            { id: 'ssd', name: 'Storage (SSD)', icon: 'hard-drive', backendKey: 'ssd' },
+            { id: 'hdd', name: 'Storage (HDD)', icon: 'database', backendKey: 'hdd' }
+        ]
+    },
     { id: 'psu', name: 'Power Supply', icon: 'zap', backendKey: 'psu', section: 'CORE COMPONENTS' },
     { id: 'case', name: 'Case', icon: 'box', backendKey: 'case', section: 'CORE COMPONENTS' },
     { id: 'cooler', name: 'CPU Cooler', icon: 'wind', backendKey: 'cooler', section: 'CORE COMPONENTS' },
@@ -35,7 +43,8 @@ const CATEGORIES = [
             { id: 'converters', name: 'Converters', icon: 'shuffle', backendKey: 'converters' }
         ]
     },
-    { id: 'consoles', name: 'Consoles', icon: 'gamepad', backendKey: 'consoles', section: 'PERIPHERALS & ACCESSORIES' }
+    { id: 'consoles', name: 'Consoles', icon: 'gamepad', backendKey: 'consoles', section: 'PERIPHERALS & ACCESSORIES' },
+
 ];
 
 // Flatten categories for easy lookup of backend keys
@@ -65,8 +74,8 @@ const ManualBuildPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const [activeCategory, setActiveCategory] = useState(CATEGORIES[0].id); // Default to first item
-    const [expandedCategories, setExpandedCategories] = useState({}); // Track expanded parents
+    const [activeCategory, setActiveCategory] = useState('cpu'); // Default to CPU
+    const [expandedCategories, setExpandedCategories] = useState({ processors: true }); // Pre-expand Processors
     // Restore build state if returning from summary, otherwise empty
     const [buildState, setBuildState] = useState(location.state?.preservedBuildState || {});
     const [products, setProducts] = useState([]);
@@ -78,7 +87,7 @@ const ManualBuildPage = () => {
     const categoryRefs = React.useRef({});
 
     // Advanced Logic State
-    const [chipset, setChipset] = useState('Intel'); // Default to Intel since modal is gone
+    const [gpuBrand, setGpuBrand] = useState('NVIDIA'); // Replaces CPU chipset toggle
     const [compatibility, setCompatibility] = useState({ issues: [], warnings: [] });
 
     const [showRamModal, setShowRamModal] = useState(false);
@@ -169,16 +178,27 @@ const ManualBuildPage = () => {
             return;
         }
 
-        // Chipset Enforcement for CPU
-        if (activeCategory === 'cpu') {
-            if (chipset === 'AMD' && product.specs?.brand === 'Intel') {
-                alert("Incompatible: You are in AMD mode but selected an Intel CPU.");
+        // GPU Brand Enforcement
+        if (activeCategory === 'gpu') {
+            const prodName = (product.name || '').toUpperCase();
+            const prodMfg = (product.manufacturer || product.gpu_chip || '').toUpperCase();
+            const isNvidia = prodName.includes('NVIDIA') || prodName.includes('GEFORCE') || prodName.includes('RTX') || prodName.includes('GTX') || prodMfg.includes('NVIDIA');
+            const isAmd = prodName.includes('AMD') || prodName.includes('RADEON') || prodName.includes('RX') || prodMfg.includes('AMD');
+
+            if (gpuBrand === 'NVIDIA' && isAmd && !isNvidia) {
+                showToastMessage('⚠ INCOMPATIBLE: AMD GPU selected in NVIDIA mode');
                 return;
             }
-            if (chipset === 'Intel' && product.specs?.brand === 'AMD') {
-                alert("Incompatible: You are in Intel mode but selected an AMD CPU.");
+            if (gpuBrand === 'AMD' && isNvidia && !isAmd) {
+                showToastMessage('⚠ INCOMPATIBLE: NVIDIA GPU selected in AMD mode');
                 return;
             }
+        }
+
+        // General compatibility check for all other categories
+        if (!isCompatible(product)) {
+            showToastMessage('⚠ INCOMPATIBLE: This component conflicts with your current build');
+            return;
         }
 
         // Toggle logic
@@ -229,9 +249,6 @@ const ManualBuildPage = () => {
     };
 
     const isCompatible = (item) => {
-        // Log debug for Motherboards to trace sorting issues
-        // const debug = activeCategory === 'motherboard' && buildState.cpu && Math.random() < 0.05;
-
         // 0. Platform Enforcement (CPU level)
         if (activeCategory === 'cpu') {
             if (chipset === 'AMD' && item.specs?.brand === 'Intel') return false;
@@ -244,17 +261,9 @@ const ManualBuildPage = () => {
             const moboSocket = item.specs?.socket;
 
             if (cpuSocket && moboSocket && cpuSocket !== moboSocket) {
-                // if (debug) console.log(`Incompatible Mobo: ${item.name} (${moboSocket}) vs CPU (${cpuSocket})`);
                 return false;
             }
 
-            // If Socket parses as Undefined, assuming Incompatible if we have a CPU?
-            // Safer to flag as incompatible if we know the CPU has a specific socket.
-            if (cpuSocket && !moboSocket) {
-                // return false; // Too aggressive if parser is weak?
-            }
-
-            // Also Filter Mobo by Platform Toggle if no CPU selected yet
             if (!buildState.cpu) {
                 const isIntelSocket = moboSocket?.includes('LGA');
                 const isAMDSocket = moboSocket?.includes('AM');
@@ -274,9 +283,6 @@ const ManualBuildPage = () => {
         if (activeCategory === 'case' && buildState.motherboard) {
             const moboFF = buildState.motherboard.specs?.form_factor;
             const caseFF = item.specs?.form_factor;
-            // Simplified logic: ATX board needs ATX case.
-            // Micro-ATX board fits in ATX case.
-            // ITX board fits in everything.
             if (moboFF === "ATX" && (caseFF === "Micro-ATX" || caseFF === "ITX")) return false;
             if (moboFF === "E-ATX" && caseFF !== "E-ATX") return false;
         }
@@ -285,10 +291,6 @@ const ManualBuildPage = () => {
 
     const getSortedList = () => {
         let list = [...products];
-
-        // Global Compatibility Sort
-        // 1. Compatible items FIRST
-        // 2. Incompatible items LAST
         list.sort((a, b) => {
             const aComp = isCompatible(a);
             const bComp = isCompatible(b);
@@ -296,9 +298,11 @@ const ManualBuildPage = () => {
             if (!aComp && bComp) return 1;
             return 0;
         });
-
         return list;
     };
+
+
+
 
     return (
         <div className="flex h-screen bg-[#050505] text-[#eeeeee] font-mono overflow-hidden selection:bg-[#ccff00] selection:text-black">
@@ -333,8 +337,8 @@ const ManualBuildPage = () => {
                             <h2 className="text-2xl font-black text-[#00f3ff] mb-2 tracking-tighter uppercase">Memory Configuration</h2>
                             <p className="text-gray-400 mb-6 font-mono text-xs">SELECT TOTAL MODULE COUNT FOR: <br /><span className="text-white font-bold">{pendingRamProduct.name}</span></p>
 
-                            <div className="grid grid-cols-3 gap-3">
-                                {[1, 2, 4].map(qty => (
+                            <div className="grid grid-cols-2 gap-4">
+                                {[1, 2, 4, 8].map(qty => (
                                     <button
                                         key={qty}
                                         onClick={() => {
@@ -390,7 +394,6 @@ const ManualBuildPage = () => {
 
                                         {/* Category Item */}
                                         {cat.subCategories ? (
-                                            // Logic for collapsible Parent Categories
                                             <div className="border-b border-neutral-900">
                                                 {/* Parent Header */}
                                                 <div
@@ -408,31 +411,31 @@ const ManualBuildPage = () => {
                                                     </span>
                                                 </div>
 
-                                                {/* Sub Categories */}
-                                                {expandedCategories[cat.id] && (
-                                                    <div className="bg-neutral-950/50">
-                                                        {cat.subCategories.map(sub => {
-                                                            const isSelected = buildState[sub.id];
-                                                            const isActive = activeCategory === sub.id;
+                                                    {/* Sub Categories */}
+                                                    {isExpanded && (
+                                                        <div className="bg-neutral-950/50 border-t border-neutral-800/50">
+                                                            {cat.subCategories.map(sub => {
+                                                                const isSelected = buildState[sub.id];
+                                                                const isActive = activeCategory === sub.id;
 
-                                                            return (
-                                                                <div
-                                                                    key={sub.id}
-                                                                    ref={el => categoryRefs.current[sub.id] = el}
-                                                                    onClick={() => setActiveCategory(sub.id)}
-                                                                    className={`
-                                                                        group/item pl-8 pr-4 py-3 cursor-pointer border-l-4 transition-all flex items-center justify-between
-                                                                        ${isActive ? 'bg-neutral-900 border-l-[#00f3ff]' : 'hover:bg-neutral-900 border-l-transparent'}
-                                                                    `}
-                                                                >
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className={`text-xs uppercase font-bold ${isActive ? 'text-[#00f3ff]' : 'text-gray-500 hover:text-white'}`}>
-                                                                            {sub.name}
-                                                                        </span>
-                                                                        {isSelected && (
-                                                                            <div className="w-2 h-2 rounded-full bg-[#00f3ff]"></div>
-                                                                        )}
-                                                                    </div>
+                                                                return (
+                                                                    <div
+                                                                        key={sub.id}
+                                                                        ref={el => categoryRefs.current[sub.id] = el}
+                                                                        onClick={() => setActiveCategory(sub.id)}
+                                                                        className={`
+                                                                            group/item pl-8 pr-3 py-2.5 cursor-pointer border-l-4 transition-all flex items-center justify-between
+                                                                            ${isActive ? 'bg-neutral-800 border-l-[#00f3ff]' : 'hover:bg-neutral-800/50 border-l-transparent'}
+                                                                        `}
+                                                                    >
+                                                                        <div className="flex items-center gap-2 min-w-0">
+                                                                            {isSelected && (
+                                                                                <div className="w-1.5 h-1.5 rounded-full bg-[#00f3ff] shrink-0"></div>
+                                                                            )}
+                                                                            <span className={`text-xs uppercase font-bold tracking-wide truncate ${isActive ? 'text-[#00f3ff]' : isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                                                {sub.name}
+                                                                            </span>
+                                                                        </div>
 
                                                                     {isSelected && (
                                                                         <button
@@ -450,7 +453,6 @@ const ManualBuildPage = () => {
                                                 )}
                                             </div>
                                         ) : (
-                                            // Standard Categories
                                             <div
                                                 ref={el => categoryRefs.current[cat.id] = el}
                                                 onClick={() => setActiveCategory(cat.id)}
@@ -532,46 +534,119 @@ const ManualBuildPage = () => {
                             >
                                 {compatibility.issues.length > 0 ? 'Fix Issues to Proceed' : 'Complete Build'}
                             </button>
+
+                            {/* Clear entire build */}
+                            {Object.keys(buildState).length > 0 && (
+                                <button
+                                    onClick={() => {
+                                        if (window.confirm('Clear the entire build? This will remove all selected components.')) {
+                                            setBuildState({});
+                                            setTotalPrice(0);
+                                            showToastMessage('BUILD CLEARED');
+                                        }
+                                    }}
+                                    className="mt-2 w-full py-2 font-bold uppercase tracking-widest transition-colors rounded-sm text-xs border border-red-900/50 text-red-500 hover:bg-red-900/20"
+                                >
+                                    ✕ Clear Entire Build
+                                </button>
+                            )}
                         </div>
                     </div>
 
                     {/* Right Content - Product List */}
                     <div className="flex-1 bg-neutral-900 flex flex-col h-full min-w-0">
-                        <div className="p-6 border-b border-neutral-800 bg-neutral-900 z-10 flex justify-between items-end sticky top-0 bg-opacity-95 backdrop-blur-sm">
-                            <div>
-                                <div className="flex items-center gap-4">
-                                    <h1 className="text-3xl font-black uppercase text-white tracking-tighter">
-                                        {ALL_CATEGORIES.find(c => c.id === activeCategory)?.name}
-                                    </h1>
+                        <div className="p-5 border-b border-neutral-800 bg-neutral-900 z-10 sticky top-0 backdrop-blur-sm">
+                            {/* Step breadcrumb + nav arrows */}
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    {/* Step number */}
+                                    {(() => {
+                                        const idx = ALL_CATEGORIES.findIndex(c => c.id === activeCategory);
+                                        const parentCat = CATEGORIES.find(c => c.subCategories?.some(s => s.id === activeCategory));
+                                        return (
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center gap-3 flex-wrap">
+                                                    {parentCat && (
+                                                        <span className="text-[10px] font-bold text-gray-600 tracking-widest">
+                                                            {parentCat.name} /
+                                                        </span>
+                                                    )}
+                                                    <h1 className="text-2xl font-black uppercase text-white tracking-tighter">
+                                                        {ALL_CATEGORIES.find(c => c.id === activeCategory)?.name}
+                                                    </h1>
+                                                    {buildState[activeCategory] && (
+                                                        <span className="flex items-center gap-1 text-[10px] font-bold text-[#00f3ff] bg-[#00f3ff]/10 border border-[#00f3ff]/20 px-2 py-0.5 rounded-sm">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-[#00f3ff] inline-block"></span> SELECTED
+                                                        </span>
+                                                    )}
+                                                    {/* GPU toggle inline with title */}
+                                                    {activeCategory === 'gpu' && (
+                                                        <div className="flex bg-neutral-800 rounded p-1 border border-neutral-700">
+                                                            <button
+                                                                onClick={() => setGpuBrand('NVIDIA')}
+                                                                className={`px-4 py-1 text-xs font-bold uppercase rounded transition-all ${gpuBrand === 'NVIDIA' ? 'bg-[#76b900] text-black' : 'text-gray-500 hover:text-white'}`}
+                                                            >NVIDIA</button>
+                                                            <button
+                                                                onClick={() => setGpuBrand('AMD')}
+                                                                className={`px-4 py-1 text-xs font-bold uppercase rounded transition-all ${gpuBrand === 'AMD' ? 'bg-red-600 text-white' : 'text-gray-500 hover:text-white'}`}
+                                                            >AMD</button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <p className="text-gray-600 text-xs mt-0.5 font-mono">
+                                                    {products.length} results · {buildState[activeCategory] ? buildState[activeCategory].name.substring(0, 40) : 'no selection'}
+                                                </p>
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+
+                                {/* Controls: Clear + Prev/Next */}
+                                <div className="flex items-center gap-2 shrink-0">
                                     {buildState[activeCategory] && (
                                         <button
                                             onClick={handleClearSelection}
-                                            className="px-3 py-1 bg-red-900/30 text-red-500 text-xs font-bold uppercase hover:bg-red-900/50 transition-colors border border-red-900/50"
+                                            className="px-3 py-1.5 bg-red-900/20 text-red-500 text-xs font-bold uppercase hover:bg-red-900/40 transition-colors border border-red-900/40 rounded-sm"
                                         >
-                                            Clear Selection
+                                            Clear
                                         </button>
                                     )}
+                                    {/* Prev button */}
+                                    {(() => {
+                                        const idx = ALL_CATEGORIES.findIndex(c => c.id === activeCategory);
+                                        const prev = idx > 0 ? ALL_CATEGORIES[idx - 1] : null;
+                                        const next = idx < ALL_CATEGORIES.length - 1 ? ALL_CATEGORIES[idx + 1] : null;
+                                        return (
+                                            <>
+                                                <button
+                                                    disabled={!prev}
+                                                    onClick={() => prev && setActiveCategory(prev.id)}
+                                                    title={prev ? `Previous: ${prev.name}` : 'First component'}
+                                                    className={`px-3 py-1.5 text-xs font-bold uppercase border rounded-sm transition-all ${prev
+                                                        ? 'border-neutral-700 text-gray-400 hover:border-[#00f3ff] hover:text-[#00f3ff]'
+                                                        : 'border-neutral-800 text-neutral-700 cursor-not-allowed'
+                                                        }`}
+                                                >
+                                                    ← Prev
+                                                </button>
+                                                <button
+                                                    disabled={!next}
+                                                    onClick={() => next && setActiveCategory(next.id)}
+                                                    title={next ? `Next: ${next.name}` : 'Last component'}
+                                                    className={`px-3 py-1.5 text-xs font-bold uppercase border rounded-sm transition-all ${next
+                                                        ? 'border-neutral-700 text-gray-400 hover:border-[#00f3ff] hover:text-[#00f3ff]'
+                                                        : 'border-neutral-800 text-neutral-700 cursor-not-allowed'
+                                                        }`}
+                                                >
+                                                    Next →
+                                                </button>
+                                            </>
+                                        );
+                                    })()}
                                 </div>
-                                <p className="text-gray-500 text-sm mt-1 font-mono">
-                                // DATABASE_QUERY: {products.length} RESULTS FOUND
-                                </p>
                             </div>
 
-                            <div className="flex gap-4 items-center">
-                                {/* Chipset Toggle */}
-                                {(activeCategory === 'cpu') && (
-                                    <div className="flex bg-neutral-800 rounded p-1 border border-neutral-700">
-                                        <button
-                                            onClick={() => setChipset('AMD')}
-                                            className={`px-4 py-1.5 text-xs font-bold uppercase rounded ${chipset === 'AMD' ? 'bg-red-600 text-white' : 'text-gray-500 hover:text-white'}`}
-                                        >AMD</button>
-                                        <button
-                                            onClick={() => setChipset('Intel')}
-                                            className={`px-4 py-1.5 text-xs font-bold uppercase rounded ${chipset === 'Intel' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-white'}`}
-                                        >Intel</button>
-                                    </div>
-                                )}
-
+                            <div className="flex gap-4 items-center mt-3">
                                 <div className="relative">
                                     <input
                                         type="text"
@@ -594,74 +669,89 @@ const ManualBuildPage = () => {
                                     <ProductSkeleton />
                                 </>
                             ) : products.length > 0 ? (
-                                getSortedList().map((item) => {
-                                    const isSelected = buildState[activeCategory]?.id === item.id;
-                                    const compatible = isCompatible(item);
+                                (() => {
+                                    const sorted = getSortedList();
 
-                                    return (
-                                        <div
-                                            key={item.id}
-                                            onClick={() => handleSelectProduct(item)}
-                                            className={`
+                                    return sorted.map((item) => {
+                                        const isSelected = buildState[activeCategory]?.id === item.id;
+                                        const compatible = isCompatible(item);
+
+                                        return (
+                                            <div
+                                                key={item.id}
+                                                onClick={() => handleSelectProduct(item)}
+                                                className={`
                                             relative flex items-center p-4 bg-neutral-950 border rounded-none cursor-pointer group transition-all duration-300
                                             ${isSelected ? 'border-[#00f3ff] shadow-[0_0_20px_rgba(0,243,255,0.1)]' : 'border-neutral-800 hover:border-gray-600'}
                                             ${!compatible ? 'opacity-60 grayscale hover:grayscale-0' : ''}
                                         `}
-                                        >
-                                            {/* Selection Indicator */}
-                                            <div className={`absolute top-0 left-0 bottom-0 w-1 transition-colors ${isSelected ? 'bg-[#00f3ff]' : 'bg-transparent group-hover:bg-gray-700'}`}></div>
+                                            >
+                                                {/* Selection Indicator */}
+                                                <div className={`absolute top-0 left-0 bottom-0 w-1 transition-colors ${isSelected ? 'bg-[#00f3ff]' : 'bg-transparent group-hover:bg-gray-700'}`}></div>
 
-                                            {/* Product Image Placeholder */}
-                                            <div className="w-24 h-24 bg-neutral-900 flex items-center justify-center border border-neutral-800 mr-6 relative overflow-hidden">
-                                                <img src={item.image} alt={item.name} className="w-full h-full object-cover opacity-80" onError={(e) => e.target.style.display = 'none'} />
-                                                <span className="absolute text-neutral-700 text-xs font-mono z-0">IMG_NULL</span>
-                                            </div>
-
-                                            {/* Content */}
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <h3 className={`font-bold text-lg leading-tight ${isSelected ? 'text-[#00f3ff]' : 'text-gray-200'}`}>
-                                                        {item.name}
-                                                    </h3>
-                                                    {!compatible && (
-                                                        <span className="bg-red-900/50 text-red-500 text-[10px] uppercase font-bold px-2 py-0.5 border border-red-900 rounded">
-                                                            Incompatible
-                                                        </span>
+                                                {/* Product Image Placeholder */}
+                                                <div className="relative flex items-center justify-center w-24 h-24 bg-neutral-900 border border-neutral-800 mr-6 overflow-hidden shrink-0">
+                                                    {item.image_url ? (
+                                                        <img
+                                                            src={item.image_url}
+                                                            alt={item.name}
+                                                            className="w-full h-full object-contain p-2"
+                                                            onError={(e) => {
+                                                                e.target.onerror = null; // prevents looping
+                                                                e.target.style.display = 'none';
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <span className="text-neutral-700 text-xs font-mono select-none">NO_IMG</span>
                                                     )}
                                                 </div>
 
-                                                <div className="flex flex-wrap gap-2 mt-2">
-                                                    {item.specs && Object.entries(item.specs).map(([k, v]) => {
-                                                        if (!['socket', 'chipset', 'wattage', 'type', 'brand', 'form_factor'].includes(k)) return null;
-                                                        return (
-                                                            <span key={k} className="px-2 py-1 bg-neutral-900 border border-neutral-800 text-neutral-400 text-xs font-mono uppercase rounded-sm">
-                                                                {k}: {v}
+                                                {/* Content */}
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <h3 className={`font-bold text-lg leading-tight ${isSelected ? 'text-[#00f3ff]' : 'text-gray-200'}`}>
+                                                            {item.name}
+                                                        </h3>
+                                                        {!compatible && (
+                                                            <span className="bg-red-900/50 text-red-500 text-[10px] uppercase font-bold px-2 py-0.5 border border-red-900 rounded">
+                                                                Incompatible
                                                             </span>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
+                                                        )}
+                                                    </div>
 
-                                            {/* Price & Action */}
-                                            <div className="text-right pl-6 border-l border-neutral-800 ml-6 min-w-[140px] flex flex-col items-end justify-center h-full">
-                                                <div className="font-mono text-[#00f3ff] font-bold text-lg mb-2">
-                                                    {getPrice(item)}
+                                                    <div className="flex flex-wrap gap-2 mt-2">
+                                                        {item.specs && Object.entries(item.specs).map(([k, v]) => {
+                                                            if (!['socket', 'chipset', 'wattage', 'type', 'brand', 'form_factor'].includes(k)) return null;
+                                                            return (
+                                                                <span key={k} className="px-2 py-1 bg-neutral-900 border border-neutral-800 text-neutral-400 text-xs font-mono uppercase rounded-sm">
+                                                                    {k}: {v}
+                                                                </span>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
-                                                <button
-                                                    className={`
+
+                                                {/* Price & Action */}
+                                                <div className="text-right pl-6 border-l border-neutral-800 ml-6 min-w-[140px] flex flex-col items-end justify-center h-full">
+                                                    <div className="font-mono text-[#00f3ff] font-bold text-lg mb-2">
+                                                        {getPrice(item)}
+                                                    </div>
+                                                    <button
+                                                        className={`
                                                     px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all
                                                     ${isSelected
-                                                            ? 'bg-[#00f3ff] text-black border border-[#00f3ff]'
-                                                            : 'bg-transparent text-gray-500 border border-neutral-700 group-hover:border-gray-400 group-hover:text-white'
-                                                        }
+                                                                ? 'bg-[#00f3ff] text-black border border-[#00f3ff]'
+                                                                : 'bg-transparent text-gray-500 border border-neutral-700 group-hover:border-gray-400 group-hover:text-white'
+                                                            }
                                                 `}
-                                                >
-                                                    {isSelected ? 'SELECTED' : 'SELECT'}
-                                                </button>
+                                                    >
+                                                        {isSelected ? 'SELECTED' : 'SELECT'}
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                })
+                                        );
+                                    }); // end sorted.map
+                                })() // end IIFE
                             ) : (
                                 <div className="text-center text-gray-600 font-mono py-20">
                                 // NO_COMPONENTS_FOUND_IN_SECTOR
