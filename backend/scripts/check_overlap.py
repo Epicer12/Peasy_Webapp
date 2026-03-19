@@ -16,8 +16,7 @@ supabase = create_client(url, key)
 
 def check_overlap(spec_table, current_price_table, spec_col, price_col):
     print(f"\nChecking overlap: {spec_table} vs {current_price_table}")
-    
-    # Get all names
+    # Standardized code from rebase resolution
     specs = supabase.table(spec_table).select(spec_col).execute()
     prices = supabase.table(current_price_table).select(price_col).execute()
     
@@ -28,7 +27,8 @@ def check_overlap(spec_table, current_price_table, spec_col, price_col):
     print(f"Spec count: {len(spec_names)}")
     print(f"Price count: {len(price_names)}")
     print(f"Overlap count: {len(common)}")
-    
+
+    # Sample printing for debugging
     if len(common) < 5 and len(price_names) > 0:
         print("Sample Specs:", list(spec_names)[:5])
         print("Sample Prices:", list(price_names)[:5])
