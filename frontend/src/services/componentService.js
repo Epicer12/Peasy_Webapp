@@ -342,13 +342,14 @@ export const updateProject = async (id, projectData) => {
         throw e;
     }
 };
-
-export const deleteProject = async (id, email) => {
+export const analyzeBottleneck = async (components) => {
     try {
-        const response = await fetch(`/api/projects/${id}?user_email=${email}`, {
-            method: 'DELETE'
+        const response = await fetch('/api/analyze/bottleneck', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(components)
         });
-        if (!response.ok) throw new Error('Failed to delete project');
+        if (!response.ok) throw new Error('Failed to analyze bottleneck');
         return await response.json();
     } catch (e) {
         console.error(e);

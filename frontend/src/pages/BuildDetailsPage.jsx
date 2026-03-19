@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     PencilSquareIcon,
@@ -12,10 +12,14 @@ import {
     ArrowsRightLeftIcon,
     XMarkIcon,
     CheckIcon,
-    PhotoIcon
+    PhotoIcon,
+    PresentationChartLineIcon
 } from '@heroicons/react/24/outline';
-import { getProjectById, updateProject, getProjects } from '../services/componentService';
+import { getProjectById, updateProject, getProjects, analyzeBottleneck } from '../services/componentService';
 import { auth } from '../firebase';
+import BottleneckAnalysisModal from '../components/modals/BottleneckAnalysisModal';
+import PerformanceDashboardModal from '../components/modals/PerformanceDashboardModal';
+import PerformanceSummary from '../components/build/PerformanceSummary';
 
 const BuildDetailsPage = () => {
     const { projectId } = useParams();
@@ -29,6 +33,12 @@ const BuildDetailsPage = () => {
     const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
     const [editingCompIndex, setEditingCompIndex] = useState(null);
     const [editForm, setEditForm] = useState(null);
+    
+    // Bottleneck States
+    const [isBottleneckModalOpen, setIsBottleneckModalOpen] = useState(false);
+    const [isPerfModalOpen, setIsPerfModalOpen] = useState(false);
+    const [bottleneckReport, setBottleneckReport] = useState(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     useEffect(() => {
         const fetchProject = async () => {
@@ -57,6 +67,13 @@ const BuildDetailsPage = () => {
         fetchProject();
         fetchAllProjects();
     }, [projectId]);
+
+    // Auto-analyze when project is loaded
+    useEffect(() => {
+        if (project && project.components && !bottleneckReport && !isAnalyzing) {
+            handleDetectBottlenecks(false);
+        }
+    }, [project, bottleneckReport, isAnalyzing, handleDetectBottlenecks]);
 
     const handleStatusChange = async (newStatus) => {
         setUpdatingStatus(true);
@@ -119,6 +136,20 @@ const BuildDetailsPage = () => {
             alert("Failed to save changes");
         }
     };
+
+    const handleDetectBottlenecks = useCallback(async (showModal = true) => {
+        setIsAnalyzing(true);
+        try {
+            const report = await analyzeBottleneck(project.components);
+            setBottleneckReport(report);
+            if (showModal) setIsBottleneckModalOpen(true);
+        } catch (error) {
+            console.error("Error analyzing bottleneck:", error);
+            alert("Failed to analyze build balance.");
+        } finally {
+            setIsAnalyzing(false);
+        }
+    }, [project]);
 
     if (loading) {
         return (
@@ -276,9 +307,21 @@ const BuildDetailsPage = () => {
                                     <ShieldCheckIcon className="w-5 h-5" />
                                     CHECK_COMPATIBILITY
                                 </button>
-                                <button className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[12px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all flex items-center justify-center gap-2">
-                                    <BarsArrowUpIcon className="w-5 h-5" />
-                                    DETECT_BOTTLENECKS
+                                <button 
+                                    className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[12px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all flex items-center justify-center gap-2"
+                                    onClick={handleDetectBottlenecks}
+                                    disabled={isAnalyzing}
+                                >
+                                    {isAnalyzing ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <BarsArrowUpIcon className="w-5 h-5" />}
+                                    {isAnalyzing ? "CALCULATING_BALANCE..." : "DETECT_BOTTLENECKS"}
+                                </button>
+                                <button 
+                                    className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[12px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all flex items-center justify-center gap-2 group"
+                                    onClick={() => setIsPerfModalOpen(true)}
+                                    disabled={!bottleneckReport}
+                                >
+                                    <PresentationChartLineIcon className="w-5 h-5 group-hover:text-[#00f3ff] transition-colors" />
+                                    PERFORMANCE_DASHBOARD
                                 </button>
                                 <button
                                     className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[13px] font-black uppercase tracking-widest hover:border-[#00f3ff] hover:text-[#00f3ff] transition-all flex items-center justify-center gap-2"
@@ -394,6 +437,17 @@ const BuildDetailsPage = () => {
                     </div>
                 </div>
             )}
+            {/* Bottleneck Analysis Modal */}
+            <BottleneckAnalysisModal 
+                isOpen={isBottleneckModalOpen} 
+                onClose={() => setIsBottleneckModalOpen(false)} 
+                report={bottleneckReport} 
+            />
+            <PerformanceDashboardModal 
+                isOpen={isPerfModalOpen} 
+                onClose={() => setIsPerfModalOpen(false)} 
+                report={bottleneckReport} 
+            />
         </div>
     );
 };

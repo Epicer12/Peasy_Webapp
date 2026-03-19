@@ -54,8 +54,8 @@ const HomePage = () => {
                         </div>
                     ) : (
                         savedBuilds.map(build => (
-                            <div 
-                                key={build.id} 
+                            <div
+                                key={build.id}
                                 onClick={() => navigate('/build-details/' + build.id)}
                                 className="bg-[#050505] p-5 border border-[#333] hover:border-cyan-400 transition-colors group relative flex flex-col cursor-pointer"
                             >
@@ -69,34 +69,34 @@ const HomePage = () => {
                                     <span className="font-mono text-xs text-[#666] uppercase">[BUILD_IMG]</span>
                                 </div>
 
-                            <div className="flex justify-between items-start mb-3">
-                                <h3 className="font-mono text-base text-[#eeeeee] group-hover:text-cyan-400 transition-colors">{build.name}</h3>
-                                <span className={`px-2 py-0.5 text-xs font-bold font-mono border ${build.progress === 100 ? 'border-cyan-400 text-cyan-400' : 'border-[#333] text-[#666]'}`}>
-                                    {build.status}
-                                </span>
-                            </div>
+                                <div className="flex justify-between items-start mb-3">
+                                    <h3 className="font-mono text-base text-[#eeeeee] group-hover:text-cyan-400 transition-colors">{build.name}</h3>
+                                    <span className={`px-2 py-0.5 text-xs font-bold font-mono border ${build.progress === 100 ? 'border-cyan-400 text-cyan-400' : 'border-[#333] text-[#666]'}`}>
+                                        {build.status}
+                                    </span>
+                                </div>
 
-                            {/* Segmented Progress Bar */}
-                            <div className="w-full flex gap-1 mb-3">
-                                {[...Array(10)].map((_, i) => (
-                                    <div
-                                        key={i}
-                                        className={i < (build.progress / 10) ? 'h-2 flex-1 bg-cyan-400' : 'h-2 flex-1 bg-[#1a1a1a]'}
-                                    ></div>
-                                ))}
-                            </div>
+                                {/* Segmented Progress Bar */}
+                                <div className="w-full flex gap-1 mb-3">
+                                    {[...Array(10)].map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className={i < (build.progress / 10) ? 'h-2 flex-1 bg-cyan-400' : 'h-2 flex-1 bg-[#1a1a1a]'}
+                                        ></div>
+                                    ))}
+                                </div>
 
-                            <div className="flex justify-between text-xs font-mono text-[#666] mt-auto">
-                                <span>PRG: {build.progress}%</span>
-                                <span>EST: {build.price}</span>
+                                <div className="flex justify-between text-xs font-mono text-[#666] mt-auto">
+                                    <span>PRG: {build.progress}%</span>
+                                    <span>EST: {build.price}</span>
+                                </div>
                             </div>
-                        </div>
-                    ))
-                )}
+                        ))
+                    )}
 
                     {/* Integrated Initiate Build Card from both branches */}
                     <div
-                        onClick={() => navigate('/build')}
+                        onClick={() => navigate('/plan')}
                         className="bg-[#050505] p-5 border border-[#333] hover:border-[#ccff00] transition-all group relative flex flex-col justify-center items-center cursor-pointer min-h-[200px]"
                     >
                         <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#333] group-hover:border-[#ccff00]"></div>
@@ -112,11 +112,6 @@ const HomePage = () => {
                             GENERATE_CUSTOM_SPECIFICATIONS
                         </p>
                     </div>
-
-                    <Link to="/plan" className="bg-[#111] p-5 border border-[#333] border-dashed flex flex-col items-center justify-center text-[#666] hover:text-[#eeeeee] hover:border-[#eeeeee] transition-all cursor-pointer min-h-[200px] hover:bg-[#1a1a1a]">
-                        <div className="text-4xl font-thin mb-3">+</div>
-                        <span className="font-mono text-xs tracking-widest uppercase">INIT_NEW_BUILD</span>
-                    </Link>
                 </div>
             </section>
 
