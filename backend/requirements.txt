@@ -11,7 +11,7 @@ websockets>=10.0,<15.0
 openai==2.17.0
 Pillow==12.0.0
 groq==1.0.0
-onnxruntime==1.23.2
+onnxruntime
 opencv-python-headless==4.10.0.84
 numpy==1.26.4
 cog==0.16.12
