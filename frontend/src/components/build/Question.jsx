@@ -158,46 +158,36 @@ export default function Question({
                 flexDirection: "column",
                 gap: "10px",
                 padding: "12px 15px",
+                borderRadius: "4px",
                 border: "1px solid",
-                borderColor: isSelected(option)
-                  ? "#00f3ff"
-                  : "#333",
+                borderColor: isSelected(option) ? "#00f3ff" : "#222",
                 backgroundColor: isSelected(option)
-                  ? "rgba(0, 243, 255, 0.05)"
-                  : "#050505",
+                  ? "rgba(0, 243, 255, 0.1)"
+                  : "#000",
                 cursor: "pointer",
                 transition: "all 0.2s"
               }}
               onClick={() => handleClick(option)}
             >
-              <div
-                style={{
-                  color: isSelected(option)
-                    ? "#00f3ff"
-                    : "#888",
-                  fontWeight: isSelected(option)
-                    ? "900"
-                    : "400",
-                  fontSize: "12px",
-                  textTransform: "uppercase"
-                }}
-              >
+              <div style={{
+                color: isSelected(option) ? "#00f3ff" : "#aaa",
+                fontWeight: isSelected(option) ? "900" : "400",
+                fontSize: "13px",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em"
+              }}>
                 {option}
               </div>
 
-              {renderOptionExtra &&
-                isSelected(option) && (
-                  <div
-                    style={{ flex: 1 }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {renderOptionExtra(option)}
-                  </div>
-                )}
+              {renderOptionExtra && isSelected(option) && (
+                <div style={{ flex: 1 }} onClick={(e) => e.stopPropagation()}>
+                  {renderOptionExtra(option)}
+                </div>
+              )}
             </div>
           ))}
         </div>
       )}
     </div>
-  );
+  )
 }

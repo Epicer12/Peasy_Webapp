@@ -5,9 +5,9 @@ Add more tests in this folder as the project grows.
 """
 
 from fastapi.testclient import TestClient
-from backend.app.main import app
+from app.main import app
 
-# Create a test client that talks to our FastAPI app without a real server
+# Create a test client
 client = TestClient(app)
 
 
