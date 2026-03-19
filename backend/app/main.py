@@ -24,7 +24,8 @@ from .routers import (
     troubleshoot, 
     assembly_instructions, 
     builder, 
-    warranty
+    warranty,
+    analysis
 )
 
 app.include_router(models.router, prefix="/api")
@@ -36,6 +37,7 @@ app.include_router(warranty.router, prefix="/api")
 app.include_router(components.router, prefix="/api")
 app.include_router(build_suggestions.router, prefix="/api")
 app.include_router(projects.router, prefix="/api")
+app.include_router(analysis.router, prefix="/api")
 
 @app.get("/")
 def root():
