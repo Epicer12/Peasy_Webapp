@@ -46,11 +46,14 @@ jobs:
         run: |
           pytest backend/tests/ -v
         env:
-          PYTHONPATH: ${{ github.workspace }}
+          PYTHONPATH: ${{ github.workspace }}/backend
           MAIN_SUPABASE_URL: ${{ secrets.MAIN_SUPABASE_URL }}
           MAIN_SUPABASE_KEY: ${{ secrets.MAIN_SUPABASE_KEY }}
           MODEL_SUPABASE_URL: ${{ secrets.MODEL_SUPABASE_URL }}
           MODEL_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.MODEL_SUPABASE_SERVICE_ROLE_KEY }}
+          WARRANTY_SUPABASE_URL: ${{ secrets.WARRANTY_SUPABASE_URL }}
+          WARRANTY_SUPABASE_KEY: ${{ secrets.WARRANTY_SUPABASE_KEY }}
+          SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           SERP_API_KEY: ${{ secrets.SERP_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
