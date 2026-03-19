@@ -317,7 +317,6 @@ export default function BuildPage() {
 
   return (
     <div className="min-h-screen bg-[#050505] selection:bg-[#00f3ff] selection:text-black">
-      <Navbar />
       <div style={pageWrapper}>
         <h1 style={titleStyle}>SYSTEM_BUILDER</h1>
 

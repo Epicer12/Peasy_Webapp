@@ -315,3 +315,43 @@ export const getProjects = async (email) => {
         return [];
     }
 };
+
+export const getProjectById = async (id, email) => {
+    try {
+        const url = email ? `/api/projects/${id}?user_email=${email}` : `/api/projects/${id}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch project');
+        return await response.json();
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
+};
+
+export const updateProject = async (id, projectData) => {
+    try {
+        const response = await fetch(`/api/projects/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(projectData)
+        });
+        if (!response.ok) throw new Error('Failed to update project');
+        return await response.json();
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
+};
+
+export const deleteProject = async (id, email) => {
+    try {
+        const response = await fetch(`/api/projects/${id}?user_email=${email}`, {
+            method: 'DELETE'
+        });
+        if (!response.ok) throw new Error('Failed to delete project');
+        return await response.json();
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
+};
