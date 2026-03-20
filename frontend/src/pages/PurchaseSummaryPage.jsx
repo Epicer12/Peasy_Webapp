@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { XMarkIcon, ArrowLeftIcon, ShoppingCartIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ArrowLeftIcon, ShoppingCartIcon, CheckCircleIcon, BarsArrowUpIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import logo from '../assets/logo-white.png';
+import { analyzeBottleneck } from '../services/componentService';
+import BottleneckAnalysisModal from '../components/modals/BottleneckAnalysisModal';
 
 const PurchaseSummaryPage = () => {
     const location = useLocation();
@@ -9,6 +11,29 @@ const PurchaseSummaryPage = () => {
     const { buildState, totalPrice, compatibility } = location.state || { buildState: {}, totalPrice: 0, compatibility: { issues: [], warnings: [] } };
 
     const [orderId] = React.useState(() => Math.random().toString(36).substr(2, 9).toUpperCase());
+
+    // Bottleneck Analysis States
+    const [isBottleneckModalOpen, setIsBottleneckModalOpen] = useState(false);
+    const [bottleneckReport, setBottleneckReport] = useState(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    const handleDetectBottlenecks = useCallback(async () => {
+        const components = Object.entries(buildState).map(([catId, item]) => ({
+            ...item,
+            type: catId,
+        }));
+        if (components.length === 0) return;
+        setIsAnalyzing(true);
+        try {
+            const report = await analyzeBottleneck(components);
+            setBottleneckReport(report);
+            setIsBottleneckModalOpen(true);
+        } catch (error) {
+            console.error('Error analyzing bottleneck:', error);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    }, [buildState]);
 
     // Group items for display
     const coreComponents = ['cpu', 'motherboard', 'ram', 'gpu', 'ssd', 'hdd', 'psu', 'case', 'cooler', 'software'];
@@ -130,6 +155,22 @@ const PurchaseSummaryPage = () => {
                         </div>
                     </div>
 
+                    {/* CORE_COMMAND_PANEL */}
+                    <div className="my-6 bg-[#0a0a0a] border border-[#333] p-6 shadow-2xl">
+                        <div className="text-[11px] font-black font-mono text-[#00f3ff] border-b-2 border-[#1a1a1a] pb-4 mb-6 uppercase tracking-[0.3em]">CORE_COMMAND_PANEL</div>
+                        <div className="flex flex-col gap-3">
+                            <button
+                                className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[12px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all flex items-center justify-center gap-2"
+                                onClick={handleDetectBottlenecks}
+                                disabled={isAnalyzing}
+                            >
+                                {isAnalyzing ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <BarsArrowUpIcon className="w-5 h-5" />}
+                                {isAnalyzing ? 'CALCULATING_BALANCE...' : 'DETECT_BOTTLENECKS'}
+                            </button>
+
+                        </div>
+                    </div>
+
                     <div className="space-y-3 mt-auto">
                         <button
                             onClick={handleAddToCart}
@@ -159,6 +200,13 @@ const PurchaseSummaryPage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Bottleneck Analysis Modal */}
+            <BottleneckAnalysisModal
+                isOpen={isBottleneckModalOpen}
+                onClose={() => setIsBottleneckModalOpen(false)}
+                report={bottleneckReport}
+            />
         </div>
     );
 };
