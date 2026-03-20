@@ -33,7 +33,7 @@ const BuildDetailsPage = () => {
     const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
     const [editingCompIndex, setEditingCompIndex] = useState(null);
     const [editForm, setEditForm] = useState(null);
-    
+
     // Bottleneck States
     const [isBottleneckModalOpen, setIsBottleneckModalOpen] = useState(false);
     const [isPerfModalOpen, setIsPerfModalOpen] = useState(false);
@@ -68,12 +68,7 @@ const BuildDetailsPage = () => {
         fetchAllProjects();
     }, [projectId]);
 
-    // Auto-analyze when project is loaded
-    useEffect(() => {
-        if (project && project.components && !bottleneckReport && !isAnalyzing) {
-            handleDetectBottlenecks(false);
-        }
-    }, [project, bottleneckReport, isAnalyzing, handleDetectBottlenecks]);
+
 
     const handleStatusChange = async (newStatus) => {
         setUpdatingStatus(true);
@@ -150,6 +145,13 @@ const BuildDetailsPage = () => {
             setIsAnalyzing(false);
         }
     }, [project]);
+
+    // Auto-analyze when project is loaded
+    useEffect(() => {
+        if (project && project.components && !bottleneckReport && !isAnalyzing) {
+            handleDetectBottlenecks(false);
+        }
+    }, [project, bottleneckReport, isAnalyzing, handleDetectBottlenecks]);
 
     if (loading) {
         return (
@@ -307,7 +309,7 @@ const BuildDetailsPage = () => {
                                     <ShieldCheckIcon className="w-5 h-5" />
                                     CHECK_COMPATIBILITY
                                 </button>
-                                <button 
+                                <button
                                     className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[12px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all flex items-center justify-center gap-2"
                                     onClick={handleDetectBottlenecks}
                                     disabled={isAnalyzing}
@@ -315,7 +317,7 @@ const BuildDetailsPage = () => {
                                     {isAnalyzing ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <BarsArrowUpIcon className="w-5 h-5" />}
                                     {isAnalyzing ? "CALCULATING_BALANCE..." : "DETECT_BOTTLENECKS"}
                                 </button>
-                                <button 
+                                <button
                                     className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[12px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all flex items-center justify-center gap-2 group"
                                     onClick={() => setIsPerfModalOpen(true)}
                                     disabled={!bottleneckReport}
@@ -438,15 +440,15 @@ const BuildDetailsPage = () => {
                 </div>
             )}
             {/* Bottleneck Analysis Modal */}
-            <BottleneckAnalysisModal 
-                isOpen={isBottleneckModalOpen} 
-                onClose={() => setIsBottleneckModalOpen(false)} 
-                report={bottleneckReport} 
+            <BottleneckAnalysisModal
+                isOpen={isBottleneckModalOpen}
+                onClose={() => setIsBottleneckModalOpen(false)}
+                report={bottleneckReport}
             />
-            <PerformanceDashboardModal 
-                isOpen={isPerfModalOpen} 
-                onClose={() => setIsPerfModalOpen(false)} 
-                report={bottleneckReport} 
+            <PerformanceDashboardModal
+                isOpen={isPerfModalOpen}
+                onClose={() => setIsPerfModalOpen(false)}
+                report={bottleneckReport}
             />
         </div>
     );
