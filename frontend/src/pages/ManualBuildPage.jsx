@@ -168,6 +168,12 @@ const ManualBuildPage = () => {
     }, [buildState]);
 
     const handleSelectProduct = (product, quantity = 1, isRamOverride = false) => {
+        // STRICT COMPATIBILITY BLOCK
+        if (!isCompatible(product)) {
+            showToastMessage('⚠ INCOMPATIBLE PART: Cannot install this component with your current build.');
+            return;
+        }
+
         // RAM Modal Trigger
         if (activeCategory === 'ram' && !isRamOverride && product.id !== buildState[activeCategory]?.id) {
             setPendingRamProduct(product);
@@ -250,28 +256,29 @@ const ManualBuildPage = () => {
             if (cpuSocket && moboSocket && cpuSocket !== moboSocket) {
                 return false;
             }
-
-            if (!buildState.cpu) {
-                const isIntelSocket = moboSocket?.includes('LGA');
-                const isAMDSocket = moboSocket?.includes('AM');
-                if (chipset === 'AMD' && isIntelSocket) return false;
-                if (chipset === 'Intel' && isAMDSocket) return false;
-            }
         }
 
         // 2. RAM <-> Motherboard
         if (activeCategory === 'ram' && buildState.motherboard) {
-            const moboRam = buildState.motherboard.specs?.ram_type;
-            const ramType = item.specs?.type;
-            if (moboRam && ramType && moboRam !== ramType) return false;
+            const moboRam = (buildState.motherboard.specs?.ram_type || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            const ramType = (item.specs?.type || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (moboRam && ramType && !moboRam.includes(ramType) && !ramType.includes(moboRam)) return false;
         }
 
         // 3. Case <-> Motherboard
         if (activeCategory === 'case' && buildState.motherboard) {
-            const moboFF = buildState.motherboard.specs?.form_factor;
-            const caseFF = item.specs?.form_factor;
-            if (moboFF === "ATX" && (caseFF === "Micro-ATX" || caseFF === "ITX")) return false;
-            if (moboFF === "E-ATX" && caseFF !== "E-ATX") return false;
+            const moboFF = (buildState.motherboard.specs?.form_factor || '').toUpperCase();
+            const caseFF = (item.specs?.form_factor || item.specs?.mobo_support || '').toUpperCase();
+
+            // Ensure E-ATX boards only go into E-ATX cases.
+            if (moboFF.includes('E-ATX') || moboFF.includes('EATX')) {
+                if (!caseFF.includes('E-ATX') && !caseFF.includes('EATX')) return false;
+            }
+            // Ensure standard ATX boards don't go into Micro-ATX or ITX only cases
+            else if (moboFF.includes('ATX') && !moboFF.includes('MICRO') && !moboFF.includes('MINI')) {
+                // If the case ONLY supports Micro/ITX and NOT ATX
+                if ((caseFF.includes('MICRO') || caseFF.includes('ITX')) && !caseFF.includes('ATX')) return false;
+            }
         }
         return true;
     };
@@ -343,8 +350,8 @@ const ManualBuildPage = () => {
                             <h2 className="text-2xl font-black text-[#00f3ff] mb-2 tracking-tighter uppercase">Memory Configuration</h2>
                             <p className="text-gray-400 mb-6 font-mono text-xs">SELECT TOTAL MODULE COUNT FOR: <br /><span className="text-white font-bold">{pendingRamProduct.name}</span></p>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                {[1, 2, 4, 8].map(qty => (
+                            <div className="grid grid-cols-3 gap-4">
+                                {[1, 2, 4].map(qty => (
                                     <button
                                         key={qty}
                                         onClick={() => {
