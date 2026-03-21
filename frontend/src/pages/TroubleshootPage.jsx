@@ -483,20 +483,20 @@ const TroubleshootPage = () => {
                                 {brands
                                     .filter(brand => method === 'camera' ? (!brand.includes('ASUS LED') && !brand.includes('Lenovo (Amber LED + Beeps)')) : true)
                                     .map((brand) => (
-                                    <button
-                                        key={brand}
-                                        onClick={() => {
-                                            setSelectedBrand(brand);
-                                            setResult(null);
-                                        }}
-                                        className={`text-left px-5 py-4 font-mono text-lg border-2 transition-all ${selectedBrand === brand
-                                            ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
-                                            : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
-                                            }`}
-                                    >
-                                        {brand}
-                                    </button>
-                                ))}
+                                        <button
+                                            key={brand}
+                                            onClick={() => {
+                                                setSelectedBrand(brand);
+                                                setResult(null);
+                                            }}
+                                            className={`text-left px-5 py-4 font-mono text-lg border-2 transition-all ${selectedBrand === brand
+                                                ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
+                                                : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
+                                                }`}
+                                        >
+                                            {brand}
+                                        </button>
+                                    ))}
                             </div>
                         </section>
                     </div>
