@@ -8,7 +8,7 @@ const TroubleshootPage = () => {
     const [viewMode, setViewMode] = useState('config');
     const [brands, setBrands] = useState([]);
     const [selectedBrand, setSelectedBrand] = useState('');
-    const [method, setMethod] = useState('manual');
+    const [method, setMethod] = useState('');
     const [manualCode, setManualCode] = useState('');
     const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);
