@@ -198,7 +198,7 @@ const ProfilePage = () => {
                     <div>
                         <span className="text-[10px] font-black uppercase text-[#666] tracking-[0.5em] mb-2 block">System Profile</span>
                         <h1 className="text-5xl font-black uppercase tracking-tighter italic leading-none">
-                            USER <span className="text-[#00f3ff]">HUB</span>
+                            {profile.username || 'USER'} <span className="text-[#00f3ff]">HUB</span>
                         </h1>
                         <p className="text-[10px] font-mono text-[#444] mt-2">ID: {auth.currentUser?.uid?.substring(0, 12)}... // AUTH_OK</p>
                     </div>
