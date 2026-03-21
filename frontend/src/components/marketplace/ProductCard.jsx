@@ -1,17 +1,25 @@
 import React from 'react';
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, onClick }) => {
     const hasOffer = product.offer_price;
     const imageUrl = product.image_url || 'https://via.placeholder.com/400x300/050505/00f3ff?text=NO_IMAGE';
+    const isMultiShop = product.available_shops && product.available_shops.length > 1;
 
     return (
-        <div className="group relative flex flex-col h-full cursor-pointer">
-            {/* Offer Badge - Minimalist Tag with Neon Orange */}
-            {hasOffer && (
-                <div className="absolute top-3 left-3 z-10 bg-[var(--color-neon-orange)] text-black text-[10px] font-black px-2 py-1 uppercase tracking-widest shadow-[0_0_10px_var(--color-neon-orange)]">
-                    {product.discount_percentage}% OFF
-                </div>
-            )}
+        <div className="group relative flex flex-col h-full cursor-pointer" onClick={onClick}>
+            {/* Offer Badge / Multi-Shop Badge */}
+            <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
+                {hasOffer && (
+                    <div className="bg-[var(--color-neon-orange)] text-black text-[10px] font-black px-2 py-1 uppercase tracking-widest shadow-[0_0_10px_var(--color-neon-orange)]">
+                        {product.discount_percentage}% OFF
+                    </div>
+                )}
+                {isMultiShop && (
+                    <div className="bg-[#111] border border-[var(--color-neon-blue)] text-[var(--color-neon-blue)] text-[9px] font-mono px-2 py-1 uppercase tracking-widest bg-opacity-80">
+                        {product.available_shops.length} SHOPS
+                    </div>
+                )}
+            </div>
             
             {/* Image Container */}
             <div className="relative w-full aspect-[4/3] bg-[#0c0c0c] mb-4 flex items-center justify-center overflow-hidden transition-all duration-500 rounded-sm border border-[#1a1a1a] group-hover:border-[var(--color-neon-blue)] group-hover:bg-[#111]">
@@ -30,7 +38,7 @@ const ProductCard = ({ product }) => {
                     </span>
                 </div>
 
-                <h4 className="text-[#eee] font-medium text-sm leading-snug mb-3 group-hover:text-white transition-colors">
+                <h4 className="text-[#eee] font-medium text-sm leading-snug mb-3 group-hover:text-white transition-colors line-clamp-2">
                     {product.name}
                 </h4>
 
@@ -38,11 +46,11 @@ const ProductCard = ({ product }) => {
                     {hasOffer ? (
                         <div className="flex items-baseline space-x-3">
                             <span className="text-lg text-[var(--color-neon-orange)] font-black tracking-tight drop-shadow-[0_0_8px_rgba(255,87,34,0.4)]">LKR {product.offer_price?.toLocaleString()}</span>
-                            <span className="text-xs text-[#555] line-through font-mono">LKR {product.price?.toLocaleString()}</span>
+                            <span className="text-xs text-[#555] line-through font-mono">LKR {product.actual_price?.toLocaleString()}</span>
                         </div>
                     ) : (
                         <span className="text-lg text-white font-bold tracking-tight group-hover:text-[var(--color-neon-blue)] transition-colors">
-                            LKR {product.price?.toLocaleString()}
+                            LKR {product.actual_price?.toLocaleString()}
                         </span>
                     )}
                 </div>
