@@ -32,13 +32,13 @@ def get_supabase():
 TABLE_MAP = {
     "gpu": "gpu_final",
     "cpu": "cpu_final",
-    "mobo": "motherboard_final",
+    "motherboard": "motherboard_final",
     "ram": "ram_final",
     "ssd": "ssd_final",
-    "hdd": "hdd_final",
     "psu": "psu_final",
-    "case": "case_final",
-    "cooler": "cooler_final"
+    "case": "cases_final",
+    "case_fans": "case_fans_final",
+    "cooler": "cpu_coolers_final"
 }
 
 KNOWN_SHOPS = [
@@ -55,29 +55,39 @@ KNOWN_SHOPS = [
 def standardize_product(item: dict, table_name: str, requested_shop: Optional[str]) -> Optional[dict]:
     """Standardize the product dictionary mapping specific shopX_price columns."""
     
+    # Robustly fetch name due to differing column schemas across final tables
+    name = item.get("name") or item.get("component_name") or item.get("final_model_name") or item.get("model_name")
+    if not name and item.get("brand") and item.get("model"):
+        name = f"{item.get('brand')} {item.get('line', '')} {item.get('model')}".strip()
+    if not name:
+        name = "Unknown Component"
+
     # Ensure fallback ID
     if "id" not in item:
-        item["id"] = item.get("name", "unknown_id")
+        item["id"] = name
         
     item_type = table_name.replace("_final", "")
-    
-    # Try to extract a brand if missing
     brand = item.get("brand", "")
     if not brand:
-        name = item.get("name", "")
         brand = name.split()[0] if name else "Unknown"
 
     available_shops = []
     prices = []
     
-    # Scan columns for shop-specific pricing (e.g., nanotek_price, redline_price)
+    # Scan columns for shop-specific pricing handling disparate database prefixes and suffixes
     for key, value in item.items():
-        if key.endswith("_price") and value is not None:
-            # Explicitly ignore estimated or arbitrary pricing that isn't a direct shop listing
-            if "estimated" in key or key in ("average_price", "price"):
-                continue
-                
-            shop_prefix = key.replace("_price", "")  
+        if "estimated" in key or key in ("average_price", "price"):
+            continue
+            
+        shop_prefix = None
+        if key.endswith("_price"):
+            shop_prefix = key.replace("_price", "")
+        elif key.startswith("price_"):
+            shop_prefix = key.replace("price_", "")
+        elif key.endswith("_price_lkr"):
+            shop_prefix = key.replace("_price_lkr", "")
+            
+        if shop_prefix and value is not None:
             try:
                 price_float = float(value)
                 if price_float > 0:
@@ -102,14 +112,14 @@ def standardize_product(item: dict, table_name: str, requested_shop: Optional[st
         
     return {
         "id": item.get("id"),
-        "name": item.get("name"),
+        "name": name,
         "type": item_type,
         "brand": brand,
         "actual_price": actual_price,
         "available_shops": available_shops,
         "specs": item.get("specs", item.get("specifications")),
         "status": item.get("status", "In Stock"),
-        "image_url": item.get("image_url", "https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&q=80&w=400")
+        "image_url": item.get("image_url")  # Pass None if missing so frontend placeholder logic kicks in
     }
 
 def fetch_table_data_sync(supabase, table_name: str, q: Optional[str], min_price: Optional[float], max_price: Optional[float], shop: Optional[str]):
@@ -117,9 +127,17 @@ def fetch_table_data_sync(supabase, table_name: str, q: Optional[str], min_price
     try:
         query = supabase.table(table_name).select("*")
         
-        # db level search
+        # db level search (handles inconsistent column schemas)
         if q and q.strip():
-            query = query.ilike("name", f"%{q.strip()}%")
+            search_col = "name"
+            if table_name in ["ssd_final", "psu_final"]:
+                search_col = "final_model_name"
+            elif table_name in ["cpu_coolers_final", "case_fans_final"]:
+                search_col = "model_name"
+            elif table_name == "cpu_final":
+                search_col = "model"  # fallback for CPU
+                
+            query = query.ilike(search_col, f"%{q.strip()}%")
             
         response = query.execute()
         
