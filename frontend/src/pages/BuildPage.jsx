@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import Question from "../components/build/Question";
-import { searchComponents, submitBuildRequest, analyzeBottleneck } from "../services/componentService";
-import BottleneckAnalysisModal from "../components/modals/BottleneckAnalysisModal";
+import { searchComponents, submitBuildRequest } from "../services/componentService";
 export default function BuildPage() {
   // Tabs & Step
   const [activeTab, setActiveTab] = useState("basic");
@@ -11,26 +10,6 @@ export default function BuildPage() {
   const [showSummary, setShowSummary] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const navigate = useNavigate();
-
-  // Bottleneck Analysis
-  const [isBottleneckModalOpen, setIsBottleneckModalOpen] = useState(false);
-  const [bottleneckReport, setBottleneckReport] = useState(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-
-  const handleDetectBottlenecks = async () => {
-    const components = Object.entries(ownedDetails).map(([type, name]) => ({ type, name }));
-    if (components.length === 0) return;
-    setIsAnalyzing(true);
-    try {
-      const report = await analyzeBottleneck(components);
-      setBottleneckReport(report);
-      setIsBottleneckModalOpen(true);
-    } catch (error) {
-      console.error('Error analyzing bottleneck:', error);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
 
   // Basic Answers
   const [answers, setAnswers] = useState({
@@ -224,7 +203,7 @@ export default function BuildPage() {
   };
 
   // Styles reconciled from feature branch's rich aesthetics
-  const pageWrapper = { padding: "40px 20px", maxWidth: showSummary ? "1100px" : "850px", margin: "0 auto", minHeight: "100vh" };
+  const pageWrapper = { padding: "40px 20px", maxWidth: "850px", margin: "0 auto", minHeight: "100vh" };
   const titleStyle = { textAlign: "left", fontSize: "42px", fontWeight: "900", marginBottom: "30px", color: "#eeeeee", textTransform: "uppercase", letterSpacing: "-0.02em", borderBottom: "2px solid #333", paddingBottom: "15px" };
   const tabContainerStyle = { display: "flex", justifyContent: "flex-start", gap: "0px", marginBottom: "30px", borderBottom: "1px solid #1a1a1a" };
 
@@ -301,74 +280,36 @@ export default function BuildPage() {
             <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#00f3ff]"></div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "30px", alignItems: "start" }}>
-            <div style={{ backgroundColor: "#111", border: "2px solid #333", padding: "40px" }}>
-              <h3 style={{ color: "#00f3ff", marginBottom: "20px", borderBottom: "1px solid #333", paddingBottom: "10px" }}>CORE_PREFERENCES</h3>
-              {Object.entries(answers).map(([key, value]) => (
-                <div key={key} style={{ marginBottom: "12px", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #222", paddingBottom: "4px" }}>
-                  <strong style={{ color: "#666", fontSize: "10px" }}>{key.toUpperCase()}:</strong>
-                  <span style={{ fontSize: "12px" }}>{Array.isArray(value) ? value.join(", ") : (typeof value === "object" ? `LKR ${value.min || 0} - ${value.max || "INF"}` : value || "NULL")}</span>
-                </div>
-              ))}
-
-              {Object.keys(ownedDetails).length > 0 && (
-                <div style={{ marginTop: "30px" }}>
-                  <h3 style={{ color: "#ccff00", marginBottom: "20px", borderBottom: "1px solid #333", paddingBottom: "10px" }}>OWNED_HARDWARE</h3>
-                  {Object.entries(ownedDetails).map(([part, detail]) => (
-                    <div key={part} style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", borderBottom: "1px solid #222", paddingBottom: "4px" }}>
-                      <strong style={{ color: "#666", fontSize: "10px" }}>{part.toUpperCase()}:</strong> <span style={{ fontSize: "12px" }}>{detail}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div style={{ marginTop: "50px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                <button style={{ ...buttonStyle, backgroundColor: "#00f3ff", color: "#000", marginTop: "0" }} onClick={handleSubmitBuild} disabled={isNavigating}>
-                  Submit Build Request & Calculate
-                </button>
-                <button style={{ ...secondaryButtonStyle, marginTop: "0" }} onClick={() => setShowSummary(false)}>
-                  Return to Configurator
-                </button>
+          <div style={{ backgroundColor: "#111", border: "2px solid #333", padding: "40px" }}>
+            <h3 style={{ color: "#00f3ff", marginBottom: "20px", borderBottom: "1px solid #333", paddingBottom: "10px" }}>CORE_PREFERENCES</h3>
+            {Object.entries(answers).map(([key, value]) => (
+              <div key={key} style={{ marginBottom: "12px", display: "flex", justifyContent: "space-between", borderBottom: "1px solid #222", paddingBottom: "4px" }}>
+                <strong style={{ color: "#666", fontSize: "10px" }}>{key.toUpperCase()}:</strong>
+                <span style={{ fontSize: "12px" }}>{Array.isArray(value) ? value.join(", ") : (typeof value === "object" ? `LKR ${value.min || 0} - ${value.max || "INF"}` : value || "NULL")}</span>
               </div>
-            </div>
+            ))}
 
-            {/* Right Side: Sticky CORE_COMMAND_PANEL */}
-            <div style={{ position: "sticky", top: "24px" }}>
-              <div className="bg-[#0a0a0a] border border-[#333] p-6 shadow-2xl w-full">
-                <div className="text-[11px] font-black font-mono text-[#00f3ff] border-b-2 border-[#1a1a1a] pb-4 mb-6 uppercase tracking-[0.3em]">CORE_COMMAND_PANEL</div>
-                <div className="flex flex-col gap-3">
-                  <button
-                    className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[12px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all flex items-center justify-center gap-2"
-                    onClick={handleDetectBottlenecks}
-                    disabled={isAnalyzing || Object.keys(ownedDetails).length === 0}
-                    style={{ opacity: (Object.keys(ownedDetails).length === 0 || isAnalyzing) ? 0.5 : 1, cursor: (Object.keys(ownedDetails).length === 0 || isAnalyzing) ? 'not-allowed' : 'pointer' }}
-                  >
-                    {isAnalyzing
-                      ? <svg className="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                      : <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L17.25 9m0 0L21 12.75M17.25 9v12" /></svg>
-                    }
-                    {isAnalyzing ? 'CALCULATING_BALANCE...' : 'DETECT_BOTTLENECKS'}
-                  </button>
-                  <button
-                    className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[12px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all flex items-center justify-center gap-2"
-                    onClick={() => setIsBottleneckModalOpen(true)}
-                    disabled={!bottleneckReport}
-                    style={{ opacity: !bottleneckReport ? 0.5 : 1, cursor: !bottleneckReport ? 'not-allowed' : 'pointer', display: bottleneckReport ? 'flex' : 'none' }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L17.25 9m0 0L21 12.75M17.25 9v12" /></svg>
-                    PERFORMANCE_DASHBOARD
-                  </button>
-                </div>
+            {Object.keys(ownedDetails).length > 0 && (
+              <div style={{ marginTop: "30px" }}>
+                <h3 style={{ color: "#ccff00", marginBottom: "20px", borderBottom: "1px solid #333", paddingBottom: "10px" }}>OWNED_HARDWARE</h3>
+                {Object.entries(ownedDetails).map(([part, detail]) => (
+                  <div key={part} style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", borderBottom: "1px solid #222", paddingBottom: "4px" }}>
+                    <strong style={{ color: "#666", fontSize: "10px" }}>{part.toUpperCase()}:</strong> <span style={{ fontSize: "12px" }}>{detail}</span>
+                  </div>
+                ))}
               </div>
+            )}
+
+            <div style={{ marginTop: "50px", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <button style={{ ...buttonStyle, backgroundColor: "#00f3ff", color: "#000", marginTop: "0" }} onClick={handleSubmitBuild} disabled={isNavigating}>
+                Submit Build Request & Calculate
+              </button>
+              <button style={secondaryButtonStyle} onClick={() => setShowSummary(false)}>
+                Return to Configurator
+              </button>
             </div>
           </div>
         </div>
-
-        <BottleneckAnalysisModal
-          isOpen={isBottleneckModalOpen}
-          onClose={() => setIsBottleneckModalOpen(false)}
-          report={bottleneckReport}
-        />
       </div>
     );
   }
