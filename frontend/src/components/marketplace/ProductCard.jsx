@@ -1,8 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
+
+const makeSVG = (label) => {
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'><rect width='400' height='300' fill='#0d0d0d'/><rect x='60' y='60' width='280' height='180' rx='12' fill='#00f3ff11' stroke='#00f3ff' stroke-width='1.5'/><text x='200' y='158' text-anchor='middle' font-family='monospace' font-size='20' font-weight='bold' fill='#00f3ff'>${label}</text><text x='200' y='183' text-anchor='middle' font-family='monospace' font-size='10' fill='#00f3ff66'>NO IMAGE</text></svg>`;
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+};
+
+const FALLBACK_BY_TYPE = {
+    gpu: makeSVG('GPU'),
+    cpu: makeSVG('CPU'),
+    motherboard: makeSVG('MOTHERBOARD'),
+    ram: makeSVG('RAM'),
+    ssd: makeSVG('SSD'),
+    psu: makeSVG('PSU'),
+    case: makeSVG('CASE'),
+    case_fans: makeSVG('CASE FAN'),
+    cooler: makeSVG('CPU COOLER'),
+};
 
 const ProductCard = ({ product, onClick }) => {
     const hasOffer = product.offer_price;
-    const imageUrl = product.image_url || 'https://via.placeholder.com/400x300/050505/00f3ff?text=NO_IMAGE';
+    const fallback = FALLBACK_BY_TYPE[product.type] || FALLBACK_BY_TYPE.gpu;
+    const [imgSrc, setImgSrc] = useState(product.image_url || fallback);
     const isMultiShop = product.available_shops && product.available_shops.length > 1;
 
     return (
@@ -20,13 +38,14 @@ const ProductCard = ({ product, onClick }) => {
                     </div>
                 )}
             </div>
-            
+
             {/* Image Container */}
             <div className="relative w-full aspect-[4/3] bg-[#0c0c0c] mb-4 flex items-center justify-center overflow-hidden transition-all duration-500 rounded-sm border border-[#1a1a1a] group-hover:border-[var(--color-neon-blue)] group-hover:bg-[#111]">
-                <img 
-                    src={imageUrl} 
-                    alt={product.name} 
-                    className="object-contain w-full h-full p-4 filter grayscale group-hover:grayscale-0 transform group-hover:scale-105 group-hover:-translate-y-2 transition-all duration-700 ease-out"
+                <img
+                    src={imgSrc}
+                    alt={product.name}
+                    className="object-contain w-full h-full p-4 transform group-hover:scale-105 group-hover:-translate-y-2 transition-all duration-700 ease-out"
+                    onError={() => setImgSrc(fallback)}
                 />
             </div>
 
