@@ -3,6 +3,16 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 const WS_BASE_URL = API_BASE_URL.replace(/^http/, "ws");
 
+const asusCodes = [
+    { code: "Fast Flash", prob: "No Memory or Memory Error" },
+    { code: "Slow Flash", prob: "No VGA/Graphics Error" },
+    { code: "Super Slow Flash", prob: "No Boot Device" },
+    { code: "CPU LED", prob: "No CPU or CPU Faulty" },
+    { code: "DRAM LED", prob: "No Memory or Memory Faulty" },
+    { code: "VGA LED", prob: "No Graphics Card detected" },
+    { code: "BOOT LED", prob: "No Bootable Drive found" }
+];
+
 const TroubleshootPage = () => {
     // viewMode: 'config' | 'dashboard'
     const [viewMode, setViewMode] = useState('config');
