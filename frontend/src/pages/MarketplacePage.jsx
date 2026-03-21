@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
 import ProductCard from '../components/marketplace/ProductCard';
 import ProductModal from '../components/marketplace/ProductModal';
 import DualPriceSlider from '../components/marketplace/DualPriceSlider';
@@ -8,7 +9,7 @@ const MarketplacePage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [minPrice, setMinPrice] = useState('0');
     const [maxPrice, setMaxPrice] = useState('1000000');
-    
+
     // New states for dynamic data
     const [productsData, setProductsData] = useState({});
     const [offersData, setOffersData] = useState([]);
@@ -16,48 +17,135 @@ const MarketplacePage = () => {
     const [activeShop, setActiveShop] = useState('all');
     const [loading, setLoading] = useState(true);
     const [selectedProduct, setSelectedProduct] = useState(null);
-
     const categories = [
         { id: 'all', label: 'All Components' },
-        { id: 'gpu', label: 'Graphics Cards' },
         { id: 'cpu', label: 'Processors' },
-        { id: 'mobo', label: 'Motherboards' },
+        { id: 'motherboard', label: 'Motherboards' },
         { id: 'ram', label: 'Memory' },
-        { id: 'ssd', label: 'Storage' },
-        { id: 'hdd', label: 'Hard Drives' },
+        { id: 'ssd', label: 'Storage (SSD)' },
         { id: 'psu', label: 'Power Supplies' },
         { id: 'case', label: 'PC Cases' },
+        { id: 'case_fans', label: 'Case Fans' },
         { id: 'cooler', label: 'Coolers' }
     ];
 
     // Initial mount fetches
     useEffect(() => {
-        // Fetch known shops
-        fetch('/api/marketplace/shops')
-            .then(res => res.json())
-            .then(data => setShopsData(data))
-            .catch(err => console.error("Error fetching shops:", err));
+        setShopsData([
+            { id: "nanotek", name: "Nanotek" },
+            { id: "redline", name: "Redline" },
+            { id: "barclays", name: "Barclays" },
+            { id: "chroma", name: "Chroma" },
+            { id: "sense", name: "Sense" },
+            { id: "techzone", name: "Techzone" },
+            { id: "computerzone", name: "Computerzone" },
+            { id: "winsoft", name: "Winsoft" }
+        ]);
 
-        // Fetch curated offers
-        fetch('/api/marketplace/offers')
-            .then(res => res.json())
-            .then(data => setOffersData(data))
-            .catch(err => console.error("Error fetching offers:", err));
+        setOffersData([
+            { id: 102, type: "cpu", name: "AMD Ryzen 9 7950X3D", actual_price: 250000, offer_price: 210000, discount_percentage: 16, brand: "AMD", image_url: "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&q=80&w=400" }
+        ]);
     }, []);
 
     const fetchMarketplaceData = async () => {
         setLoading(true);
         try {
-            let url = `/api/marketplace/search?category=${activeTab}&shop=${activeShop}`;
-            if (searchQuery) url += `&q=${encodeURIComponent(searchQuery)}`;
-            if (minPrice) url += `&min_price=${minPrice}`;
-            if (maxPrice) url += `&max_price=${maxPrice}`;
-            
-            const res = await fetch(url);
-            const data = await res.json();
-            setProductsData(data);
+            const TABLE_MAP = {
+                "cpu": ["cpu_final"],
+                "motherboard": ["motherboard_final"],
+                "ram": ["ram_final"],
+                "ssd": ["ssd_final"],
+                "psu": ["psu_final"],
+                "case": ["cases_final"],
+                "case_fans": ["case_fans_final"],
+                "cooler": ["cpu_coolers_final"]
+            };
+
+            const targetCategories = activeTab === 'all' ? Object.keys(TABLE_MAP) : [activeTab];
+            const finalData = {};
+            targetCategories.forEach(c => finalData[c] = []);
+
+            const fetchTableData = async (tableName, catKey) => {
+                let query = supabase.from(tableName).select('*').limit(300);
+
+                if (searchQuery) {
+                    let searchCol = 'name';
+                    if (['ssd_final', 'psu_final'].includes(tableName)) searchCol = 'final_model_name';
+                    else if (['cpu_coolers_final', 'case_fans_final'].includes(tableName)) searchCol = 'model_name';
+                    else if (tableName === 'cpu_final') searchCol = 'model';
+                    query = query.ilike(searchCol, `%${searchQuery.trim()}%`);
+                }
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                return data.map(item => {
+                    const name = item.name || item.component_name || item.final_model_name || item.model_name ||
+                        (item.brand && item.line && item.model ? `${item.brand} ${item.line} ${item.model}`.trim() : "Unknown Component");
+
+                    let available_shops = [];
+                    let prices = [];
+
+                    Object.entries(item).forEach(([key, value]) => {
+                        if (key.includes("estimated") || key === "average_price" || key === "price") return;
+
+                        let shop_prefix = null;
+                        if (key.endsWith("_price")) shop_prefix = key.replace("_price", "");
+                        else if (key.startsWith("price_")) shop_prefix = key.replace("price_", "");
+                        else if (key.endsWith("_price_lkr")) shop_prefix = key.replace("_price_lkr", "");
+
+                        if (shop_prefix && value !== null) {
+                            const val = parseFloat(value);
+                            if (!isNaN(val) && val > 0) {
+                                available_shops.push(shop_prefix);
+                                prices.push({ shop: shop_prefix, price: val });
+                            }
+                        }
+                    });
+
+                    if (prices.length === 0) return null;
+
+                    let actual_price = 0;
+                    if (activeShop !== 'all') {
+                        if (!available_shops.includes(activeShop)) return null;
+                        actual_price = prices.find(p => p.shop === activeShop)?.price || 0;
+                    } else {
+                        actual_price = Math.min(...prices.map(p => p.price));
+                    }
+
+                    if (minPrice && actual_price < parseFloat(minPrice)) return null;
+                    if (maxPrice && actual_price > parseFloat(maxPrice)) return null;
+
+                    return {
+                        id: item.id || name,
+                        name: name,
+                        type: catKey,
+                        brand: item.brand || name.split(' ')[0] || "Unknown",
+                        actual_price: actual_price,
+                        available_shops: available_shops,
+                        specs: item.specs || item.specifications,
+                        status: item.status || "In Stock",
+                        image_url: item.image_url || null
+                    };
+                }).filter(Boolean);
+            };
+
+            const promises = [];
+            targetCategories.forEach(cat => {
+                TABLE_MAP[cat].forEach(table => {
+                    promises.push(fetchTableData(table, cat).then(data => ({ cat, data })));
+                });
+            });
+
+            const results = await Promise.all(promises);
+            results.forEach(({ cat, data }) => {
+                finalData[cat] = [...finalData[cat], ...data];
+            });
+
+            setProductsData(finalData);
+
         } catch (err) {
-            console.error("Error fetching marketplace:", err);
+            console.error("Supabase native Marketplace fetch failed:", err);
             setProductsData({});
         } finally {
             setLoading(false);
@@ -77,12 +165,12 @@ const MarketplacePage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#030303] text-white pt-28 pb-20 selection:bg-[var(--color-neon-blue)] selection:text-black">
-            
-            <ProductModal 
-                product={selectedProduct} 
-                isOpen={!!selectedProduct} 
-                onClose={() => setSelectedProduct(null)} 
+        <div className="min-h-screen bg-[#030303] text-white pt-8 pb-20 selection:bg-[var(--color-neon-blue)] selection:text-black">
+
+            <ProductModal
+                product={selectedProduct}
+                isOpen={!!selectedProduct}
+                onClose={() => setSelectedProduct(null)}
             />
 
             <div className="max-w-[1400px] px-6 md:px-12 relative z-10">
@@ -101,7 +189,7 @@ const MarketplacePage = () => {
 
                     {/* Unified Filter & Search Bar - Single Row */}
                     <div className="w-full flex flex-col lg:flex-row items-center justify-start gap-4 mt-2 flex-wrap">
-                        
+
                         {/* Category Selector Dropdown */}
                         <div className="flex items-center w-full lg:w-80 bg-[#0a0a0a] border border-[#333] rounded-sm focus-within:border-[var(--color-neon-blue)] focus-within:shadow-[0_0_15px_rgba(0,243,255,0.15)] transition-all overflow-hidden group min-h-[46px]">
                             <div className="pl-4 pr-2 flex items-center justify-center">
@@ -110,8 +198,8 @@ const MarketplacePage = () => {
                                 </span>
                             </div>
                             <div className="w-px h-6 bg-[#222] mx-1"></div>
-                            <select 
-                                value={activeTab} 
+                            <select
+                                value={activeTab}
                                 onChange={(e) => setActiveTab(e.target.value)}
                                 className="flex-1 bg-transparent py-3 px-2 focus:outline-none text-white font-mono text-sm appearance-none cursor-pointer uppercase"
                             >
@@ -129,8 +217,8 @@ const MarketplacePage = () => {
                                 </span>
                             </div>
                             <div className="w-px h-6 bg-[#222] mx-1"></div>
-                            <select 
-                                value={activeShop} 
+                            <select
+                                value={activeShop}
                                 onChange={(e) => setActiveShop(e.target.value)}
                                 className="flex-1 bg-transparent py-3 px-2 focus:outline-none text-white font-mono text-sm appearance-none cursor-pointer"
                             >
@@ -168,9 +256,9 @@ const MarketplacePage = () => {
 
                         {/* Price Slider Section - Standardized Size */}
                         <div className="w-full lg:w-80 flex items-center bg-[#0a0a0a] border border-[#333] rounded-sm focus-within:border-[var(--color-neon-blue)] focus-within:shadow-[0_0_15px_rgba(0,243,255,0.15)] transition-all overflow-hidden group min-h-[46px]">
-                            <DualPriceSlider 
-                                min={0} 
-                                max={1000000} 
+                            <DualPriceSlider
+                                min={0}
+                                max={1000000}
                                 step={1000}
                                 defaultMinValue={minPrice ? parseFloat(minPrice) : 0}
                                 defaultMaxValue={maxPrice ? parseFloat(maxPrice) : 1000000}
@@ -216,7 +304,7 @@ const MarketplacePage = () => {
                                     No components found matching your criteria.
                                 </div>
                             )}
-                            
+
                             {productsData && Object.entries(productsData).map(([category, items]) => {
                                 if (!items || items.length === 0) return null;
 
@@ -224,12 +312,11 @@ const MarketplacePage = () => {
                                     'gpu': 'Graphics Cards',
                                     'cpu': 'Processors',
                                     'motherboard': 'Motherboards',
-                                    'mobo': 'Motherboards',
                                     'ram': 'Memory',
-                                    'ssd': 'Solid State Drives',
-                                    'hdd': 'Hard Disk Drives',
+                                    'ssd': 'Storage (SSD)',
                                     'psu': 'Power Supplies',
                                     'case': 'PC Cases',
+                                    'case_fans': 'Case Fans',
                                     'cooler': 'Cooling Systems'
                                 };
 
