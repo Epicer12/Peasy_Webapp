@@ -59,8 +59,14 @@ const parseSpecs = (item, type) => {
     }
 
     if (type === 'ram') {
-        // RAM type (DDR4/DDR5) from the DB 'type' column
-        specs.type = item.type || null;
+        // RAM type (DDR4/DDR5) from the DB 'type' column or name
+        let ramType = item.type || item.memory_type || null;
+        if (!ramType) {
+            const tempName = item.name || item.component_name || item.final_model_name || '';
+            const match = tempName.match(/DDR[3-5]/i);
+            if (match) ramType = match[0].toUpperCase();
+        }
+        specs.type = ramType;
         specs.speed_mhz = item.speed_mhz || null;
     }
 
@@ -205,7 +211,19 @@ export const searchComponents = async (query, type) => {
 
         let queryBuilder = supabase
             .from(tableName)
-            .select('*');
+            .select('*')
+            .not('image_url', 'is', null);
+
+        // Sort by benchmark/performance so the "perfect" / best components show on top
+        if (tableName === 'cpu_final') queryBuilder = queryBuilder.order('cpu_mark', { ascending: false, nullsFirst: false });
+        else if (tableName === 'gpu_final') queryBuilder = queryBuilder.order('g3_dmark', { ascending: false, nullsFirst: false });
+        else if (tableName === 'ram_final') queryBuilder = queryBuilder.order('read_speed_mb_s', { ascending: false, nullsFirst: false });
+        else if (tableName === 'ssd_final') queryBuilder = queryBuilder.order('benchmark_score', { ascending: false, nullsFirst: false });
+        // Fallback sort: estimated_price descending (higher price often means higher tier)
+        else if (['motherboard_final', 'cases_final', 'psu_final', 'cpu_coolers_final'].includes(tableName)) {
+            const priceCol = tableName === 'motherboard_final' ? 'estimated_price' : 'estimated_price_lkr';
+            queryBuilder = queryBuilder.order(priceCol, { ascending: false, nullsFirst: false });
+        }
 
         if (query && query.trim()) {
             if (tableName === 'cpu_final') {
@@ -240,8 +258,8 @@ export const searchComponents = async (query, type) => {
         } else if (type === 'monitors') {
             // Just in case monitors table has other stuff? Unlikely but safe.
         }
-
-        const { data, error } = await queryBuilder.limit(50);
+        // We limit to 800 to ensure we pull enough variations (e.g. DDR3 vs DDR4 vs DDR5) so the user isn't stuck with 0 compatible components in the UI.
+        const { data, error } = await queryBuilder.limit(800);
 
         if (error) {
             console.error(`Supabase error fetching ${type} from ${tableName}:`, error);
