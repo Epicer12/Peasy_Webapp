@@ -25,6 +25,7 @@ from .routers import (
     assembly_instructions, 
     builder, 
     warranty,
+    community,
     marketplace
 )
 
@@ -34,6 +35,7 @@ app.include_router(troubleshoot.router, prefix="/api/troubleshoot", tags=["troub
 app.include_router(assembly_instructions.router, prefix="/api")  # new router
 app.include_router(builder.router, prefix="/api")
 app.include_router(warranty.router, prefix="/api")
+app.include_router(community.router, prefix="/api")
 app.include_router(components.router, prefix="/api")
 app.include_router(build_suggestions.router, prefix="/api")
 app.include_router(projects.router, prefix="/api")

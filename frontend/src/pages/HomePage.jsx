@@ -2,29 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
 import { getProjects } from '../services/componentService';
+import { getWarranties } from '../services/warrantyService';
 
 const HomePage = () => {
     const navigate = useNavigate();
     // Kept actual state management from feature branch to display real user projects
     const [savedBuilds, setSavedBuilds] = useState([]);
+    const [warrantyItems, setWarrantyItems] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [warrantyLoading, setWarrantyLoading] = useState(true);
 
     useEffect(() => {
         // Use onAuthStateChanged to ensure auth is initialized before fetching
         const unsubscribe = auth.onAuthStateChanged(async (user) => {
-            const projects = await getProjects(user?.email);
-            setSavedBuilds(projects || []);
+            if (user) {
+                const projects = await getProjects(user.email);
+                setSavedBuilds(projects || []);
+                
+                const warranties = await getWarranties();
+                setWarrantyItems(warranties || []);
+            } else {
+                setSavedBuilds([]);
+                setWarrantyItems([]);
+            }
             setLoading(false);
+            setWarrantyLoading(false);
         });
         return () => unsubscribe();
     }, []);
 
-    // Reconciled static data structures (present in both)
-    const warrantyItems = [
-        { id: 1, name: "RTX 3080", daysLeft: 450, totalDays: 1095, color: "cyan-400" },
-        { id: 2, name: "AMD RYZEN 9", daysLeft: 200, totalDays: 1095, color: "#ff4400" },
-        { id: 3, name: "SAMSUNG 980", daysLeft: 800, totalDays: 1825, color: "#ccff00" },
-    ];
+
 
     const specialDeals = [
         { id: 1, name: "RTX 4070", discount: "-15%", price: "$599", oldPrice: "$699" },
@@ -163,26 +170,47 @@ const HomePage = () => {
                 </div>
 
                 <div className="bg-[#050505] p-5 border border-[#333] space-y-4 max-w-xl hover:border-[#ccff00] transition-colors">
-                    {warrantyItems.map(item => (
-                        <div key={item.id} className="space-y-1">
-                            <div className="flex justify-between text-xs font-mono text-[#666] uppercase">
-                                <span>{item.name}</span>
-                                <span>{item.daysLeft} DAYS LEFT</span>
-                            </div>
-                            <div className="w-full h-1.5 bg-[#1a1a1a]">
-                                <div
-                                    className="h-full"
-                                    style={{
-                                        width: `${(item.daysLeft / item.totalDays) * 100}%`,
-                                        backgroundColor: 'lime'
-                                    }}
-                                ></div>
-                            </div>
+                    {warrantyLoading ? (
+                        <div className="py-6 text-center text-[#666] font-mono animate-pulse uppercase tracking-widest text-xs">
+                            SYNCING_WARRANTIES...
                         </div>
-                    ))}
-                    <button className="w-full py-3 mt-6 text-xs font-bold font-mono text-black bg-[#eeeeee] hover:bg-[#ccff00] transition-colors uppercase tracking-widest">
-                        VIEW_FULL_LOG
-                    </button>
+                    ) : warrantyItems.length === 0 ? (
+                        <div className="py-10 border border-dashed border-[#333] text-center space-y-4">
+                            <p className="text-[#444] font-mono uppercase text-xs">NO_WARRANTIES_UPLOADED</p>
+                            <Link 
+                                to="/warranty"
+                                className="inline-block px-4 py-2 text-[10px] font-bold font-mono border border-[#333] text-[#666] hover:border-[#ccff00] hover:text-[#ccff00] transition-all uppercase"
+                            >
+                                UPLOAD_WARRANTY
+                            </Link>
+                        </div>
+                    ) : (
+                        <>
+                            {warrantyItems.map(item => (
+                                <div key={item.id} className="space-y-1">
+                                    <div className="flex justify-between text-xs font-mono text-[#666] uppercase">
+                                        <span className="truncate max-w-[200px]">{item.name}</span>
+                                        <span>{item.daysLeft} DAYS LEFT</span>
+                                    </div>
+                                    <div className="w-full h-1.5 bg-[#1a1a1a]">
+                                        <div
+                                            className="h-full transition-all duration-1000"
+                                            style={{
+                                                width: `${item.percentage}%`,
+                                                backgroundColor: item.status
+                                            }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            ))}
+                            <Link 
+                                to="/warranty"
+                                className="block w-full py-3 mt-6 text-center text-xs font-bold font-mono text-black bg-[#eeeeee] hover:bg-[#ccff00] transition-colors uppercase tracking-widest"
+                            >
+                                MANAGE_WARRANTIES
+                            </Link>
+                        </>
+                    )}
                 </div>
             </section>
         </div>

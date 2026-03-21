@@ -1,7 +1,9 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { XMarkIcon, ArrowLeftIcon, ShoppingCartIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ArrowLeftIcon, ShoppingCartIcon, CheckCircleIcon, BookmarkIcon } from '@heroicons/react/24/outline';
 import logo from '../assets/logo-white.png';
+import { saveProject } from '../services/componentService';
+import { auth } from '../firebase';
 
 const PurchaseSummaryPage = () => {
     const location = useLocation();
@@ -9,6 +11,7 @@ const PurchaseSummaryPage = () => {
     const { buildState, totalPrice, compatibility } = location.state || { buildState: {}, totalPrice: 0, compatibility: { issues: [], warnings: [] } };
 
     const [orderId] = React.useState(() => Math.random().toString(36).substr(2, 9).toUpperCase());
+    const [isSaving, setIsSaving] = React.useState(false);
 
     // Group items for display
     const coreComponents = ['cpu', 'motherboard', 'ram', 'gpu', 'ssd', 'hdd', 'psu', 'case', 'cooler', 'software'];
@@ -29,16 +32,50 @@ const PurchaseSummaryPage = () => {
     }, {});
 
     const handleBack = () => {
-        // Navigate back to build page, passing state back if needed (or relying on context if we had it)
-        // For now, we just go back. Ideally, ManualBuildPage should initialize from location.state if present, 
-        // but since we are using local state there, we might lose it if we don't pass it back.
-        // Let's pass it back just in case we update ManualBuildPage to read it.
         navigate('/manual-build', { state: { preservedBuildState: buildState } });
+    };
+
+    const handleSaveBuild = async () => {
+        const user = auth.currentUser;
+        if (!user) {
+            alert("Please log in to save your build.");
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            // Transform buildState to format expected by backend (list of dicts)
+            const componentsList = Object.entries(buildState).map(([key, item]) => ({
+                category: key,
+                ...item
+            }));
+
+            const buildImage = buildState['case']?.image || buildState['gpu']?.image || null;
+
+            const projectData = {
+                user_id: user.uid,
+                user_email: user.email,
+                name: `Plan_${orderId}`,
+                description: `Created via Manual Override`,
+                total_price: totalPrice,
+                components: componentsList,
+                status: "Planned",
+                progress: 0,
+                image_url: buildImage
+            };
+
+            await saveProject(projectData);
+            alert("Build saved successfully! You can now access it in your projects or share it in the Community Hub.");
+        } catch (error) {
+            console.error(error);
+            alert("Failed to save build.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleAddToCart = () => {
         alert("System Integration Initiated. Added to Cart.");
-        // in real app: addToCart(buildState); navigate('/cart');
     };
 
     return (
@@ -131,6 +168,15 @@ const PurchaseSummaryPage = () => {
                     </div>
 
                     <div className="space-y-3 mt-auto">
+                        <button
+                            onClick={handleSaveBuild}
+                            disabled={isSaving}
+                            className="w-full py-4 bg-white/5 border border-white/20 text-[#ccff00] font-black text-sm uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            <BookmarkIcon className="w-5 h-5" />
+                            {isSaving ? "Saving..." : "Save Configuration"}
+                        </button>
+
                         <button
                             onClick={handleAddToCart}
                             className="w-full py-4 bg-[#00f3ff] text-black font-black text-sm uppercase tracking-widest hover:bg-[#00d2dd] transition-all flex items-center justify-center gap-2"

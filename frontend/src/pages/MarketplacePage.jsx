@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ProductCard from '../components/marketplace/ProductCard';
 import ProductModal from '../components/marketplace/ProductModal';
 import DualPriceSlider from '../components/marketplace/DualPriceSlider';
@@ -45,7 +45,7 @@ const MarketplacePage = () => {
             .catch(err => console.error("Error fetching offers:", err));
     }, []);
 
-    const fetchMarketplaceData = async () => {
+    const fetchMarketplaceData = useCallback(async () => {
         setLoading(true);
         try {
             let url = `/api/marketplace/search?category=${activeTab}&shop=${activeShop}`;
@@ -62,7 +62,7 @@ const MarketplacePage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [activeTab, activeShop, searchQuery, minPrice, maxPrice]);
 
     // Debounce fetching on filter changes
     useEffect(() => {
@@ -70,7 +70,7 @@ const MarketplacePage = () => {
             fetchMarketplaceData();
         }, 300);
         return () => clearTimeout(delayBounceFn);
-    }, [activeTab, activeShop, searchQuery, minPrice, maxPrice]);
+    }, [fetchMarketplaceData]);
 
     const handleSearch = (e) => {
         setSearchQuery(e.target.value);
