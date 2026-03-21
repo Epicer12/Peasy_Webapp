@@ -1,9 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { XMarkIcon, ArrowLeftIcon, ShoppingCartIcon, CheckCircleIcon, BarsArrowUpIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ArrowLeftIcon, ShoppingCartIcon, CheckCircleIcon, BarsArrowUpIcon, ArrowPathIcon, PresentationChartLineIcon } from '@heroicons/react/24/outline';
 import logo from '../assets/logo-white.png';
 import { analyzeBottleneck } from '../services/componentService';
 import BottleneckAnalysisModal from '../components/modals/BottleneckAnalysisModal';
+import PerformanceDashboardModal from '../components/modals/PerformanceDashboardModal';
 
 const PurchaseSummaryPage = () => {
     const location = useLocation();
@@ -14,6 +15,7 @@ const PurchaseSummaryPage = () => {
 
     // Bottleneck Analysis States
     const [isBottleneckModalOpen, setIsBottleneckModalOpen] = useState(false);
+    const [isPerfModalOpen, setIsPerfModalOpen] = useState(false);
     const [bottleneckReport, setBottleneckReport] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -167,6 +169,14 @@ const PurchaseSummaryPage = () => {
                                 {isAnalyzing ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <BarsArrowUpIcon className="w-5 h-5" />}
                                 {isAnalyzing ? 'CALCULATING_BALANCE...' : 'DETECT_BOTTLENECKS'}
                             </button>
+                            <button
+                                className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[12px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all flex items-center justify-center gap-2 group"
+                                onClick={() => setIsPerfModalOpen(true)}
+                                disabled={!bottleneckReport}
+                            >
+                                <PresentationChartLineIcon className="w-5 h-5 group-hover:text-[#00f3ff] transition-colors" />
+                                PERFORMANCE_DASHBOARD
+                            </button>
 
                         </div>
                     </div>
@@ -205,6 +215,13 @@ const PurchaseSummaryPage = () => {
             <BottleneckAnalysisModal
                 isOpen={isBottleneckModalOpen}
                 onClose={() => setIsBottleneckModalOpen(false)}
+                report={bottleneckReport}
+            />
+
+            {/* Performance Dashboard Modal — same logic as BuildDetailsPage */}
+            <PerformanceDashboardModal
+                isOpen={isPerfModalOpen}
+                onClose={() => setIsPerfModalOpen(false)}
                 report={bottleneckReport}
             />
         </div>
