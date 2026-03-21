@@ -68,7 +68,7 @@ const PurchaseSummaryPage = () => {
                     <h1 className="text-2xl md:text-3xl font-black tracking-[-0.05em] uppercase text-[#eeeeee]">
                         System Configuration Summary
                     </h1>
-                    <span className="text-[10px] font-mono text-[#666666]">ORD.ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}</span>
+                    <span className="text-[10px] font-mono text-[#666666]">ORD.ID: {orderId}</span>
                 </header>
             </div>
 
@@ -80,7 +80,6 @@ const PurchaseSummaryPage = () => {
                     {compatibility?.issues?.length > 0 && (
                         <div className="mb-6 p-4 bg-red-900/20 border border-red-900 rounded-sm">
                             <div className="flex items-center gap-2 text-red-400 font-bold text-xs uppercase mb-2">
-                                <ExclamationTriangleIcon className="w-4 h-4" />
                                 {compatibility.issues.length} Compatibility Issue{compatibility.issues.length > 1 ? 's' : ''} Detected
                             </div>
                             <ul className="space-y-1">
@@ -93,7 +92,6 @@ const PurchaseSummaryPage = () => {
                     {compatibility?.warnings?.length > 0 && (
                         <div className="mb-6 p-4 bg-yellow-900/10 border border-yellow-900/40 rounded-sm">
                             <div className="flex items-center gap-2 text-yellow-400 font-bold text-xs uppercase mb-2">
-                                <ExclamationTriangleIcon className="w-4 h-4" />
                                 {compatibility.warnings.length} Advisory Notice{compatibility.warnings.length > 1 ? 's' : ''}
                             </div>
                             <ul className="space-y-1">
@@ -188,7 +186,7 @@ const PurchaseSummaryPage = () => {
                 {/* Right Column: Order Summary */}
                 <div className="w-[460px] shrink-0 bg-neutral-900 border-l-2 border-[#333333] flex flex-col h-full overflow-hidden">
 
-                    {/* ── Fixed top: title + price ── */}
+                    {/* Fixed top: title + price */}
                     <div className="px-8 pt-8 pb-4 shrink-0">
                         <h2 className="text-lg font-black uppercase text-white mb-5 tracking-wide">Order Summary</h2>
                         <div className="space-y-2.5">
@@ -211,7 +209,7 @@ const PurchaseSummaryPage = () => {
                         <div className="mt-4 border-t border-neutral-800"></div>
                     </div>
 
-                    {/* ── Scrollable middle: Performance Estimator + insights ── */}
+                    {/* Scrollable middle: Performance Estimator + insights */}
                     <div className="flex-1 overflow-y-auto px-8 py-4 custom-scrollbar">
 
                         {/* Performance Dashboard */}
@@ -227,7 +225,7 @@ const PurchaseSummaryPage = () => {
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    {/* ── FPS Estimates ── */}
+                                    {/* FPS Estimates */}
                                     <div className="grid grid-cols-3 gap-2">
                                         <div className="bg-neutral-950 border border-neutral-800 p-3 text-center transition-colors hover:border-[#00f3ff]/50">
                                             <div className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">1080p Ultra</div>
@@ -243,7 +241,7 @@ const PurchaseSummaryPage = () => {
                                         </div>
                                     </div>
 
-                                    {/* ── System Metrics ── */}
+                                    {/* System Metrics */}
                                     <div className="bg-neutral-900 border border-neutral-800 p-4">
                                         <div className="flex items-center gap-2 mb-3">
                                             <BoltIcon className="w-4 h-4 text-yellow-500" />
@@ -265,7 +263,7 @@ const PurchaseSummaryPage = () => {
                                         </div>
                                     </div>
 
-                                    {/* ── Hardware Details Grid ── */}
+                                    {/* Hardware Details Grid */}
                                     <div className="grid grid-cols-2 gap-3">
                                         {/* CPU */}
                                         <div className="bg-neutral-950 border border-neutral-800 p-3">
@@ -338,7 +336,7 @@ const PurchaseSummaryPage = () => {
                         )}
                     </div>
 
-                    {/* ── Fixed bottom: buttons + compat ── */}
+                    {/* Fixed bottom: buttons + compat */}
                     <div className="px-8 pt-4 pb-8 shrink-0 border-t border-neutral-800">
                         <div className="space-y-3">
                             <button

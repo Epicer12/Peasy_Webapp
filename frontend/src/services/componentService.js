@@ -140,7 +140,7 @@ export const searchComponents = async (query, type) => {
         // Correct mappings based on Database Inspection
         const tableMap = {
             "cpu": "cpu_final",
-            "motherboard": "motherboard_final", // Added for clarity
+            "motherboard": "motherboard_final",
             "mobo": "motherboard_final",
             "ram": "ram_final",
             "gpu": "gpu_final",
@@ -149,16 +149,14 @@ export const searchComponents = async (query, type) => {
             "psu": "psu_final",
             "case": "cases_final",
             "cooler": "cpu_coolers_final",
-            "case_fans": "case_fans_final", // Mapped newly provided table
+            "case_fans": "case_fans_final",
             "software": "os_software_prices",
-            "os": "os_software_prices", // Keep for backward compat
+            "os": "os_software_prices",
             "mice": "peripherals_prices",
             "headsets": "peripherals_prices",
             "consoles": "console_handheld_gaming_prices",
             "monitors": "monitors_prices",
             "keyboards": "peripherals_prices",
-
-            // New ones - keeping mapping if they exist
             "all_in_one": "all_in_one_systems_prices",
             "desktop": "desktop_pcs_prices",
             "system": "desktop_systems_prices",
@@ -176,7 +174,7 @@ export const searchComponents = async (query, type) => {
             let peripheralsQuery = supabase
                 .from('peripherals_prices')
                 .select('*')
-                .ilike('component_name', '%speaker%'); // Filter for speakers
+                .ilike('component_name', '%speaker%');
 
             let partyBoxQuery = supabase
                 .from('party_box_pricing')
@@ -200,7 +198,7 @@ export const searchComponents = async (query, type) => {
             const transformedP = transformData(pData, 'speakers');
             const transformedPB = transformData(pbData, 'speakers');
 
-            return [...transformedPB, ...transformedP]; // PartyBox first? or mixed?
+            return [...transformedPB, ...transformedP];
         }
 
         const tableName = tableMap[type?.toLowerCase()] || type;
@@ -226,24 +224,17 @@ export const searchComponents = async (query, type) => {
         if (type === 'keyboards') {
             queryBuilder = queryBuilder.ilike('component_name', '%keyboard%');
         } else if (type === 'mice') {
-            // "mouse" covers "Gaming Mouse", "Wireless Mouse"
             queryBuilder = queryBuilder.ilike('component_name', '%mouse%');
         } else if (type === 'headsets') {
-            // Headsets/Headphones from peripherals table
             queryBuilder = queryBuilder.or('component_name.ilike.%headset%,component_name.ilike.%headphone%');
-            // Exclude Speakers
             queryBuilder = queryBuilder.not('component_name', 'ilike', '%speaker%');
         } else if (type === 'consoles') {
-            // Strict filter for Consoles
             queryBuilder = queryBuilder.or('component_name.ilike.%console%,component_name.ilike.%handheld%,component_name.ilike.%ps5%,component_name.ilike.%playstation%,component_name.ilike.%xbox%,component_name.ilike.%switch%,component_name.ilike.%nintendo%');
-
-            // Exclude Accessories to ensure only actual Consoles/Systems appear
             queryBuilder = queryBuilder.not('component_name', 'ilike', '%controller%');
             queryBuilder = queryBuilder.not('component_name', 'ilike', '%stand%');
             queryBuilder = queryBuilder.not('component_name', 'ilike', '%station%');
             queryBuilder = queryBuilder.not('component_name', 'ilike', '%cooling%');
             queryBuilder = queryBuilder.not('component_name', 'ilike', '%remote%');
-            // User reported "wireless headset" appeared. Excluding audio gear.
             queryBuilder = queryBuilder.not('component_name', 'ilike', '%headset%');
             queryBuilder = queryBuilder.not('component_name', 'ilike', '%headphone%');
         } else if (type === 'monitors') {
@@ -277,4 +268,106 @@ export const submitBuildRequest = async (payload) => {
     console.log("Submitting build request (mock):", payload);
     await new Promise((resolve) => setTimeout(resolve, 1000));
     return { success: true };
+};
+
+export const generateBuilds = async (payload) => {
+    console.log("Generating builds for payload:", payload);
+    try {
+        const response = await fetch('/api/generate-builds', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ summary: payload })
+        });
+        if (!response.ok) {
+            throw new Error('Failed to generate builds');
+        }
+        return await response.json();
+    } catch (e) {
+        console.error(e);
+        return { builds: [], warning: "" };
+    }
+};
+
+export const generateBuildSummary = async (builds) => {
+    try {
+        const response = await fetch('/api/generate-summary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ builds })
+        });
+        if (!response.ok) throw new Error('Failed to generate summary');
+        return await response.json();
+    } catch (e) {
+        console.error(e);
+        return { summaries: [] };
+    }
+};
+
+export const saveProject = async (projectData) => {
+    try {
+        const response = await fetch('/api/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(projectData)
+        });
+        if (!response.ok) throw new Error('Failed to save project');
+        return await response.json();
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
+};
+
+export const getProjects = async (email) => {
+    try {
+        const url = email ? `/api/projects?user_email=${email}` : '/api/projects';
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch projects');
+        return await response.json();
+    } catch (e) {
+        console.error(e);
+        return [];
+    }
+};
+
+export const getProjectById = async (id, email) => {
+    try {
+        const url = email ? `/api/projects/${id}?user_email=${email}` : `/api/projects/${id}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch project');
+        return await response.json();
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
+};
+
+export const updateProject = async (id, projectData) => {
+    try {
+        const response = await fetch(`/api/projects/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(projectData)
+        });
+        if (!response.ok) throw new Error('Failed to update project');
+        return await response.json();
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
+};
+
+export const deleteProject = async (id, email) => {
+    try {
+        const response = await fetch(`/api/projects/${id}?user_email=${email}`, {
+            method: 'DELETE'
+        });
+        if (!response.ok) throw new Error('Failed to delete project');
+        return await response.json();
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
 };

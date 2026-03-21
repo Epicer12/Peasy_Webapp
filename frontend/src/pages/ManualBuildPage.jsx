@@ -36,7 +36,7 @@ const CATEGORIES = [
     {
         id: 'cables',
         name: 'Cables',
-        icon: 'link', // Parent Category
+        icon: 'link',
         section: 'PERIPHERALS & ACCESSORIES',
         subCategories: [
             { id: 'connectors', name: 'Connectors', icon: 'link', backendKey: 'connectors' },
@@ -44,7 +44,6 @@ const CATEGORIES = [
         ]
     },
     { id: 'consoles', name: 'Consoles', icon: 'gamepad', backendKey: 'consoles', section: 'PERIPHERALS & ACCESSORIES' },
-
 ];
 
 // Flatten categories for easy lookup of backend keys
@@ -74,8 +73,8 @@ const ManualBuildPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const [activeCategory, setActiveCategory] = useState('cpu'); // Default to CPU
-    const [expandedCategories, setExpandedCategories] = useState({ processors: true }); // Pre-expand Processors
+    const [activeCategory, setActiveCategory] = useState('cpu');
+    const [expandedCategories, setExpandedCategories] = useState({ processors: true });
     // Restore build state if returning from summary, otherwise empty
     const [buildState, setBuildState] = useState(location.state?.preservedBuildState || {});
     const [products, setProducts] = useState([]);
@@ -87,7 +86,7 @@ const ManualBuildPage = () => {
     const categoryRefs = React.useRef({});
 
     // Advanced Logic State
-    const [gpuBrand, setGpuBrand] = useState('NVIDIA'); // Replaces CPU chipset toggle
+    const [gpuBrand, setGpuBrand] = useState('NVIDIA');
     const [compatibility, setCompatibility] = useState({ issues: [], warnings: [] });
 
     const [showRamModal, setShowRamModal] = useState(false);
@@ -152,8 +151,6 @@ const ManualBuildPage = () => {
         }));
     };
 
-    // ... (Rest of logic remains same until return)
-
     // Update total price and Check Compatibility
     useEffect(() => {
         // Price
@@ -195,11 +192,7 @@ const ManualBuildPage = () => {
             }
         }
 
-        // General compatibility check for all other categories
-        if (!isCompatible(product)) {
-            showToastMessage('⚠ INCOMPATIBLE: This component conflicts with your current build');
-            return;
-        }
+
 
         // Toggle logic
         if (buildState[activeCategory]?.id === product.id) {
@@ -249,12 +242,6 @@ const ManualBuildPage = () => {
     };
 
     const isCompatible = (item) => {
-        // 0. Platform Enforcement (CPU level)
-        if (activeCategory === 'cpu') {
-            if (chipset === 'AMD' && item.specs?.brand === 'Intel') return false;
-            if (chipset === 'Intel' && item.specs?.brand === 'AMD') return false;
-        }
-
         // 1. CPU <-> Motherboard
         if (activeCategory === 'motherboard' && buildState.cpu) {
             const cpuSocket = buildState.cpu.specs?.socket;
@@ -289,9 +276,32 @@ const ManualBuildPage = () => {
         return true;
     };
 
+    const getGpuBrandScore = (item) => {
+        const name = (item.name || '').toUpperCase();
+        const mfg = (item.manufacturer || item.gpu_chip || '').toUpperCase();
+        const isNvidia = name.includes('NVIDIA') || name.includes('GEFORCE') || name.includes('RTX') || name.includes('GTX') || mfg.includes('NVIDIA');
+        const isAmd = name.includes('AMD') || name.includes('RADEON') || name.includes('RX') || mfg.includes('AMD');
+        if (gpuBrand === 'NVIDIA') {
+            if (isNvidia) return 0;   // chosen brand — top
+            if (isAmd) return 2;      // other brand — bottom
+            return 1;                 // unknown — middle
+        } else {
+            if (isAmd) return 0;      // chosen brand — top
+            if (isNvidia) return 2;   // other brand — bottom
+            return 1;                 // unknown — middle
+        }
+    };
+
     const getSortedList = () => {
         let list = [...products];
         list.sort((a, b) => {
+            // On GPU category: sort by brand preference first
+            if (activeCategory === 'gpu') {
+                const aBrand = getGpuBrandScore(a);
+                const bBrand = getGpuBrandScore(b);
+                if (aBrand !== bBrand) return aBrand - bBrand;
+            }
+            // Then by compatibility
             const aComp = isCompatible(a);
             const bComp = isCompatible(b);
             if (aComp && !bComp) return -1;
@@ -301,23 +311,19 @@ const ManualBuildPage = () => {
         return list;
     };
 
-
-
-
     return (
         <div className="flex h-screen bg-[#050505] text-[#eeeeee] font-mono overflow-hidden selection:bg-[#ccff00] selection:text-black">
 
-
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0">
-                {/* Composite Header - Recreating the "Sidebar Top + Main Header" visual strip */}
+                {/* Composite Header */}
                 <div className="flex h-20 shrink-0 bg-[#050505] z-50">
-                    {/* Logo Area (Matches Category Sidebar Width, Left Aligned) */}
+                    {/* Logo Area */}
                     <div className="w-[300px] flex justify-start items-center pl-4 border-r-2 border-b-2 border-[#333333] shrink-0">
                         <img src={logo} alt="PEASY" className="h-full max-h-12 object-contain" />
                     </div>
 
-                    {/* Main Header Area (Simulates MainLayout Header) */}
+                    {/* Main Header Area */}
                     <header className="flex-1 flex flex-col justify-between px-6 md:px-8 pb-3 pt-3 border-b-2 border-[#333333] bg-[#050505] min-w-0">
                         <div className="flex justify-between items-start mb-1">
                             <span className="text-[10px] font-mono text-[#666666] ml-auto">SYS.VER.2.0.5 // ONLINE</span>
@@ -346,7 +352,7 @@ const ManualBuildPage = () => {
                                             setShowRamModal(false);
                                             setPendingRamProduct(null);
                                         }}
-                                        className="border border-neutral-700 hover:border-[#00f3ff] hover:bg-[#00f3ff]/10 text-white py-3 px-2 font-mono font-bold transition-all text-sm md:text-lg"
+                                        className="border border-neutral-700 hover:border-[#00f3ff] hover:bg-[#00f3ff]/10 text-white py-4 font-mono font-bold transition-all text-xl"
                                     >
                                         {qty} x Module{qty > 1 ? 's' : ''}
                                     </button>
@@ -376,8 +382,8 @@ const ManualBuildPage = () => {
                                 // Section Header Logic
                                 const prevCat = index > 0 ? CATEGORIES[index - 1] : null;
                                 const isNewSection = !prevCat || cat.section !== prevCat.section;
-                                const showSectionHeader = isNewSection && cat.section !== 'OTHERS'; // Don't show header for OTHERS
-                                const showSpacer = isNewSection && cat.section === 'OTHERS'; // Just spacer for OTHERS
+                                const showSectionHeader = isNewSection && cat.section !== 'OTHERS';
+                                const showSpacer = isNewSection && cat.section === 'OTHERS';
 
                                 return (
                                     <React.Fragment key={cat.id}>
@@ -411,31 +417,31 @@ const ManualBuildPage = () => {
                                                     </span>
                                                 </div>
 
-                                                    {/* Sub Categories */}
-                                                    {isExpanded && (
-                                                        <div className="bg-neutral-950/50 border-t border-neutral-800/50">
-                                                            {cat.subCategories.map(sub => {
-                                                                const isSelected = buildState[sub.id];
-                                                                const isActive = activeCategory === sub.id;
+                                                {/* Sub Categories */}
+                                                {expandedCategories[cat.id] && (
+                                                    <div className="bg-neutral-950/50">
+                                                        {cat.subCategories.map(sub => {
+                                                            const isSelected = buildState[sub.id];
+                                                            const isActive = activeCategory === sub.id;
 
-                                                                return (
-                                                                    <div
-                                                                        key={sub.id}
-                                                                        ref={el => categoryRefs.current[sub.id] = el}
-                                                                        onClick={() => setActiveCategory(sub.id)}
-                                                                        className={`
-                                                                            group/item pl-8 pr-3 py-2.5 cursor-pointer border-l-4 transition-all flex items-center justify-between
-                                                                            ${isActive ? 'bg-neutral-800 border-l-[#00f3ff]' : 'hover:bg-neutral-800/50 border-l-transparent'}
-                                                                        `}
-                                                                    >
-                                                                        <div className="flex items-center gap-2 min-w-0">
-                                                                            {isSelected && (
-                                                                                <div className="w-1.5 h-1.5 rounded-full bg-[#00f3ff] shrink-0"></div>
-                                                                            )}
-                                                                            <span className={`text-xs uppercase font-bold tracking-wide truncate ${isActive ? 'text-[#00f3ff]' : isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
-                                                                                {sub.name}
-                                                                            </span>
-                                                                        </div>
+                                                            return (
+                                                                <div
+                                                                    key={sub.id}
+                                                                    ref={el => categoryRefs.current[sub.id] = el}
+                                                                    onClick={() => setActiveCategory(sub.id)}
+                                                                    className={`
+                                                                        group/item pl-8 pr-4 py-3 cursor-pointer border-l-4 transition-all flex items-center justify-between
+                                                                        ${isActive ? 'bg-neutral-900 border-l-[#00f3ff]' : 'hover:bg-neutral-900 border-l-transparent'}
+                                                                    `}
+                                                                >
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className={`text-xs uppercase font-bold ${isActive ? 'text-[#00f3ff]' : 'text-gray-500 hover:text-white'}`}>
+                                                                            {sub.name}
+                                                                        </span>
+                                                                        {isSelected && (
+                                                                            <div className="w-2 h-2 rounded-full bg-[#00f3ff]"></div>
+                                                                        )}
+                                                                    </div>
 
                                                                     {isSelected && (
                                                                         <button
@@ -472,7 +478,6 @@ const ManualBuildPage = () => {
                                                     )}
                                                 </div>
 
-                                                {/* Delete Icon for Standard Categories */}
                                                 {buildState[cat.id] && (
                                                     <button
                                                         onClick={(e) => handleRemoveItem(e, cat.id)}
@@ -489,7 +494,7 @@ const ManualBuildPage = () => {
                             })}
                         </div>
 
-                        {/* Total Price Area - Fixed at Bottom */}
+                        {/* Total Price Area */}
                         <div className="p-6 bg-neutral-950 border-t border-neutral-800 shrink-0 z-10">
                             <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Estimated Total</div>
                             <div className="text-2xl font-black text-[#00f3ff]">
@@ -559,9 +564,7 @@ const ManualBuildPage = () => {
                             {/* Step breadcrumb + nav arrows */}
                             <div className="flex items-center justify-between gap-4">
                                 <div className="flex items-center gap-3 min-w-0">
-                                    {/* Step number */}
                                     {(() => {
-                                        const idx = ALL_CATEGORIES.findIndex(c => c.id === activeCategory);
                                         const parentCat = CATEGORIES.find(c => c.subCategories?.some(s => s.id === activeCategory));
                                         return (
                                             <div className="flex flex-col">
@@ -592,6 +595,7 @@ const ManualBuildPage = () => {
                                                             >AMD</button>
                                                         </div>
                                                     )}
+
                                                 </div>
                                                 <p className="text-gray-600 text-xs mt-0.5 font-mono">
                                                     {products.length} results · {buildState[activeCategory] ? buildState[activeCategory].name.substring(0, 40) : 'no selection'}
@@ -601,7 +605,7 @@ const ManualBuildPage = () => {
                                     })()}
                                 </div>
 
-                                {/* Controls: Clear + Prev/Next */}
+                                {/* Controls: Clear + Prev/Next + Search */}
                                 <div className="flex items-center gap-2 shrink-0">
                                     {buildState[activeCategory] && (
                                         <button
@@ -611,7 +615,6 @@ const ManualBuildPage = () => {
                                             Clear
                                         </button>
                                     )}
-                                    {/* Prev button */}
                                     {(() => {
                                         const idx = ALL_CATEGORIES.findIndex(c => c.id === activeCategory);
                                         const prev = idx > 0 ? ALL_CATEGORIES[idx - 1] : null;
@@ -643,19 +646,16 @@ const ManualBuildPage = () => {
                                             </>
                                         );
                                     })()}
-                                </div>
-                            </div>
-
-                            <div className="flex gap-4 items-center mt-3">
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="SEARCH_DB..."
-                                        className="bg-neutral-800 border border-neutral-700 text-white px-4 py-2 pl-10 text-sm font-mono w-64 focus:border-[#00f3ff] outline-none rounded-none transition-all placeholder-gray-600"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                    />
-                                    <span className="absolute left-3 top-2.5 text-gray-500 text-xs">🔍</span>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="SEARCH_DB..."
+                                            className="bg-neutral-800 border border-neutral-700 text-white px-4 py-2 pl-10 text-sm font-mono w-64 focus:border-[#00f3ff] outline-none rounded-none transition-all placeholder-gray-600"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                        />
+                                        <span className="absolute left-3 top-2.5 text-gray-500 text-xs">🔍</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -669,89 +669,85 @@ const ManualBuildPage = () => {
                                     <ProductSkeleton />
                                 </>
                             ) : products.length > 0 ? (
-                                (() => {
-                                    const sorted = getSortedList();
+                                getSortedList().map((item) => {
+                                    const isSelected = buildState[activeCategory]?.id === item.id;
+                                    const compatible = isCompatible(item);
 
-                                    return sorted.map((item) => {
-                                        const isSelected = buildState[activeCategory]?.id === item.id;
-                                        const compatible = isCompatible(item);
-
-                                        return (
-                                            <div
-                                                key={item.id}
-                                                onClick={() => handleSelectProduct(item)}
-                                                className={`
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            onClick={() => handleSelectProduct(item)}
+                                            className={`
                                             relative flex items-center p-4 bg-neutral-950 border rounded-none cursor-pointer group transition-all duration-300
                                             ${isSelected ? 'border-[#00f3ff] shadow-[0_0_20px_rgba(0,243,255,0.1)]' : 'border-neutral-800 hover:border-gray-600'}
                                             ${!compatible ? 'opacity-60 grayscale hover:grayscale-0' : ''}
                                         `}
-                                            >
-                                                {/* Selection Indicator */}
-                                                <div className={`absolute top-0 left-0 bottom-0 w-1 transition-colors ${isSelected ? 'bg-[#00f3ff]' : 'bg-transparent group-hover:bg-gray-700'}`}></div>
+                                        >
+                                            {/* Selection Indicator */}
+                                            <div className={`absolute top-0 left-0 bottom-0 w-1 transition-colors ${isSelected ? 'bg-[#00f3ff]' : 'bg-transparent group-hover:bg-gray-700'}`}></div>
 
-                                                {/* Product Image Placeholder */}
-                                                <div className="relative flex items-center justify-center w-24 h-24 bg-neutral-900 border border-neutral-800 mr-6 overflow-hidden shrink-0">
-                                                    {item.image_url ? (
-                                                        <img
-                                                            src={item.image_url}
-                                                            alt={item.name}
-                                                            className="w-full h-full object-contain p-2"
-                                                            onError={(e) => {
-                                                                e.target.onerror = null; // prevents looping
-                                                                e.target.style.display = 'none';
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        <span className="text-neutral-700 text-xs font-mono select-none">NO_IMG</span>
+                                            {/* Product Image */}
+                                            <div className="relative flex items-center justify-center w-24 h-24 bg-neutral-900 border border-neutral-800 mr-6 overflow-hidden shrink-0">
+                                                {item.image_url ? (
+                                                    <img
+                                                        src={item.image_url}
+                                                        alt={item.name}
+                                                        className="w-full h-full object-contain p-2"
+                                                        onError={(e) => {
+                                                            e.target.onerror = null;
+                                                            e.target.style.display = 'none';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <span className="text-neutral-700 text-xs font-mono select-none">NO_IMG</span>
+                                                )}
+                                            </div>
+
+                                            {/* Content */}
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <h3 className={`font-bold text-lg leading-tight ${isSelected ? 'text-[#00f3ff]' : 'text-gray-200'}`}>
+                                                        {item.name}
+                                                    </h3>
+                                                    {!compatible && (
+                                                        <span className="bg-red-900/50 text-red-500 text-[10px] uppercase font-bold px-2 py-0.5 border border-red-900 rounded">
+                                                            Incompatible
+                                                        </span>
                                                     )}
                                                 </div>
 
-                                                {/* Content */}
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <h3 className={`font-bold text-lg leading-tight ${isSelected ? 'text-[#00f3ff]' : 'text-gray-200'}`}>
-                                                            {item.name}
-                                                        </h3>
-                                                        {!compatible && (
-                                                            <span className="bg-red-900/50 text-red-500 text-[10px] uppercase font-bold px-2 py-0.5 border border-red-900 rounded">
-                                                                Incompatible
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    {item.specs && Object.entries(item.specs).map(([k, v]) => {
+                                                        if (!['socket', 'chipset', 'wattage', 'type', 'brand', 'form_factor'].includes(k)) return null;
+                                                        return (
+                                                            <span key={k} className="px-2 py-1 bg-neutral-900 border border-neutral-800 text-neutral-400 text-xs font-mono uppercase rounded-sm">
+                                                                {k}: {v}
                                                             </span>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="flex flex-wrap gap-2 mt-2">
-                                                        {item.specs && Object.entries(item.specs).map(([k, v]) => {
-                                                            if (!['socket', 'chipset', 'wattage', 'type', 'brand', 'form_factor'].includes(k)) return null;
-                                                            return (
-                                                                <span key={k} className="px-2 py-1 bg-neutral-900 border border-neutral-800 text-neutral-400 text-xs font-mono uppercase rounded-sm">
-                                                                    {k}: {v}
-                                                                </span>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-
-                                                {/* Price & Action */}
-                                                <div className="text-right pl-6 border-l border-neutral-800 ml-6 min-w-[140px] flex flex-col items-end justify-center h-full">
-                                                    <div className="font-mono text-[#00f3ff] font-bold text-lg mb-2">
-                                                        {getPrice(item)}
-                                                    </div>
-                                                    <button
-                                                        className={`
-                                                    px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all
-                                                    ${isSelected
-                                                                ? 'bg-[#00f3ff] text-black border border-[#00f3ff]'
-                                                                : 'bg-transparent text-gray-500 border border-neutral-700 group-hover:border-gray-400 group-hover:text-white'
-                                                            }
-                                                `}
-                                                    >
-                                                        {isSelected ? 'SELECTED' : 'SELECT'}
-                                                    </button>
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
-                                        );
-                                    }); // end sorted.map
-                                })() // end IIFE
+
+                                            {/* Price & Action */}
+                                            <div className="text-right pl-6 border-l border-neutral-800 ml-6 min-w-[140px] flex flex-col items-end justify-center h-full">
+                                                <div className="font-mono text-[#00f3ff] font-bold text-lg mb-2">
+                                                    {getPrice(item)}
+                                                </div>
+                                                <button
+                                                    className={`
+                                                    px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all
+                                                    ${isSelected
+                                                            ? 'bg-[#00f3ff] text-black border border-[#00f3ff]'
+                                                            : 'bg-transparent text-gray-500 border border-neutral-700 group-hover:border-gray-400 group-hover:text-white'
+                                                        }
+                                                `}
+                                                >
+                                                    {isSelected ? 'SELECTED' : 'SELECT'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })
                             ) : (
                                 <div className="text-center text-gray-600 font-mono py-20">
                                 // NO_COMPONENTS_FOUND_IN_SECTOR

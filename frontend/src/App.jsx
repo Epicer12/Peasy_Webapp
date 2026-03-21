@@ -3,13 +3,13 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/auth/LoginPage';
 import SignUpPage from './pages/auth/SignUpPage';
 import HomePage from './pages/HomePage';
-import BuildPage from "./pages/BuildPage";
+import BuildPage from './pages/BuildPage';
+import BuildSuggestions from './pages/BuildSuggestions';
 import CameraPage from './pages/CameraPage';
 import ResultsPage from './pages/ResultsPage';
 import ModelViewerPage from './pages/ModelViewerPage';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
-import BuildPage from './pages/BuildPage';
 import ManualBuildPage from './pages/ManualBuildPage';
 import PurchaseSummaryPage from './pages/PurchaseSummaryPage';
 import PlanningPage from './pages/PlanningPage';
@@ -17,6 +17,14 @@ import AssemblePage from './pages/AssemblePage';
 import TroubleshootPage from './pages/TroubleshootPage';
 import MarketplacePage from './pages/MarketplacePage';
 import CommunityPage from './pages/CommunityPage';
+import UploadBuildPage from './pages/UploadBuildPage';
+import EditBuildPage from './pages/EditBuildPage';
+import MyBuildsPage from './pages/MyBuildsPage';
+import BuildDetailPage from './pages/BuildDetailPage';
+import GuidePage from './pages/GuidePage';
+import BuildDetailsPage from './pages/BuildDetailsPage';
+import WarrantyPage from './pages/WarrantyPage';
+import ProfilePage from './pages/ProfilePage';
 
 function App() {
   return (
@@ -26,18 +34,28 @@ function App() {
         <Route path="/" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
 
-        {/* Proteted Routes wrapped in MainLayout */}
-        <Route path="/build" element={<ProtectedRoute><BuildPage /></ProtectedRoute>} />
+        {/* Protected Routes directly accessible (Build process) */}
         <Route path="/manual-build" element={<ProtectedRoute><ManualBuildPage /></ProtectedRoute>} />
         <Route path="/purchase-summary" element={<ProtectedRoute><PurchaseSummaryPage /></ProtectedRoute>} />
 
+        {/* Protected Routes wrapped in MainLayout */}
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path="/home" element={<HomePage />} />
+          <Route path="/build" element={<BuildPage />} />
+          <Route path="/build-suggestions" element={<BuildSuggestions />} />
           <Route path="/plan" element={<PlanningPage />} />
           <Route path="/assemble" element={<AssemblePage />} />
           <Route path="/troubleshoot" element={<TroubleshootPage />} />
           <Route path="/marketplace" element={<MarketplacePage />} />
           <Route path="/community" element={<CommunityPage />} />
+          <Route path="/community/upload" element={<UploadBuildPage />} />
+          <Route path="/community/edit/:id" element={<EditBuildPage />} />
+          <Route path="/community/my-builds" element={<MyBuildsPage />} />
+          <Route path="/community/build/:id" element={<BuildDetailPage />} />
+          <Route path="/guide" element={<GuidePage />} />
+          <Route path="/build-details/:projectId" element={<BuildDetailsPage />} />
+          <Route path="/warranty" element={<WarrantyPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
 
           {/* Sub-features */}
           <Route path="/camera" element={<CameraPage />} />

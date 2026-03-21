@@ -1,15 +1,27 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { auth } from '../firebase';
+import { getProjects } from '../services/componentService';
 
 const HomePage = () => {
-    // Mock Data
-    const savedBuilds = [
-        { id: 1, name: "GAMING_BEAST_24", status: "IN_PROGRESS", progress: 60, price: "$2,400" },
-        { id: 2, name: "OFFICE_WRKSTN", status: "COMPLETED", progress: 100, price: "$800" },
-    ];
+    const navigate = useNavigate();
+    // Kept actual state management from feature branch to display real user projects
+    const [savedBuilds, setSavedBuilds] = useState([]);
+    const [loading, setLoading] = useState(true);
 
+    useEffect(() => {
+        // Use onAuthStateChanged to ensure auth is initialized before fetching
+        const unsubscribe = auth.onAuthStateChanged(async (user) => {
+            const projects = await getProjects(user?.email);
+            setSavedBuilds(projects || []);
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    // Reconciled static data structures (present in both)
     const warrantyItems = [
-        { id: 1, name: "RTX 3080", daysLeft: 450, totalDays: 1095, color: "#00f3ff" },
+        { id: 1, name: "RTX 3080", daysLeft: 450, totalDays: 1095, color: "cyan-400" },
         { id: 2, name: "AMD RYZEN 9", daysLeft: 200, totalDays: 1095, color: "#ff4400" },
         { id: 3, name: "SAMSUNG 980", daysLeft: 800, totalDays: 1825, color: "#ccff00" },
     ];
@@ -22,32 +34,44 @@ const HomePage = () => {
 
     return (
         <div className="max-w-7xl mx-auto space-y-12 pb-20 p-5">
-            {/* Section 1: Current Projects (Left Aligned) - THEME: CYAN */}
+            {/* Section 1: Current Projects - THEME: CYAN */}
             <section className="space-y-6">
                 <div className="flex items-center gap-4">
-                    <div className="w-3 h-3 bg-[#00f3ff]"></div>
+                    <div className="w-3 h-3 bg-cyan-400"></div>
                     <h2 className="text-xl font-bold uppercase tracking-tighter text-[#eeeeee]">
                         CURRENT_PROJECTS
                     </h2>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {savedBuilds.map(build => (
-                        <div key={build.id} className="bg-[#050505] p-5 border border-[#333] hover:border-[#00f3ff] transition-colors group relative flex flex-col">
-                            {/* Corner Brackets */}
-                            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#333] group-hover:border-[#00f3ff]"></div>
-                            <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-[#333] group-hover:border-[#00f3ff]"></div>
-                            <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-[#333] group-hover:border-[#00f3ff]"></div>
-                            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#333] group-hover:border-[#00f3ff]"></div>
+                    {loading ? (
+                        <div className="col-span-full py-10 text-center text-[#666] font-mono animate-pulse uppercase tracking-widest">
+                            SYNCHRONIZING_PROJECTS...
+                        </div>
+                    ) : savedBuilds.length === 0 ? (
+                        <div className="col-span-full py-10 border border-dashed border-[#333] text-center text-[#444] font-mono uppercase text-xs">
+                            NO_PROJECTS_FOUND
+                        </div>
+                    ) : (
+                        savedBuilds.map(build => (
+                            <div 
+                                key={build.id} 
+                                onClick={() => navigate('/build-details/' + build.id)}
+                                className="bg-[#050505] p-5 border border-[#333] hover:border-cyan-400 transition-colors group relative flex flex-col cursor-pointer"
+                            >
+                                {/* Corner Brackets - Kept premium UI accents */}
+                                <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#333] group-hover:border-cyan-400"></div>
+                                <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-[#333] group-hover:border-cyan-400"></div>
+                                <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-[#333] group-hover:border-cyan-400"></div>
+                                <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#333] group-hover:border-cyan-400"></div>
 
-                            {/* Image Placeholder */}
-                            <div className="w-full h-32 bg-[#1a1a1a] mb-4 flex items-center justify-center border border-[#333] group-hover:border-[#00f3ff] transition-colors">
-                                <span className="font-mono text-[10px] text-[#666] uppercase">[BUILD_IMG]</span>
-                            </div>
+                                <div className="w-full h-32 bg-[#1a1a1a] mb-4 flex items-center justify-center border border-[#333] group-hover:border-cyan-400 transition-colors">
+                                    <span className="font-mono text-xs text-[#666] uppercase">[BUILD_IMG]</span>
+                                </div>
 
                             <div className="flex justify-between items-start mb-3">
-                                <h3 className="font-mono text-base text-[#eeeeee] group-hover:text-[#00f3ff] transition-colors">{build.name}</h3>
-                                <span className={`px-2 py-0.5 text-[10px] font-bold font-mono border ${build.progress === 100 ? 'border-[#00f3ff] text-[#00f3ff]' : 'border-[#333] text-[#666]'}`}>
+                                <h3 className="font-mono text-base text-[#eeeeee] group-hover:text-cyan-400 transition-colors">{build.name}</h3>
+                                <span className={`px-2 py-0.5 text-xs font-bold font-mono border ${build.progress === 100 ? 'border-cyan-400 text-cyan-400' : 'border-[#333] text-[#666]'}`}>
                                     {build.status}
                                 </span>
                             </div>
@@ -57,49 +81,46 @@ const HomePage = () => {
                                 {[...Array(10)].map((_, i) => (
                                     <div
                                         key={i}
-                                        className={`h-2 flex-1 ${i < (build.progress / 10) ? 'bg-[#00f3ff]' : 'bg-[#1a1a1a]'}`}
+                                        className={i < (build.progress / 10) ? 'h-2 flex-1 bg-cyan-400' : 'h-2 flex-1 bg-[#1a1a1a]'}
                                     ></div>
                                 ))}
                             </div>
 
-                            <div className="flex justify-between text-[10px] font-mono text-[#666] mt-auto">
+                            <div className="flex justify-between text-xs font-mono text-[#666] mt-auto">
                                 <span>PRG: {build.progress}%</span>
                                 <span>EST: {build.price}</span>
                             </div>
                         </div>
-<<<<<<< HEAD
-                    ))}
-=======
-                    </div>
-                {/* Build Your Own PC Card */}
-                <div
-                    onClick={() => navigate('/build')}
-                    className="bg-white rounded-xl shadow-lg p-8 cursor-pointer hover:shadow-xl transition-shadow border-2 border-transparent hover:border-purple-500"
-                >
-                    <div className="text-center">
-                        <div className="text-6xl mb-4">🛠</div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                            Build Your Own PC
-                        </h2>
-                        <p className="text-gray-600 mb-4">
-                            Answer guided questions and generate your custom PC build plan
-                        </p>
-                        <button className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold">
-                            Start Building
-                        </button>
-                    </div>
-                </div>
->>>>>>> main
+                    ))
+                )}
 
-                    {/* Add New Project Card */}
+                    {/* Integrated Initiate Build Card from both branches */}
+                    <div
+                        onClick={() => navigate('/build')}
+                        className="bg-[#050505] p-5 border border-[#333] hover:border-[#ccff00] transition-all group relative flex flex-col justify-center items-center cursor-pointer min-h-[200px]"
+                    >
+                        <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#333] group-hover:border-[#ccff00]"></div>
+                        <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-[#333] group-hover:border-[#ccff00]"></div>
+                        <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-[#333] group-hover:border-[#ccff00]"></div>
+                        <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#333] group-hover:border-[#ccff00]"></div>
+
+                        <div className="text-4xl mb-3 text-[#ccff00] group-hover:scale-110 transition-transform">🛠</div>
+                        <h3 className="font-mono text-base text-[#eeeeee] uppercase tracking-widest mb-2 group-hover:text-[#ccff00]">
+                            INITIATE_BUILD
+                        </h3>
+                        <p className="text-xs font-mono text-[#666] text-center uppercase tracking-tighter">
+                            GENERATE_CUSTOM_SPECIFICATIONS
+                        </p>
+                    </div>
+
                     <Link to="/plan" className="bg-[#111] p-5 border border-[#333] border-dashed flex flex-col items-center justify-center text-[#666] hover:text-[#eeeeee] hover:border-[#eeeeee] transition-all cursor-pointer min-h-[200px] hover:bg-[#1a1a1a]">
                         <div className="text-4xl font-thin mb-3">+</div>
-                        <span className="font-mono text-[10px] tracking-widest uppercase">INIT_NEW_BUILD</span>
+                        <span className="font-mono text-xs tracking-widest uppercase">INIT_NEW_BUILD</span>
                     </Link>
                 </div>
             </section>
 
-            {/* Section 2: Market Deals (Right/Alt Aligned) - THEME: ORANGE */}
+            {/* Section 2: Market Deals - THEME: ORANGE */}
             <section className="space-y-6">
                 <div className="flex items-center justify-end gap-4">
                     <h2 className="text-xl font-bold uppercase tracking-tighter text-[#eeeeee] text-right">
@@ -111,20 +132,20 @@ const HomePage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {specialDeals.map(deal => (
                         <div key={deal.id} className="bg-[#050505] border border-[#333] relative group hover:border-[#ff4400] transition-colors">
-                            <div className="absolute top-0 right-0 bg-[#ff4400] text-black text-[10px] font-bold px-2 py-0.5 font-mono">
+                            <div className="absolute top-0 right-0 bg-[#ff4400] text-black text-xs font-bold px-2 py-0.5 font-mono">
                                 {deal.discount}
                             </div>
                             <div className="h-32 bg-[#111] border-b border-[#333] flex items-center justify-center text-[#333] overflow-hidden relative">
                                 <div className="absolute inset-0 grid grid-cols-4 grid-rows-4 opacity-10">
                                     {[...Array(16)].map((_, i) => <div key={i} className="border border-[#333]"></div>)}
                                 </div>
-                                <span className="font-mono text-[10px] z-10">[IMG_PLACEHOLDER]</span>
+                                <span className="font-mono text-xs z-10">[IMG_PLACEHOLDER]</span>
                             </div>
                             <div className="p-4">
                                 <h4 className="font-bold text-[#eeeeee] text-sm mb-2 uppercase tracking-wide group-hover:text-[#ff4400] transition-colors">{deal.name}</h4>
                                 <div className="flex justify-between items-baseline font-mono">
                                     <span className="text-[#ff4400] text-base font-bold">{deal.price}</span>
-                                    <span className="text-[#666] text-[10px] line-through">{deal.oldPrice}</span>
+                                    <span className="text-[#666] text-xs line-through">{deal.oldPrice}</span>
                                 </div>
                             </div>
                         </div>
@@ -132,7 +153,7 @@ const HomePage = () => {
                 </div>
             </section>
 
-            {/* Section 3: Warranty Log (Left Aligned) - THEME: LIME */}
+            {/* Section 3: Warranty Log - THEME: LIME */}
             <section className="space-y-6">
                 <div className="flex items-center gap-4">
                     <div className="w-3 h-3 bg-[#ccff00]"></div>
@@ -142,40 +163,30 @@ const HomePage = () => {
                 </div>
 
                 <div className="bg-[#050505] p-5 border border-[#333] space-y-4 max-w-xl hover:border-[#ccff00] transition-colors">
-                    {warrantyItems.map(item => {
-                        return (
-                            <div key={item.id} className="space-y-1">
-                                <div className="flex justify-between text-[10px] font-mono text-[#666] uppercase">
-                                    <span>{item.name}</span>
-                                    <span>{item.daysLeft} DAYS LEFT</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-[#1a1a1a]">
-                                    <div
-                                        className="h-full"
-                                        style={{
-                                            width: `${(item.daysLeft / item.totalDays) * 100}%`,
-                                            backgroundColor: item.color === '#00f3ff' ? '#ccff00' : (item.color === '#ff4400' ? '#ccff00' : item.color) // Force Lime theme for this section if generic colors were used
-                                        }}
-                                    ></div>
-                                </div>
+                    {warrantyItems.map(item => (
+                        <div key={item.id} className="space-y-1">
+                            <div className="flex justify-between text-xs font-mono text-[#666] uppercase">
+                                <span>{item.name}</span>
+                                <span>{item.daysLeft} DAYS LEFT</span>
                             </div>
-                        );
-                    })}
+                            <div className="w-full h-1.5 bg-[#1a1a1a]">
+                                <div
+                                    className="h-full"
+                                    style={{
+                                        width: `${(item.daysLeft / item.totalDays) * 100}%`,
+                                        backgroundColor: 'lime'
+                                    }}
+                                ></div>
+                            </div>
+                        </div>
+                    ))}
                     <button className="w-full py-3 mt-6 text-xs font-bold font-mono text-black bg-[#eeeeee] hover:bg-[#ccff00] transition-colors uppercase tracking-widest">
                         VIEW_FULL_LOG
                     </button>
                 </div>
             </section>
-            {/* Injected Styles (if needed for other things, marquee removed) */}
-            <style>{`
-                /* ... specific page styles ... */
-            `}</style>
         </div>
     );
-<<<<<<< HEAD
 };
 
 export default HomePage;
-=======
-}
->>>>>>> main

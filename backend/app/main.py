@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from fastapi.middleware.cors import CORSMiddleware  # ✅ added
 
 load_dotenv()
 
@@ -15,14 +14,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+<<<<<<< HEAD
 from .routers import models, component_identification, components
 app.include_router(models.router, prefix="/api")
 app.include_router(component_identification.router, prefix="/api") 
 app.include_router(components.router, prefix="/api")
 from .routers import builder
 app.include_router(builder.router, prefix="/api")
+=======
+# --- Routers ---
+from .routers import (
+    models, 
+    components, 
+    component_identification, 
+    build_suggestions, 
+    projects, 
+    troubleshoot, 
+    assembly_instructions, 
+    builder, 
+    warranty,
+    marketplace
+)
 
-# --- Routes ---
+app.include_router(models.router, prefix="/api")
+app.include_router(component_identification.router, prefix="/api")
+app.include_router(troubleshoot.router, prefix="/api/troubleshoot", tags=["troubleshoot"])
+app.include_router(assembly_instructions.router, prefix="/api")  # new router
+app.include_router(builder.router, prefix="/api")
+app.include_router(warranty.router, prefix="/api")
+app.include_router(components.router, prefix="/api")
+app.include_router(build_suggestions.router, prefix="/api")
+app.include_router(projects.router, prefix="/api")
+app.include_router(marketplace.router, prefix="/api")
+>>>>>>> origin/development
+
 @app.get("/")
 def root():
     return {"message": "Peasy backend is running 🚀"}
