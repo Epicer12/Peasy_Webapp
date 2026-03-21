@@ -431,38 +431,11 @@ const TroubleshootPage = () => {
                 <div className="space-y-10">
                     {/* Horizontal Selectors Row */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                        {/* Target Brand Selection */}
-                        <section className="bg-black border-2 border-[#1a1a1a] p-8 space-y-6">
-                            <h3 className="text-3xl font-black text-[#ff4400] uppercase tracking-tighter flex items-center gap-4">
-                                <span className="w-2 h-8 bg-[#ff4400]"></span>
-                                1. Target Brand
-                            </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {brands
-                                    .filter(brand => method === 'camera' ? (!brand.includes('ASUS LED') && !brand.includes('Lenovo (Amber LED + Beeps)')) : true)
-                                    .map((brand) => (
-                                    <button
-                                        key={brand}
-                                        onClick={() => {
-                                            setSelectedBrand(brand);
-                                            setResult(null);
-                                        }}
-                                        className={`text-left px-5 py-4 font-mono text-lg border-2 transition-all ${selectedBrand === brand
-                                            ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
-                                            : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
-                                            }`}
-                                    >
-                                        {brand}
-                                    </button>
-                                ))}
-                            </div>
-                        </section>
-
                         {/* Input Protocol Selection */}
-                        <section className={`bg-black border-2 transition-all duration-500 p-8 space-y-6 ${selectedBrand ? 'border-[#1a1a1a] opacity-100' : 'border-[#0a0a0a] opacity-20 pointer-events-none'}`}>
+                        <section className="bg-black border-2 border-[#1a1a1a] p-8 space-y-6">
                             <h3 className="text-3xl font-black text-cyan-400 uppercase tracking-tighter flex items-center gap-4">
                                 <span className="w-2 h-8 bg-cyan-400"></span>
-                                2. Input Protocol
+                                1. Input Protocol
                             </h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <button
@@ -487,6 +460,33 @@ const TroubleshootPage = () => {
                                 >
                                     [ CAMERA_AI ]
                                 </button>
+                            </div>
+                        </section>
+
+                        {/* Target Brand Selection */}
+                        <section className={`bg-black border-2 transition-all duration-500 p-8 space-y-6 ${method ? 'border-[#1a1a1a] opacity-100' : 'border-[#0a0a0a] opacity-20 pointer-events-none'}`}>
+                            <h3 className="text-3xl font-black text-[#ff4400] uppercase tracking-tighter flex items-center gap-4">
+                                <span className="w-2 h-8 bg-[#ff4400]"></span>
+                                2. Target Brand
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {brands
+                                    .filter(brand => method === 'camera' ? (!brand.includes('ASUS LED') && !brand.includes('Lenovo (Amber LED + Beeps)')) : true)
+                                    .map((brand) => (
+                                    <button
+                                        key={brand}
+                                        onClick={() => {
+                                            setSelectedBrand(brand);
+                                            setResult(null);
+                                        }}
+                                        className={`text-left px-5 py-4 font-mono text-lg border-2 transition-all ${selectedBrand === brand
+                                            ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
+                                            : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
+                                            }`}
+                                    >
+                                        {brand}
+                                    </button>
+                                ))}
                             </div>
                         </section>
                     </div>
