@@ -524,6 +524,35 @@ const TroubleshootPage = () => {
                                         <span>Syntax_Requirement: {selectedBrand.includes('Dell') ? 'INT_X, INT_Y' : 'SPECIFIC_SEQUENCE'}</span>
                                         <span className="text-[#ff4400]/20 underline">View_Brand_Protocols</span>
                                     </div>
+                                    
+                                    {/* ASUS Specific Error Codes Helper */}
+                                    {selectedBrand.includes('ASUS') && (
+                                        <div className="mt-6 border-2 border-[#1a1a1a] bg-[#050505] p-8 space-y-6">
+                                            <h3 className="text-3xl font-black text-cyan-400 uppercase tracking-tighter flex items-center gap-4">
+                                                <span className="w-2 h-8 bg-cyan-400"></span>
+                                                Known ASUS Protocols
+                                            </h3>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                                                {asusCodes.map((bc) => (
+                                                    <button
+                                                        key={bc.code}
+                                                        onClick={() => setManualCode(bc.code)}
+                                                        title={bc.prob}
+                                                        className={`text-left px-5 py-4 font-mono border-2 transition-all group ${manualCode === bc.code 
+                                                            ? 'border-cyan-400 bg-cyan-400/10 text-white shadow-[0_0_15px_rgba(34,211,238,0.2)]' 
+                                                            : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'}`}
+                                                    >
+                                                        <div className={`text-lg font-black uppercase truncate ${manualCode === bc.code ? 'text-cyan-400' : 'text-[#eee] group-hover:text-cyan-400'}`}>
+                                                            {bc.code}
+                                                        </div>
+                                                        <div className={`text-xs mt-1 truncate whitespace-nowrap overflow-hidden text-ellipsis ${manualCode === bc.code ? 'text-cyan-100/50' : 'text-[#666]'}`}>
+                                                            // {bc.prob}
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                                 <button
                                     onClick={handleManualAnalyze}
