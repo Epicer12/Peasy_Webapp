@@ -37,6 +37,7 @@ const TroubleshootPage = () => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const wsRef = useRef(null);
+    const panelRef = useRef(null);
 
     useEffect(() => {
         fetch(`${API_BASE_URL}/api/troubleshoot/brands`)
@@ -488,6 +489,10 @@ const TroubleshootPage = () => {
                                             onClick={() => {
                                                 setSelectedBrand(brand);
                                                 setResult(null);
+                                                // Smooth scroll to the interaction panel
+                                                setTimeout(() => {
+                                                    panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                }, 100);
                                             }}
                                             className={`text-left px-5 py-4 font-mono text-lg border-2 transition-all ${selectedBrand === brand
                                                 ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
@@ -502,7 +507,7 @@ const TroubleshootPage = () => {
                     </div>
 
                     {/* Full Width Interaction Panel */}
-                    <div className="w-full">
+                    <div className="w-full" ref={panelRef}>
                         {selectedBrand && method === 'manual' && (
                             <div className="bg-[#050505] p-12 border-2 border-[#1a1a1a] space-y-8 animate-in zoom-in-95 duration-500">
                                 <div className="space-y-4">
