@@ -2,10 +2,12 @@ import os
 import json
 from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+from app.utils.image_vault import get_component_image
 from supabase import create_client
 from groq import Groq
 from openai import OpenAI
+from ..services.bottleneck_service import calculate_bottleneck
 
 router = APIRouter()
 
@@ -22,24 +24,43 @@ try:
 except Exception as e:
     print(f"Supabase init error: {e}")
 
-price_columns = {
-    "case_fans_final": "estimated_price_lkr",
-    "cases_final": "estimated_price_lkr",
-    "cpu_coolers_final": "estimated_price_lkr",
-    "cpu_final": "estimated_price",
-    "gpu_final": "estimated_lkr_price",
-    "hdd_final": "estimated_price_lkr",
-    "motherboard_final": "estimated_price",
-    "psu_final": "estimated_price_lkr",
-    "ram_final": "estimated_price",
-    "ssd_final": "estimated_price_lkr"
-}
+# Real price columns to check, in order of priority (or we pick best)
+PRICE_COLS = [
+    "nanotek_price", "nanotek_price_lkr", "price_nanotek",
+    "computerzone_price", "computerzone_price_lkr", "cz_price", "price_computerzone",
+    "pc_builders_price", "pc_builders_price_lkr", "price_pcbuilders",
+    "winsoft_price", "winsoft_price_lkr", "price_winsoft"
+]
+
+def get_local_price(item: Dict) -> float:
+    prices = []
+    for col in PRICE_COLS:
+        val = item.get(col)
+        if val:
+            try:
+                if isinstance(val, str):
+                    import re
+                    val = re.sub(r'[^0-9.]', '', val)
+                f_val = float(val)
+                if f_val > 0:
+                    prices.append(f_val)
+            except:
+                pass
+    return min(prices) if prices else 0.0
+
 
 import time
 
 def fetch_candidates(table: str, alloc: float, max_budget: float, min_alloc: float = 0) -> List[Dict]:
     if not supabase: return []
-    price_col = price_columns.get(table, "estimated_price_lkr")
+    
+    # Use estimated_price_lkr as a proxy for the initial query range
+    # Component specific fallbacks if the table doesn't have estimated_price_lkr
+    price_col = "estimated_price_lkr"
+    if table == "cpu_final" or table == "ram_final" or table == "motherboard_final":
+        price_col = "estimated_price"
+    elif table == "gpu_final":
+        price_col = "estimated_lkr_price"
     
     base_min_prices = {
         "cpu_final": 15000,
@@ -125,15 +146,25 @@ def fetch_candidates(table: str, alloc: float, max_budget: float, min_alloc: flo
                 return []
     return []
 
+def fetch_by_id(table: str, component_id: str) -> Optional[Dict]:
+    """Fetch a single component from a _final table by its ID"""
+    try:
+        res = supabase.table(table).select("*").eq("id", component_id).execute()
+        if res.data:
+            return format_comp(table, res.data[0])
+    except Exception as e:
+        print(f"Error fetching {table} by id {component_id}: {e}")
+    return None
+
 class BuildRequest(BaseModel):
     summary: Dict[str, Any]
 
 def format_comp(table: str, item: Dict) -> Dict:
     # Standardize and minify everything for LLM ingestion to save tokens
-    pcol = price_columns.get(table, "estimated_price_lkr")
+    local_price = get_local_price(item)
     base = {
         "id": item.get("id", ""),
-        "price": float(item.get(pcol, 0) or 0)
+        "price": local_price
     }
     
     if table == "cpu_final":
@@ -185,16 +216,30 @@ def generate_builds(req: BuildRequest):
         "CPU": "cpu_final",
         "GPU": "gpu_final",
         "RAM": "ram_final",
-        "Storage": "ssd_final",
+        "SSD": "ssd_final",
+        "HDD": "hdd_final",
         "PSU": "psu_final",
         "Case": "cases_final"
     }
 
     processed_owned = {}
-    for cat, name in owned.items():
+    for cat, data in owned.items():
         table = owned_map.get(cat)
-        if table and name:
-            processed_owned[table] = name
+        if not table or not data:
+            continue
+            
+        # If the frontend sent a component object (with ID), fetch its authoritative specs
+        if isinstance(data, dict) and data.get("id"):
+            item = fetch_by_id(table, data["id"])
+            if item:
+                processed_owned[table] = item
+                total_freed_pct += base_alloc_pcts.get(table, 0)
+                continue
+        
+        # Fallback for string names or cases where ID fetch fails
+        name_str = data.get("name") if isinstance(data, dict) else str(data)
+        if name_str:
+            processed_owned[table] = {"name": name_str}
             total_freed_pct += base_alloc_pcts.get(table, 0)
 
     # Calculate final allocations (min and max)
@@ -239,116 +284,55 @@ def generate_builds(req: BuildRequest):
     if db_items_count == 0:
         return {"warning": "Component database is currently empty or unreachable.", "builds": []}
 
-    system_prompt = f"""You are an elite PC build configuration AI wrapper. 
-Your task is to generate EXACTLY 4 distinct PC builds perfectly assembled based ONLY on the components provided in the JSON database payload or the user's ALREADY OWNED components.
+    system_prompt = f"""You are an elite PC build configuration AI. 
+Generate EXACTLY 4 distinct PC builds using ONLY the provided database or owned components.
 
-CRITICAL PRICE RULES:
-1. Every component MUST use its actual price from 'price' field in the database.
-2. PRICE MUST NEVER BE 0 for any component unless it is explicitly marked as "Already owned:". 
-3. If you select a component from the database, you MUST include its assigned price.
+### BUDGET & PRICE RULES (STRICT):
+1. **Budget Window**: {min_budget:,.0f} LKR to {max_budget:,.0f} LKR. Total price MUST be within this range.
+2. **Owned Components**: Price = 0. Label as "Already owned: <name>".
+3. **Database Prices**: Use the exact 'price' field. No 0 prices for new parts.
+4. **Calculations**: 'total_price' = exact sum of non-owned components. Double-check math!
+5. **Optimization**: If over budget, swap for cheaper items from the top of the candidate list (sorted by price).
 
-TOTAL PRICE CALCULATION & BUDGET (STRICT):
-1. 'total_price' MUST be the exact mathematical sum of all component prices where the price is > 0.
-2. OWNED components count as 0 in this sum.
-3. DOUBLE-CHECK YOUR MATH before returning. The 'total_price' must be 100% accurate.
-4. ABSOLUTE RULE: THE BUILD TOTAL PRICE MUST ALWAYS STAY WITHIN THE MIN AND MAX BUDGET.
-   - Budget Window: {min_budget:,.0f} LKR to {max_budget:,.0f} LKR.
-   - IF TOTAL_PRICE > {max_budget:,.0f}, YOUR BUILD IS INVALID AND REJECTED.
-   - IF TOTAL_PRICE < {min_budget:,.0f}, YOUR BUILD IS INVALID AND REJECTED.
-   - EVERY BUILD MUST BE >= {min_budget:,.0f} AND <= {max_budget:,.0f}.
-   - YOU MUST PRIORITIZE STAYING WITHIN THIS LIMIT OVER ANY PERFORMANCE PREFERENCE.
-5. Precision Check: If you calculate that you are over budget by even 1 LKR, you MUST swap to a cheaper component from the database immediately. The database is sorted by price (ascending); use items from the top of the lists to save money.
+### HARDWARE CONSTRAINTS:
+- **Owned Parts**: MUST be included in ALL 4 builds. Respect all specs (socket, RAM type, etc.).
+- **Compatibility**: 
+  - AM5 CPU -> AM5 Mobo + DDR5 RAM.
+  - AM4 CPU -> AM4 Mobo + DDR4 RAM.
+  - LGA1700 CPU -> LGA1700 Mobo.
+  - Case must support Mobo form factor.
+  - PSU Wattage: TDP + 30% headroom (Min 650W for mid-range, 750W for high-end).
+- **Workload**: If 'Gaming', AVOID workstation GPUs (Quadro, RTX A-series, T-series).
+- **Thermals**: High-end CPUs (i7/i9/R7/R9) REQUIRE high-performance Air/AIO coolers.
+- **Storage**: Gaming builds REQUIRE min 1TB SSD.
 
-OWNED COMPONENT LOCK:
-1. If the user owns a component (e.g., CPU, GPU), you MUST include that specific component in ALL 4 builds. 
-2. You are NOT allowed to replace owned components. Build the system around them.
-3. Label as: "Already owned: <component model>", price: 0.
+### BUILD DIFFERENTIATION:
+1. **Balanced**: Optimal price/performance (~{min_budget + (max_budget-min_budget)*0.5:,.0f} LKR).
+2. **Performance**: Max power within limit (~{max_budget * 0.95:,.0f} LKR).
+3. **Budget Efficient**: Best value near MIN budget (~{min_budget * 1.05:,.0f} LKR).
+4. **Alternative**: Different ecosystem (AMD vs Intel, etc.) (~{min_budget + (max_budget-min_budget)*0.4:,.0f} LKR).
 
-STRICT HARDWARE COMPATIBILITY:
-1. CPU socket MUST match Motherboard socket:
-   - AM5 CPU -> AM5 Motherboard
-   - AM4 CPU -> AM4 Motherboard
-   - LGA1700 CPU -> LGA1700 Motherboard
-2. RAM Type MUST match Motherboard:
-   - AM5 Motherboards REQUIRE DDR5 RAM.
-   - AM4 Motherboards REQUIRE DDR4 RAM.
-   - Never mix these.
-3. Case must support the Motherboard form factor.
-4. PSU must have enough wattage (TDP + 30% headroom).
-
-CRITICAL WORKLOAD GUIDANCE (WORKSTATION VS GAMING):
-- If user purpose is GAMING, AVOID ANY GPU containing "RTX A", "Quadro", or "T-Series" (e.g., A2000, A4000, A4500, A5000, RTX 6000). 
-- For Gaming, use consumer graphics cards: RTX (40-series/50-series) or RX (7000-series).
-
-STRICT BUILD DIFFERENTIATION (VERY IMPORTANT):
-The four builds MUST NOT be nearly identical. They must differ in at least 3 major components (e.g. GPU model or tier, Motherboard chipset, RAM capacity/brand, Storage capacity, PSU wattage, Case model) while remaining compatible with the user's owned components.
-- Build 1 (Balanced Build): Optimal price-to-performance ratio.
-- Build 2 (Performance Focused Build): Maximum performance within the {max_budget:,.0f} limit.
-- Build 3 (Budget Efficient Build): The best possible performance while staying closest to the MINIMUM budget ({min_budget:,.0f} LKR).
-- Build 4 (Alternative Brand Build): Switch ecosystem (AMD vs Intel, NVIDIA vs AMD) while staying within range.
- 
-TOTAL PRICE CALCULATION & BUDGET (STRICT):
-1. 'total_price' MUST be the exact mathematical sum of all component prices where the price is > 0.
-2. OWNED components count as 0 in this sum.
-3. DOUBLE-CHECK YOUR MATH before returning. The 'total_price' must be 100% accurate.
-4. ABSOLUTE RULE: THE BUILD TOTAL PRICE MUST ALWAYS STAY WITHIN THE MIN AND MAX BUDGET.
-   - Budget Window: {min_budget:,.0f} LKR to {max_budget:,.0f} LKR.
-   - EVERY BUILD MUST BE >= {min_budget:,.0f} AND <= {max_budget:,.0f}.
-   - IF TOTAL_PRICE < {min_budget:,.0f}, YOU MUST UPGRADE PARTS (CPU, GPU, RAM, etc.) from the candidate list until it is above {min_budget:,.0f}.
-
-BUILD TYPE TARGETS:
-- Build 1 (Balanced): Aim for ~{min_budget + (max_budget-min_budget)*0.5:,.0f} LKR.
-- Build 2 (Performance): Aim for ~{max_budget * 0.95:,.0f} LKR.
-- Build 3 (Budget Efficient): Aim for ~{min_budget * 1.05:,.0f} LKR.
-- Build 4 (Alternative): Aim for ~{min_budget + (max_budget-min_budget)*0.4:,.0f} LKR.
-
-STRICT COMPONENT RULES:
-1. NO "Not included" or 0 prices for mandatory components (CPU, Mobo, RAM, SSD, PSU, Case) unless explicitly OWNED by the user.
-2. If the user budget is {max_budget:,.0f}, you have plenty of money. DO NOT exclude components. Provide a complete, high-end system.
-3. Use the candidate list provided. It is sorted by price (ascending). For high-budget builds, pick from the BOTTOM of the lists.
-
-THERMAL REQUIREMENTS RULE:
-High-performance CPUs require strong cooling.
-If the CPU is an Intel Core i9, Intel Core i7 (high-end models), Ryzen 9, or Ryzen 7 X3D model:
-  - The cooler MUST be a high-performance air cooler or AIO.
-  - Do NOT use Low profile coolers or Ultra budget coolers for these CPUs.
-
-STORAGE CAPACITY RULE:
-Gaming builds MUST include at least 1TB of SSD storage.
-  - Do NOT recommend: 120GB SSD, 240GB SSD, 256GB SSD.
-
-PSU QUALITY RULE:
-Power supply must match the GPU power requirements.
-  - If GPU is RTX 4070 / RX 7800 XT or higher: PSU MUST be minimum 750W.
-  - If GPU is mid-range (RTX 4060 / RX 7700 XT): PSU MUST be minimum 650W.
-
-Output format: Return ONLY a valid JSON object following this SCHEMA:
+### OUTPUT SCHEMA (JSON ONLY):
 {{
-    "warning": "Friendly warning if budget is too low, else empty string",
+    "warning": "string",
     "builds": [
         {{
             "id": "b1",
-            "name": "Balanced Build",
-            "description": "Description of the build...",
-            "total_price": 0.0,
+            "name": "string",
+            "description": "string",
+            "total_price": float,
             "components": [
-                {{
-                    "type": "CPU",
-                    "brand": "BrandName",
-                    "model": "ModelName",
-                    "price": 0,
-                    "details": ""
-                }},
-                ... (exactly 10 component types: "CPU", "CPU Cooler", "Motherboard", "RAM", "Storage", "HDD", "GPU", "Power Supply", "Case", "Case Fans")
+                {{"type": "CPU/GPU/etc.", "brand": "string", "model": "string", "price": float, "details": "string"}}
             ]
         }}
     ]
 }}
+Required component types (10): CPU, CPU Cooler, Motherboard, RAM, Storage, HDD, GPU, Power Supply, Case, Case Fans.
 """
 
     user_prompt = f"""
 User Preferences: {json.dumps(basic)}
-Already Owned Components: {json.dumps(owned)}
+Already Owned Components: {json.dumps(processed_owned)}
 Component Database: {json.dumps(sandbox_db)}
 
 Generate the 4 builds now obeying the JSON schema precisely.
@@ -356,9 +340,11 @@ Generate the 4 builds now obeying the JSON schema precisely.
 
     models_to_try = [
         {"provider": "groq", "model": "llama-3.3-70b-versatile"},
+        {"provider": "cerebras", "model": "llama-3.3-70b"},
         {"provider": "nvidia", "model": "meta/llama-3.1-405b-instruct"},
         {"provider": "nvidia", "model": "meta/llama-3.3-70b-instruct"},
         {"provider": "openrouter", "model": "google/gemini-2.0-flash-001"},
+        {"provider": "cohere", "model": "command-r-plus"},
         {"provider": "groq", "model": "llama-3.1-8b-instant"},
     ]
 
@@ -367,6 +353,8 @@ Generate the 4 builds now obeying the JSON schema precisely.
     or_key = os.getenv("OPENROUTER_API_KEY")
     or_alt_key = os.getenv("OPENROUTER_API_KEY_ALT")
     nv_key = os.getenv("NVIDIA_API_KEY")
+    co_key = os.getenv("COHERE_API_KEY")
+    cb_key = os.getenv("CEREBRAS_API_KEY")
 
     for attempt in models_to_try:
         provider = attempt["provider"]
@@ -454,6 +442,40 @@ Generate the 4 builds now obeying the JSON schema precisely.
                 except Exception as ne:
                     print(f"NVIDIA API Error with {model_name}: {ne}")
 
+            elif provider == "cerebras" and cb_key:
+                try:
+                    print(f"Attempting {model_name} on Cerebras...")
+                    client = OpenAI(base_url="https://api.cerebras.ai/v1", api_key=cb_key)
+                    response = client.chat.completions.create(
+                        model=model_name,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        response_format={"type": "json_object"},
+                        temperature=0.2
+                    )
+                    return clean_build_result(json.loads(response.choices[0].message.content), owned)
+                except Exception as ce:
+                    print(f"Cerebras Error with {model_name}: {ce}")
+
+            elif provider == "cohere" and co_key:
+                try:
+                    print(f"Attempting {model_name} on Cohere...")
+                    client = OpenAI(base_url="https://api.cohere.com/v1", api_key=co_key)
+                    response = client.chat.completions.create(
+                        model=model_name,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        response_format={"type": "json_object"},
+                        temperature=0.2
+                    )
+                    return clean_build_result(json.loads(response.choices[0].message.content), owned)
+                except Exception as coe:
+                    print(f"Cohere Error with {model_name}: {coe}")
+
                         
         except Exception as e:
             print(f"Error with {model_name} on {provider}: {e}")
@@ -483,8 +505,10 @@ Rules:
 
     models_to_try = [
         {"provider": "groq", "model": "llama-3.3-70b-versatile"},
+        {"provider": "cerebras", "model": "llama-3.3-70b"},
         {"provider": "nvidia", "model": "meta/llama-3.1-405b-instruct"},
         {"provider": "openrouter", "model": "google/gemini-2.0-flash-001"},
+        {"provider": "cohere", "model": "command-r-plus"},
     ]
 
     groq_api_key = os.getenv("GROQ_API_KEY")
@@ -492,6 +516,20 @@ Rules:
     or_key = os.getenv("OPENROUTER_API_KEY")
     or_alt_key = os.getenv("OPENROUTER_API_KEY_ALT")
     nv_key = os.getenv("NVIDIA_API_KEY")
+    co_key = os.getenv("COHERE_API_KEY")
+    cb_key = os.getenv("CEREBRAS_API_KEY")
+
+    def normalize_summary(raw: dict) -> dict:
+        """Guarantee the response always has a 'summaries' list, regardless of what the AI returns."""
+        if isinstance(raw, dict):
+            if "summaries" in raw:
+                return raw
+            # AI sometimes wraps under different keys
+            for fallback_key in ["builds", "results", "data", "analysis"]:
+                if fallback_key in raw and isinstance(raw[fallback_key], list):
+                    return {"summaries": raw[fallback_key]}
+        print(f"[Summary] WARNING: Could not normalize AI response: {str(raw)[:200]}")
+        return {"summaries": []}
 
     for attempt in models_to_try:
         provider = attempt["provider"]
@@ -507,8 +545,12 @@ Rules:
                             messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
                             response_format={"type": "json_object"}
                         )
-                        return json.loads(response.choices[0].message.content)
-                    except: continue
+                        raw = json.loads(response.choices[0].message.content)
+                        print(f"[Summary] Groq success. Keys: {list(raw.keys()) if isinstance(raw, dict) else 'not a dict'}")
+                        return normalize_summary(raw)
+                    except Exception as e:
+                        print(f"[Summary] Groq err ({k[-4:]}): {e}")
+                        continue
             elif provider == "openrouter":
                 keys = [k for k in [or_key, or_alt_key] if k]
                 for k in keys:
@@ -519,8 +561,12 @@ Rules:
                             messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
                             response_format={"type": "json_object"}
                         )
-                        return json.loads(response.choices[0].message.content)
-                    except: continue
+                        raw = json.loads(response.choices[0].message.content)
+                        print(f"[Summary] OpenRouter success. Keys: {list(raw.keys()) if isinstance(raw, dict) else 'not a dict'}")
+                        return normalize_summary(raw)
+                    except Exception as e:
+                        print(f"[Summary] OpenRouter err: {e}")
+                        continue
             elif provider == "nvidia" and nv_key:
                 try:
                     client = OpenAI(base_url="https://integrate.api.nvidia.com/v1", api_key=nv_key)
@@ -529,9 +575,43 @@ Rules:
                         messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
                         response_format={"type": "json_object"}
                     )
-                    return json.loads(response.choices[0].message.content)
-                except: continue
-        except: continue
+                    raw = json.loads(response.choices[0].message.content)
+                    print(f"[Summary] NVIDIA success. Keys: {list(raw.keys()) if isinstance(raw, dict) else 'not a dict'}")
+                    return normalize_summary(raw)
+                except Exception as e:
+                    print(f"[Summary] NVIDIA err: {e}")
+                    continue
+            elif provider == "cerebras" and cb_key:
+                try:
+                    client = OpenAI(base_url="https://api.cerebras.ai/v1", api_key=cb_key)
+                    response = client.chat.completions.create(
+                        model=model_name,
+                        messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
+                        response_format={"type": "json_object"}
+                    )
+                    raw = json.loads(response.choices[0].message.content)
+                    print(f"[Summary] Cerebras success. Keys: {list(raw.keys()) if isinstance(raw, dict) else 'not a dict'}")
+                    return normalize_summary(raw)
+                except Exception as e:
+                    print(f"[Summary] Cerebras err: {e}")
+                    continue
+            elif provider == "cohere" and co_key:
+                try:
+                    client = OpenAI(base_url="https://api.cohere.com/v1", api_key=co_key)
+                    response = client.chat.completions.create(
+                        model=model_name,
+                        messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
+                        response_format={"type": "json_object"}
+                    )
+                    raw = json.loads(response.choices[0].message.content)
+                    print(f"[Summary] Cohere success. Keys: {list(raw.keys()) if isinstance(raw, dict) else 'not a dict'}")
+                    return normalize_summary(raw)
+                except Exception as e:
+                    print(f"[Summary] Cohere err: {e}")
+                    continue
+        except Exception as e:
+            print(f"[Summary] General err {model_name}: {e}")
+            continue
 
     return {"summaries": []}
 
@@ -616,11 +696,15 @@ def clean_build_result(data: Dict, owned_comps: Dict = None) -> Dict:
                     brand = "None"
                     model = "Not included (Budget constraint)"
             
+            img_data = get_component_image(ctype, model)
             comp_obj = {
                 "type": ctype,
+                "id": c.get("id", ""),
                 "brand": brand,
                 "model": model,
                 "price": price,
+                "image": img_data["url"],
+                "image_rotate": img_data["rotate"],
                 "details": str(c.get("details", ""))
             }
             mapped_comps[ctype] = comp_obj
@@ -644,6 +728,25 @@ def clean_build_result(data: Dict, owned_comps: Dict = None) -> Dict:
         
         # Always use the recalculated sum for precision
         clean_build["total_price"] = build_total
+        
+        # --- Bottleneck Analysis ---
+        try:
+            # Prepare components for bottleneck service
+            # bottleneck_service expects [{type, name, brand, id}]
+            analysis_comps = []
+            for c in clean_build["components"]:
+                if c["model"] and c["model"] != "Not included":
+                    analysis_comps.append({
+                        "type": c["type"],
+                        "name": c["model"],
+                        "brand": c["brand"]
+                    })
+            
+            # Default to 1440p as the middle ground
+            clean_build["analysis"] = calculate_bottleneck(analysis_comps, "1440p")
+        except Exception as ae:
+            print(f"Error calculating bottleneck for build {clean_build['name']}: {ae}")
+            clean_build["analysis"] = None
             
         clean_data["builds"].append(clean_build)
 

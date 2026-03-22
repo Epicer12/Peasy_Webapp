@@ -33,7 +33,7 @@ const WarrantyPage = () => {
     // Initial Load & State Check
     useEffect(() => {
         fetchSavedWarranties();
-        
+
         // Check if we came from another page with a record to edit
         if (location.state?.existingRecord) {
             const record = location.state.existingRecord;
@@ -52,7 +52,7 @@ const WarrantyPage = () => {
             let token = localStorage.getItem('token');
             const currentUser = auth.currentUser;
             if (currentUser) token = await currentUser.getIdToken();
-            
+
             const response = await fetch('/api/warranty/list', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -70,17 +70,17 @@ const WarrantyPage = () => {
     const handleDeleteRecord = async (e, id) => {
         e.stopPropagation();
         if (!window.confirm("Delete this warranty record?")) return;
-        
+
         try {
             let token = localStorage.getItem('token');
             const currentUser = auth.currentUser;
             if (currentUser) token = await currentUser.getIdToken();
-            
+
             const response = await fetch(`/api/warranty/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            
+
             if (response.ok) {
                 setSavedWarranties(prev => prev.filter(w => w.id !== id));
                 if (result?.id === id) {
@@ -620,7 +620,7 @@ const WarrantyPage = () => {
                         {savedWarranties.map((w) => {
                             const info = w.extraction_data?.warranty_info || {};
                             return (
-                                <div 
+                                <div
                                     key={w.id}
                                     onClick={() => handleSelectForEdit(w)}
                                     className={`
@@ -642,13 +642,13 @@ const WarrantyPage = () => {
                                     </div>
 
                                     <div className="flex items-center gap-3">
-                                        <button 
+                                        <button
                                             onClick={(e) => { e.stopPropagation(); handleSelectForEdit(w); }}
                                             className="w-8 h-8 flex items-center justify-center bg-[#111] text-[#444] hover:text-[#00f3ff] hover:bg-[#00f3ff]/10 transition-colors"
                                         >
                                             <PencilIcon className="w-4 h-4" />
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={(e) => handleDeleteRecord(e, w.id)}
                                             className="w-8 h-8 flex items-center justify-center bg-[#111] text-[#444] hover:text-red-500 hover:bg-red-500/10 transition-colors"
                                         >

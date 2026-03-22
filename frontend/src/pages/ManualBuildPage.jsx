@@ -8,12 +8,20 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 
 const CATEGORIES = [
     // Core Components
-    { id: 'cpu', name: 'Processor', icon: 'cpu', backendKey: 'cpu', section: 'CORE COMPONENTS' },
+    { id: 'cpu', name: 'CPU', icon: 'cpu', backendKey: 'cpu', section: 'CORE COMPONENTS' },
+    { id: 'gpu', name: 'GPU', icon: 'monitor', backendKey: 'gpu', section: 'CORE COMPONENTS' },
     { id: 'motherboard', name: 'Motherboard', icon: 'server', backendKey: 'mobo', section: 'CORE COMPONENTS' },
     { id: 'ram', name: 'Memory', icon: 'grid', backendKey: 'ram', section: 'CORE COMPONENTS' },
-    { id: 'gpu', name: 'Graphics Card', icon: 'monitor', backendKey: 'gpu', section: 'CORE COMPONENTS' },
-    { id: 'ssd', name: 'Storage (SSD)', icon: 'hard-drive', backendKey: 'ssd', section: 'CORE COMPONENTS' },
-    { id: 'hdd', name: 'Storage (HDD)', icon: 'database', backendKey: 'hdd', section: 'CORE COMPONENTS' },
+    {
+        id: 'storage_group',
+        name: 'Storage',
+        icon: 'database',
+        section: 'CORE COMPONENTS',
+        subCategories: [
+            { id: 'ssd', name: 'Storage (SSD)', icon: 'hard-drive', backendKey: 'ssd' },
+            { id: 'hdd', name: 'Storage (HDD)', icon: 'database', backendKey: 'hdd' }
+        ]
+    },
     { id: 'psu', name: 'Power Supply', icon: 'zap', backendKey: 'psu', section: 'CORE COMPONENTS' },
     { id: 'case', name: 'Case', icon: 'box', backendKey: 'case', section: 'CORE COMPONENTS' },
     { id: 'cooler', name: 'CPU Cooler', icon: 'wind', backendKey: 'cooler', section: 'CORE COMPONENTS' },
@@ -28,7 +36,7 @@ const CATEGORIES = [
     {
         id: 'cables',
         name: 'Cables',
-        icon: 'link', // Parent Category
+        icon: 'link',
         section: 'PERIPHERALS & ACCESSORIES',
         subCategories: [
             { id: 'connectors', name: 'Connectors', icon: 'link', backendKey: 'connectors' },
@@ -36,9 +44,6 @@ const CATEGORIES = [
         ]
     },
     { id: 'consoles', name: 'Consoles', icon: 'gamepad', backendKey: 'consoles', section: 'PERIPHERALS & ACCESSORIES' },
-
-    // All-In-One (Third Section, No Name)
-    { id: 'all_in_one', name: 'All-In-One', icon: 'monitor', backendKey: 'all_in_one', section: 'OTHERS' },
 ];
 
 // Flatten categories for easy lookup of backend keys
@@ -68,8 +73,8 @@ const ManualBuildPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const [activeCategory, setActiveCategory] = useState(CATEGORIES[0].id); // Default to first item
-    const [expandedCategories, setExpandedCategories] = useState({}); // Track expanded parents
+    const [activeCategory, setActiveCategory] = useState('cpu');
+    const [expandedCategories, setExpandedCategories] = useState({ processors: true });
     // Restore build state if returning from summary, otherwise empty
     const [buildState, setBuildState] = useState(location.state?.preservedBuildState || {});
     const [products, setProducts] = useState([]);
@@ -81,7 +86,7 @@ const ManualBuildPage = () => {
     const categoryRefs = React.useRef({});
 
     // Advanced Logic State
-    const [chipset, setChipset] = useState('Intel'); // Default to Intel since modal is gone
+    const [gpuBrand, setGpuBrand] = useState('NVIDIA');
     const [compatibility, setCompatibility] = useState({ issues: [], warnings: [] });
 
     const [showRamModal, setShowRamModal] = useState(false);
@@ -163,6 +168,12 @@ const ManualBuildPage = () => {
     }, [buildState]);
 
     const handleSelectProduct = (product, quantity = 1, isRamOverride = false) => {
+        // STRICT COMPATIBILITY BLOCK
+        if (!isCompatible(product)) {
+            showToastMessage('⚠ INCOMPATIBLE PART: Cannot install this component with your current build.');
+            return;
+        }
+
         // RAM Modal Trigger
         if (activeCategory === 'ram' && !isRamOverride && product.id !== buildState[activeCategory]?.id) {
             setPendingRamProduct(product);
@@ -170,17 +181,24 @@ const ManualBuildPage = () => {
             return;
         }
 
-        // Chipset Enforcement for CPU
-        if (activeCategory === 'cpu') {
-            if (chipset === 'AMD' && product.specs?.brand === 'Intel') {
-                alert("Incompatible: You are in AMD mode but selected an Intel CPU.");
+        // GPU Brand Enforcement
+        if (activeCategory === 'gpu') {
+            const prodName = (product.name || '').toUpperCase();
+            const prodMfg = (product.manufacturer || product.gpu_chip || '').toUpperCase();
+            const isNvidia = prodName.includes('NVIDIA') || prodName.includes('GEFORCE') || prodName.includes('RTX') || prodName.includes('GTX') || prodMfg.includes('NVIDIA');
+            const isAmd = prodName.includes('AMD') || prodName.includes('RADEON') || prodName.includes('RX') || prodMfg.includes('AMD');
+
+            if (gpuBrand === 'NVIDIA' && isAmd && !isNvidia) {
+                showToastMessage('⚠ INCOMPATIBLE: AMD GPU selected in NVIDIA mode');
                 return;
             }
-            if (chipset === 'Intel' && product.specs?.brand === 'AMD') {
-                alert("Incompatible: You are in Intel mode but selected an AMD CPU.");
+            if (gpuBrand === 'AMD' && isNvidia && !isAmd) {
+                showToastMessage('⚠ INCOMPATIBLE: NVIDIA GPU selected in AMD mode');
                 return;
             }
         }
+
+
 
         // Toggle logic
         if (buildState[activeCategory]?.id === product.id) {
@@ -230,12 +248,6 @@ const ManualBuildPage = () => {
     };
 
     const isCompatible = (item) => {
-        // 0. Platform Enforcement (CPU level)
-        if (activeCategory === 'cpu') {
-            if (chipset === 'AMD' && item.specs?.brand === 'Intel') return false;
-            if (chipset === 'Intel' && item.specs?.brand === 'AMD') return false;
-        }
-
         // 1. CPU <-> Motherboard
         if (activeCategory === 'motherboard' && buildState.cpu) {
             const cpuSocket = buildState.cpu.specs?.socket;
@@ -244,35 +256,59 @@ const ManualBuildPage = () => {
             if (cpuSocket && moboSocket && cpuSocket !== moboSocket) {
                 return false;
             }
-
-            if (!buildState.cpu) {
-                const isIntelSocket = moboSocket?.includes('LGA');
-                const isAMDSocket = moboSocket?.includes('AM');
-                if (chipset === 'AMD' && isIntelSocket) return false;
-                if (chipset === 'Intel' && isAMDSocket) return false;
-            }
         }
 
         // 2. RAM <-> Motherboard
         if (activeCategory === 'ram' && buildState.motherboard) {
-            const moboRam = buildState.motherboard.specs?.ram_type;
-            const ramType = item.specs?.type;
-            if (moboRam && ramType && moboRam !== ramType) return false;
+            const moboRam = (buildState.motherboard.specs?.ram_type || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            const ramType = (item.specs?.type || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (moboRam && ramType && !moboRam.includes(ramType) && !ramType.includes(moboRam)) return false;
         }
 
         // 3. Case <-> Motherboard
         if (activeCategory === 'case' && buildState.motherboard) {
-            const moboFF = buildState.motherboard.specs?.form_factor;
-            const caseFF = item.specs?.form_factor;
-            if (moboFF === "ATX" && (caseFF === "Micro-ATX" || caseFF === "ITX")) return false;
-            if (moboFF === "E-ATX" && caseFF !== "E-ATX") return false;
+            const moboFF = (buildState.motherboard.specs?.form_factor || '').toUpperCase();
+            const caseFF = (item.specs?.form_factor || item.specs?.mobo_support || '').toUpperCase();
+
+            // Ensure E-ATX boards only go into E-ATX cases.
+            if (moboFF.includes('E-ATX') || moboFF.includes('EATX')) {
+                if (!caseFF.includes('E-ATX') && !caseFF.includes('EATX')) return false;
+            }
+            // Ensure standard ATX boards don't go into Micro-ATX or ITX only cases
+            else if (moboFF.includes('ATX') && !moboFF.includes('MICRO') && !moboFF.includes('MINI')) {
+                // If the case ONLY supports Micro/ITX and NOT ATX
+                if ((caseFF.includes('MICRO') || caseFF.includes('ITX')) && !caseFF.includes('ATX')) return false;
+            }
         }
         return true;
+    };
+
+    const getGpuBrandScore = (item) => {
+        const name = (item.name || '').toUpperCase();
+        const mfg = (item.manufacturer || item.gpu_chip || '').toUpperCase();
+        const isNvidia = name.includes('NVIDIA') || name.includes('GEFORCE') || name.includes('RTX') || name.includes('GTX') || mfg.includes('NVIDIA');
+        const isAmd = name.includes('AMD') || name.includes('RADEON') || name.includes('RX') || mfg.includes('AMD');
+        if (gpuBrand === 'NVIDIA') {
+            if (isNvidia) return 0;   // chosen brand — top
+            if (isAmd) return 2;      // other brand — bottom
+            return 1;                 // unknown — middle
+        } else {
+            if (isAmd) return 0;      // chosen brand — top
+            if (isNvidia) return 2;   // other brand — bottom
+            return 1;                 // unknown — middle
+        }
     };
 
     const getSortedList = () => {
         let list = [...products];
         list.sort((a, b) => {
+            // On GPU category: sort by brand preference first
+            if (activeCategory === 'gpu') {
+                const aBrand = getGpuBrandScore(a);
+                const bBrand = getGpuBrandScore(b);
+                if (aBrand !== bBrand) return aBrand - bBrand;
+            }
+            // Then by compatibility
             const aComp = isCompatible(a);
             const bComp = isCompatible(b);
             if (aComp && !bComp) return -1;
@@ -284,6 +320,7 @@ const ManualBuildPage = () => {
 
     return (
         <div className="flex h-screen bg-[#050505] text-[#eeeeee] font-mono overflow-hidden selection:bg-[#ccff00] selection:text-black">
+
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0">
                 {/* Composite Header */}
@@ -313,8 +350,8 @@ const ManualBuildPage = () => {
                             <h2 className="text-2xl font-black text-[#00f3ff] mb-2 tracking-tighter uppercase">Memory Configuration</h2>
                             <p className="text-gray-400 mb-6 font-mono text-xs">SELECT TOTAL MODULE COUNT FOR: <br /><span className="text-white font-bold">{pendingRamProduct.name}</span></p>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                {[1, 2, 4, 8].map(qty => (
+                            <div className="grid grid-cols-3 gap-4">
+                                {[1, 2, 4].map(qty => (
                                     <button
                                         key={qty}
                                         onClick={() => {
@@ -466,7 +503,7 @@ const ManualBuildPage = () => {
 
                         {/* Total Price Area */}
                         <div className="p-6 bg-neutral-950 border-t border-neutral-800 shrink-0 z-10">
-                            <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Estimated Total</div>
+                            <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Local Price Total</div>
                             <div className="text-2xl font-black text-[#00f3ff]">
                                 LKR {totalPrice.toLocaleString()}
                             </div>
@@ -509,55 +546,123 @@ const ManualBuildPage = () => {
                             >
                                 {compatibility.issues.length > 0 ? 'Fix Issues to Proceed' : 'Complete Build'}
                             </button>
+
+                            {/* Clear entire build */}
+                            {Object.keys(buildState).length > 0 && (
+                                <button
+                                    onClick={() => {
+                                        if (window.confirm('Clear the entire build? This will remove all selected components.')) {
+                                            setBuildState({});
+                                            setTotalPrice(0);
+                                            showToastMessage('BUILD CLEARED');
+                                        }
+                                    }}
+                                    className="mt-2 w-full py-2 font-bold uppercase tracking-widest transition-colors rounded-sm text-xs border border-red-900/50 text-red-500 hover:bg-red-900/20"
+                                >
+                                    ✕ Clear Entire Build
+                                </button>
+                            )}
                         </div>
                     </div>
 
                     {/* Right Content - Product List */}
                     <div className="flex-1 bg-neutral-900 flex flex-col h-full min-w-0">
-                        <div className="p-6 border-b border-neutral-800 bg-neutral-900 z-10 flex justify-between items-end sticky top-0 bg-opacity-95 backdrop-blur-sm">
-                            <div>
-                                <div className="flex items-center gap-4">
-                                    <h1 className="text-3xl font-black uppercase text-white tracking-tighter">
-                                        {ALL_CATEGORIES.find(c => c.id === activeCategory)?.name}
-                                    </h1>
+                        <div className="p-5 border-b border-neutral-800 bg-neutral-900 z-10 sticky top-0 backdrop-blur-sm">
+                            {/* Step breadcrumb + nav arrows */}
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    {(() => {
+                                        const parentCat = CATEGORIES.find(c => c.subCategories?.some(s => s.id === activeCategory));
+                                        return (
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center gap-3 flex-wrap">
+                                                    {parentCat && (
+                                                        <span className="text-[10px] font-bold text-gray-600 tracking-widest">
+                                                            {parentCat.name} /
+                                                        </span>
+                                                    )}
+                                                    <h1 className="text-2xl font-black uppercase text-white tracking-tighter">
+                                                        {ALL_CATEGORIES.find(c => c.id === activeCategory)?.name}
+                                                    </h1>
+                                                    {buildState[activeCategory] && (
+                                                        <span className="flex items-center gap-1 text-[10px] font-bold text-[#00f3ff] bg-[#00f3ff]/10 border border-[#00f3ff]/20 px-2 py-0.5 rounded-sm">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-[#00f3ff] inline-block"></span> SELECTED
+                                                        </span>
+                                                    )}
+                                                    {/* GPU toggle inline with title */}
+                                                    {activeCategory === 'gpu' && (
+                                                        <div className="flex bg-neutral-800 rounded p-1 border border-neutral-700">
+                                                            <button
+                                                                onClick={() => setGpuBrand('NVIDIA')}
+                                                                className={`px-4 py-1 text-xs font-bold uppercase rounded transition-all ${gpuBrand === 'NVIDIA' ? 'bg-[#76b900] text-black' : 'text-gray-500 hover:text-white'}`}
+                                                            >NVIDIA</button>
+                                                            <button
+                                                                onClick={() => setGpuBrand('AMD')}
+                                                                className={`px-4 py-1 text-xs font-bold uppercase rounded transition-all ${gpuBrand === 'AMD' ? 'bg-red-600 text-white' : 'text-gray-500 hover:text-white'}`}
+                                                            >AMD</button>
+                                                        </div>
+                                                    )}
+
+                                                </div>
+                                                <p className="text-gray-600 text-xs mt-0.5 font-mono">
+                                                    {products.length} results · {buildState[activeCategory] ? buildState[activeCategory].name.substring(0, 40) : 'no selection'}
+                                                </p>
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+
+                                {/* Controls: Clear + Prev/Next + Search */}
+                                <div className="flex items-center gap-2 shrink-0">
                                     {buildState[activeCategory] && (
                                         <button
                                             onClick={handleClearSelection}
-                                            className="px-3 py-1 bg-red-900/30 text-red-500 text-xs font-bold uppercase hover:bg-red-900/50 transition-colors border border-red-900/50"
+                                            className="px-3 py-1.5 bg-red-900/20 text-red-500 text-xs font-bold uppercase hover:bg-red-900/40 transition-colors border border-red-900/40 rounded-sm"
                                         >
-                                            Clear Selection
+                                            Clear
                                         </button>
                                     )}
-                                </div>
-                                <p className="text-gray-500 text-sm mt-1 font-mono">
-                                // DATABASE_QUERY: {products.length} RESULTS FOUND
-                                </p>
-                            </div>
-
-                            <div className="flex gap-4 items-center">
-                                {/* Chipset Toggle */}
-                                {(activeCategory === 'cpu') && (
-                                    <div className="flex bg-neutral-800 rounded p-1 border border-neutral-700">
-                                        <button
-                                            onClick={() => setChipset('AMD')}
-                                            className={`px-4 py-1.5 text-xs font-bold uppercase rounded ${chipset === 'AMD' ? 'bg-red-600 text-white' : 'text-gray-500 hover:text-white'}`}
-                                        >AMD</button>
-                                        <button
-                                            onClick={() => setChipset('Intel')}
-                                            className={`px-4 py-1.5 text-xs font-bold uppercase rounded ${chipset === 'Intel' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-white'}`}
-                                        >Intel</button>
+                                    {(() => {
+                                        const idx = ALL_CATEGORIES.findIndex(c => c.id === activeCategory);
+                                        const prev = idx > 0 ? ALL_CATEGORIES[idx - 1] : null;
+                                        const next = idx < ALL_CATEGORIES.length - 1 ? ALL_CATEGORIES[idx + 1] : null;
+                                        return (
+                                            <>
+                                                <button
+                                                    disabled={!prev}
+                                                    onClick={() => prev && setActiveCategory(prev.id)}
+                                                    title={prev ? `Previous: ${prev.name}` : 'First component'}
+                                                    className={`px-3 py-1.5 text-xs font-bold uppercase border rounded-sm transition-all ${prev
+                                                        ? 'border-neutral-700 text-gray-400 hover:border-[#00f3ff] hover:text-[#00f3ff]'
+                                                        : 'border-neutral-800 text-neutral-700 cursor-not-allowed'
+                                                        }`}
+                                                >
+                                                    ← Prev
+                                                </button>
+                                                <button
+                                                    disabled={!next}
+                                                    onClick={() => next && setActiveCategory(next.id)}
+                                                    title={next ? `Next: ${next.name}` : 'Last component'}
+                                                    className={`px-3 py-1.5 text-xs font-bold uppercase border rounded-sm transition-all ${next
+                                                        ? 'border-neutral-700 text-gray-400 hover:border-[#00f3ff] hover:text-[#00f3ff]'
+                                                        : 'border-neutral-800 text-neutral-700 cursor-not-allowed'
+                                                        }`}
+                                                >
+                                                    Next →
+                                                </button>
+                                            </>
+                                        );
+                                    })()}
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="SEARCH_DB..."
+                                            className="bg-neutral-800 border border-neutral-700 text-white px-4 py-2 pl-10 text-sm font-mono w-64 focus:border-[#00f3ff] outline-none rounded-none transition-all placeholder-gray-600"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                        />
+                                        <span className="absolute left-3 top-2.5 text-gray-500 text-xs">🔍</span>
                                     </div>
-                                )}
-
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="SEARCH_DB..."
-                                        className="bg-neutral-800 border border-neutral-700 text-white px-4 py-2 pl-10 text-sm font-mono w-64 focus:border-[#00f3ff] outline-none rounded-none transition-all placeholder-gray-600"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                    />
-                                    <span className="absolute left-3 top-2.5 text-gray-500 text-xs">🔍</span>
                                 </div>
                             </div>
                         </div>
@@ -588,10 +693,22 @@ const ManualBuildPage = () => {
                                             {/* Selection Indicator */}
                                             <div className={`absolute top-0 left-0 bottom-0 w-1 transition-colors ${isSelected ? 'bg-[#00f3ff]' : 'bg-transparent group-hover:bg-gray-700'}`}></div>
 
-                                            {/* Product Image Placeholder */}
-                                            <div className="w-24 h-24 bg-neutral-900 flex items-center justify-center border border-neutral-800 mr-6 relative overflow-hidden">
-                                                <img src={item.image} alt={item.name} className="w-full h-full object-cover opacity-80" onError={(e) => e.target.style.display = 'none'} />
-                                                <span className="absolute text-neutral-700 text-xs font-mono z-0">IMG_NULL</span>
+                                            {/* Product Image */}
+                                            <div className="relative flex items-center justify-center w-24 h-24 bg-neutral-900 border border-neutral-800 mr-6 overflow-hidden shrink-0">
+                                                {item.image_url ? (
+                                                    <img
+                                                        src={item.image_url}
+                                                        alt={item.name}
+                                                        style={{ transform: item.image_rotate ? `rotate(${item.image_rotate}deg)` : 'none' }}
+                                                        className="w-full h-full object-contain p-2 transition-transform duration-500"
+                                                        onError={(e) => {
+                                                            e.target.onerror = null;
+                                                            e.target.style.display = 'none';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <span className="text-neutral-700 text-xs font-mono select-none">NO_IMG</span>
+                                                )}
                                             </div>
 
                                             {/* Content */}

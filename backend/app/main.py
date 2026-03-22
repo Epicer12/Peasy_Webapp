@@ -14,6 +14,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+
 # --- Routers ---
 from .routers import (
     models, 
@@ -26,7 +28,8 @@ from .routers import (
     builder, 
     warranty,
     community,
-    marketplace
+    marketplace,
+    analysis
 )
 
 app.include_router(models.router, prefix="/api")
@@ -40,6 +43,7 @@ app.include_router(components.router, prefix="/api")
 app.include_router(build_suggestions.router, prefix="/api")
 app.include_router(projects.router, prefix="/api")
 app.include_router(marketplace.router, prefix="/api")
+app.include_router(analysis.router, prefix="/api")
 
 @app.get("/")
 def root():
