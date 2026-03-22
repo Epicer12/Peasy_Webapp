@@ -530,7 +530,14 @@ const TroubleshootPage = () => {
                                     <input
                                         type="text"
                                         value={manualCode}
-                                        onChange={(e) => setManualCode(e.target.value)}
+                                        onChange={(e) => {
+                                            let val = e.target.value;
+                                            // Real-time syntax formatting: insert space after comma if missing
+                                            if (val.includes(',') && !val.includes(', ')) {
+                                                val = val.replace(/,([^ ])/g, ', $1');
+                                            }
+                                            setManualCode(val.toUpperCase()); // Also enforce uppercase for consistency
+                                        }}
                                         placeholder=">>_WAITING_FOR_INPUT_<<"
                                         className="w-full bg-black border-2 border-[#1a1a1a] p-10 text-6xl font-black text-cyan-400 placeholder-[#111] focus:border-cyan-400/40 outline-none transition-all font-mono text-center tracking-tighter"
                                     />
