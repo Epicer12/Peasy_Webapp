@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { generateBuilds, generateBuildSummary, saveProject, analyzeBottleneck } from "../services/componentService";
 import { auth } from "../firebase";
 import BottleneckAnalysisModal from "../components/modals/BottleneckAnalysisModal";
+import PerformanceDashboardModal from "../components/modals/PerformanceDashboardModal";
 
 /* ── Build type definitions ──────────────────────────────────────────────── */
 const BUILD_TYPES = [
@@ -85,24 +86,9 @@ export default function BuildSuggestions() {
     const [bottleneckReport, setBottleneckReport] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-    const handleDetectBottlenecks = useCallback(async () => {
-        const build = balancedBuild;
-        if (!build?.components?.length) return;
-        const components = build.components.map((c) => ({
-            name: c.model,
-            type: c.type,
-        }));
-        setIsAnalyzing(true);
-        try {
-            const report = await analyzeBottleneck(components);
-            setBottleneckReport(report);
-            setIsBottleneckModalOpen(true);
-        } catch (error) {
-            console.error('Error analyzing bottleneck:', error);
-        } finally {
-            setIsAnalyzing(false);
-        }
-    }, [balancedBuild]);
+    // Performance Estimator
+    const [isPerfModalOpen, setIsPerfModalOpen] = useState(false);
+    const [isPerfAnalyzing, setIsPerfAnalyzing] = useState(false);
 
     const openSaveModal = (build) => {
         setSavingBuild(build);
@@ -137,7 +123,10 @@ export default function BuildSuggestions() {
         }
     };
 
+    const hasFetchedBuilds = useRef(false);
     useEffect(() => {
+        if (hasFetchedBuilds.current) return;
+        hasFetchedBuilds.current = true;
         const fetchBuilds = async () => {
             const summaryData = location.state?.summary;
             const res = await generateBuilds(summaryData || { basicPreferences: {} });
@@ -151,8 +140,30 @@ export default function BuildSuggestions() {
     const getBuild = useCallback((keyword) =>
         builds.find((b) => b.name.toLowerCase().includes(keyword)), [builds]);
 
-    const balancedBuild = getBuild("balance");
-    const unlockedExtras = BUILD_TYPES.filter((bt) => shownExtras.has(bt.key));
+    const balancedBuild = useMemo(() => getBuild("balance"), [getBuild]);
+    const unlockedExtras = useMemo(() => 
+        BUILD_TYPES.filter((bt) => shownExtras.has(bt.key)),
+        [shownExtras]
+    );
+
+    const handleDetectBottlenecks = useCallback(async () => {
+        const build = balancedBuild;
+        if (!build?.components?.length) return;
+        const components = build.components.map((c) => ({
+            name: c.model,
+            type: c.type,
+        }));
+        setIsAnalyzing(true);
+        try {
+            const report = await analyzeBottleneck(components);
+            setBottleneckReport(report);
+            setIsBottleneckModalOpen(true);
+        } catch (error) {
+            console.error('Error analyzing bottleneck:', error);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    }, [balancedBuild]);
 
     // Final comparable list
     const comparableBuilds = useMemo(() => [
@@ -168,6 +179,7 @@ export default function BuildSuggestions() {
     useEffect(() => {
         const fetchSummary = async () => {
             if (comparing && comparableBuilds.length > 0) {
+                setSummaries([]); // Reset to prevent flickering old data
                 setSummarizing(true);
                 try {
                     const res = await generateBuildSummary(comparableBuilds);
@@ -367,8 +379,11 @@ export default function BuildSuggestions() {
                             <div style={{ textAlign: "center", color: "#666", padding: "40px", fontSize: "16px", fontStyle: "italic" }}>Analysing hardware specs and generating pros/cons...</div>
                         ) : summaries.length > 0 ? (
                             <div style={{ display: "grid", gridTemplateColumns: `repeat(${comparableBuilds.length}, 1fr)`, gap: "30px" }}>
-                                {comparableBuilds.map((b) => {
-                                    const sum = summaries.find(s => s.name === b.name) || summaries[0];
+                                {comparableBuilds.map((b, idx) => {
+                                    // Use index-based fallback if names don't match exactly
+                                    const sum = summaries.find(s => s.name === b.name) || 
+                                               summaries.find(s => s.name?.toLowerCase().includes(b.name?.toLowerCase().split(' ')[0])) ||
+                                               summaries[idx];
                                     const typeInfo = BUILD_TYPES.find(bt => b.name.toLowerCase().includes(bt.nameKeyword));
                                     const accent = typeInfo?.color || "#a3ff00";
                                     return (
@@ -566,17 +581,43 @@ export default function BuildSuggestions() {
                                     }
                                     {isAnalyzing ? 'CALCULATING_BALANCE...' : 'DETECT_BOTTLENECKS'}
                                 </button>
+                                <button
+                                    className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[12px] font-black uppercase tracking-widest hover:border-[#ccff00] transition-all flex items-center justify-center gap-2"
+                                    onClick={async () => {
+                                        if (!balancedBuild?.components?.length) return;
+                                        const components = balancedBuild.components.map((c) => ({ name: c.model, type: c.type }));
+                                        setIsPerfAnalyzing(true);
+                                        try {
+                                            const report = await analyzeBottleneck(components);
+                                            setBottleneckReport(report);
+                                            setIsPerfModalOpen(true);
+                                        } catch (e) {
+                                            console.error('Performance analysis error:', e);
+                                        } finally {
+                                            setIsPerfAnalyzing(false);
+                                        }
+                                    }}
+                                    disabled={isPerfAnalyzing || !balancedBuild}
+                                    style={{ opacity: (!balancedBuild || isPerfAnalyzing) ? 0.5 : 1, cursor: (!balancedBuild || isPerfAnalyzing) ? 'not-allowed' : 'pointer' }}
+                                >
+                                    {isPerfAnalyzing
+                                        ? <svg className="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                                        : <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25M3.75 14.25a2.25 2.25 0 0 0 4.5 0m-4.5 0H3m1.5 0h7.5M13.5 3v11.25m0 0a2.25 2.25 0 0 0 4.5 0m-4.5 0H12m1.5 0h7.5" /></svg>
+                                    }
+                                    {isPerfAnalyzing ? 'ESTIMATING...' : 'PERFORMANCE_ESTIMATOR'}
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <BottleneckAnalysisModal
-                isOpen={isBottleneckModalOpen}
-                onClose={() => setIsBottleneckModalOpen(false)}
+            <PerformanceDashboardModal
+                isOpen={isPerfModalOpen}
+                onClose={() => setIsPerfModalOpen(false)}
                 report={bottleneckReport}
             />
+
         </div>
     );
 }
