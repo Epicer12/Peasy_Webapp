@@ -59,6 +59,7 @@ const TroubleshootPage = () => {
             if (res.ok) {
                 setResult(data);
                 setViewMode('dashboard');
+                window.scrollTo(0, 0);
             } else {
                 alert(data.detail || "Pattern not found");
             }
@@ -114,6 +115,7 @@ const TroubleshootPage = () => {
             if (res.ok) {
                 setResult(data);
                 setViewMode('dashboard');
+                window.scrollTo(0, 0);
             }
         } catch (err) {
             console.error("Auto analysis error:", err);
