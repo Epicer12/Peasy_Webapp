@@ -31,7 +31,6 @@ backend/.env
 
 # YOLO / AI
 runs/
-*.onnx
 vision_model/
 
 # Logs
@@ -53,3 +52,5 @@ legacy_data.txt
 test_results.txt
 lint_errors.json
 docs/
+
+*.bak
