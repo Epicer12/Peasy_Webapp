@@ -91,6 +91,7 @@ export default function BuildPage() {
   };
 
   const handleOwnedDetailChange = async (part, value) => {
+    // If we're typing, we clear the selected object and just store the search string
     setOwnedDetails({ ...ownedDetails, [part]: value });
     if (selectedIndex !== -1) setSelectedIndex(-1);
     setLoadingState(prev => ({ ...prev, [part]: true }));
@@ -106,8 +107,9 @@ export default function BuildPage() {
     }
   };
 
-  const selectComponent = (part, componentName) => {
-    setOwnedDetails({ ...ownedDetails, [part]: componentName });
+  const selectComponent = (part, component) => {
+    // Store the full component object instead of just the name string
+    setOwnedDetails({ ...ownedDetails, [part]: component });
     setSelectedIndex(-1);
     setActiveSearchPart(null);
   };
@@ -115,7 +117,7 @@ export default function BuildPage() {
   const isPartOwned = (part) => answers.ownedParts.includes(part);
 
   const getComponentDisplayName = (res) => {
-    let displayName = res.name || res.model || res.title || res.product_name || res.item_name;
+    let displayName = res.name || res.model || res.model_name || res.final_model_name || res.title || res.product_name || res.item_name;
     if (!displayName) {
       if (res.line) displayName = res.line;
       else if (res.family) displayName = `${res.family} ${res.microarchitecture || ""}`.trim();
@@ -231,12 +233,12 @@ export default function BuildPage() {
       <input
         type="text"
         placeholder={`Search ${part}...`}
-        value={ownedDetails[part] || ""}
+        value={typeof ownedDetails[part] === 'object' ? getComponentDisplayName(ownedDetails[part]) : (ownedDetails[part] || "")}
         onChange={(e) => handleOwnedDetailChange(part, e.target.value)}
         onKeyDown={(e) => handleKeyDown(e, part)}
         style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid", borderColor: activeSearchPart === part ? "#00f3ff" : "#333", fontSize: "12px", height: "40px", outline: "none", transition: "all 0.2s ease", color: "#eeeeee", backgroundColor: "#0a0a0a", fontFamily: "'Space Mono', monospace" }}
-        onFocus={() => { setActiveSearchPart(part); handleOwnedDetailChange(part, ownedDetails[part] || ""); }}
-        onClick={(e) => { e.stopPropagation(); if (activeSearchPart !== part) { setActiveSearchPart(part); handleOwnedDetailChange(part, ownedDetails[part] || ""); } }}
+        onFocus={() => { setActiveSearchPart(part); handleOwnedDetailChange(part, typeof ownedDetails[part] === 'object' ? getComponentDisplayName(ownedDetails[part]) : (ownedDetails[part] || "")); }}
+        onClick={(e) => { e.stopPropagation(); if (activeSearchPart !== part) { setActiveSearchPart(part); handleOwnedDetailChange(part, typeof ownedDetails[part] === 'object' ? getComponentDisplayName(ownedDetails[part]) : (ownedDetails[part] || "")); } }}
       />
       {activeSearchPart === part && (loadingState[part] || (searchResults[part] && searchResults[part].length > 0) || (ownedDetails[part] && ownedDetails[part].length > 1)) && (
         <ul style={{ listStyle: "none", padding: "0", margin: "4px 0 0", border: "1px solid #333", borderRadius: "0px", maxHeight: "220px", overflowY: "auto", backgroundColor: "#111", position: "absolute", zIndex: 9999, width: "100%", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
@@ -248,7 +250,7 @@ export default function BuildPage() {
                 const displayName = getComponentDisplayName(res);
                 const isSelected = index === selectedIndex;
                 return (
-                  <li key={res.id || index} onMouseDown={(e) => { e.preventDefault(); selectComponent(part, displayName); }} style={{ padding: "12px 16px", cursor: "pointer", borderBottom: "1px solid #1a1a1a", fontSize: "11px", color: isSelected ? "#00f3ff" : "#888", lineHeight: "1.4", backgroundColor: isSelected ? "#1a1a1a" : "transparent", fontFamily: "'Space Mono', monospace", textTransform: "uppercase" }}>
+                  <li key={res.id || index} onMouseDown={(e) => { e.preventDefault(); selectComponent(part, res); }} style={{ padding: "12px 16px", cursor: "pointer", borderBottom: "1px solid #1a1a1a", fontSize: "11px", color: isSelected ? "#00f3ff" : "#888", lineHeight: "1.4", backgroundColor: isSelected ? "#1a1a1a" : "transparent", fontFamily: "'Space Mono', monospace", textTransform: "uppercase" }}>
                     {displayName}
                   </li>
                 );
@@ -331,7 +333,7 @@ export default function BuildPage() {
               <Question title="VISUAL_RESOLUTION" options={["1080p", "1440p", "4K", "Not sure"]} selected={answers.resolution} onSelect={(val) => updateAnswer("resolution", val)} layout="row" />
               <Question title="PERFORMANCE_TIER" options={["Entry Level", "Mid-Range", "High-End", "Enthusiast"]} selected={answers.performance} onSelect={(val) => updateAnswer("performance", val)} />
               <Question title="BUDGET_THRESHOLD" type="range" selected={answers.budget} onSelect={(val) => updateAnswer("budget", val)} min={100000} />
-              <Question title="EXISTING_HARDWARE" options={["CPU", "GPU", "RAM", "Storage", "PSU", "Case", "None"]} selected={answers.ownedParts} onSelect={(val) => handleOwnedPartsSelect(val)} multi={true} renderOptionExtra={(option) => option !== "None" && renderComponentSearch(option)} />
+              <Question title="EXISTING_HARDWARE" options={["CPU", "GPU", "RAM", "SSD", "HDD", "PSU", "Case", "None"]} selected={answers.ownedParts} onSelect={(val) => handleOwnedPartsSelect(val)} multi={true} renderOptionExtra={(option) => option !== "None" && renderComponentSearch(option)} />
               <Question title="PROCESSOR_PREFERENCE" subtitle={isPartOwned("CPU") ? "SECTOR_OWNED: CPU" : null} options={["Intel", "AMD", "No preference", isPartOwned("CPU") ? "ALREADY_OWNED" : null].filter(Boolean)} selected={answers.cpuBrand} onSelect={(val) => updateAnswer("cpuBrand", val)} layout="row" />
               <Question title="GRAPHICS_PREFERENCE" subtitle={isPartOwned("GPU") ? "SECTOR_OWNED: GPU" : null} options={["NVIDIA", "AMD", "No preference", isPartOwned("GPU") ? "ALREADY_OWNED" : null].filter(Boolean)} selected={answers.gpuBrand} onSelect={(val) => updateAnswer("gpuBrand", val)} layout="row" />
               <Question title="FUTURE_EXPANSION" options={["More RAM slots", "Extra storage slots", "Space for GPU upgrades", "No preference"]} selected={answers.expansion} onSelect={(val) => updateAnswer("expansion", val)} multi={true} exclusiveOption="No preference" />
