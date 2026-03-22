@@ -24,6 +24,7 @@ const TroubleshootPage = () => {
     const [loading, setLoading] = useState(false);
     const [aiAnalysis, setAiAnalysis] = useState({ deepDive: '', fixGuide: '' });
     const [aiLoading, setAiLoading] = useState({ deepDive: false, fixGuide: false });
+    const [errorPopup, setErrorPopup] = useState({ show: false, message: '' });
 
     // Camera/WebSocket State
     const [cameraOn, setCameraOn] = useState(false);
@@ -61,10 +62,11 @@ const TroubleshootPage = () => {
                 setViewMode('dashboard');
                 window.scrollTo(0, 0);
             } else {
-                alert(data.detail || "Pattern not found");
+                setErrorPopup({ show: true, message: data.detail || "Diagnostic pattern mismatch detected." });
             }
         } catch (err) {
             console.error("Manual analysis error:", err);
+            setErrorPopup({ show: true, message: "System downlink failure. Authentication required." });
         } finally {
             setLoading(false);
         }
@@ -119,6 +121,7 @@ const TroubleshootPage = () => {
             }
         } catch (err) {
             console.error("Auto analysis error:", err);
+            setErrorPopup({ show: true, message: "Optical sync failure. Pattern decoding interrupted." });
         } finally {
             setLoading(false);
         }
@@ -656,6 +659,40 @@ const TroubleshootPage = () => {
                 </div>
             ) : (
                 <DiagnosticDashboard />
+            )}
+
+            {/* Error Popup Modal */}
+            {errorPopup.show && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="w-full max-w-md bg-[#050505] border-2 border-red-600 shadow-[0_0_50px_rgba(220,38,38,0.2)] overflow-hidden">
+                        <div className="bg-red-600 p-3 flex justify-between items-center">
+                            <span className="text-black font-black uppercase text-xs tracking-widest flex items-center gap-2">
+                                <span className="w-2 h-2 bg-black animate-pulse"></span>
+                                System_Interrupt_Alert
+                            </span>
+                            <button 
+                                onClick={() => setErrorPopup({ ...errorPopup, show: false })}
+                                className="text-black hover:bg-white px-2 font-bold transition-colors"
+                            >
+                                [X]
+                            </button>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <div className="font-mono text-sm text-red-100 leading-relaxed uppercase tracking-tight">
+                                {errorPopup.message}
+                            </div>
+                            <button 
+                                onClick={() => setErrorPopup({ ...errorPopup, show: false })}
+                                className="w-full py-4 bg-red-600 text-black font-black uppercase text-xs tracking-[0.3em] hover:bg-white transition-all shadow-lg"
+                            >
+                                Acknowledge_&_Reset
+                            </button>
+                        </div>
+                        <div className="bg-black/50 p-2 text-center text-[8px] text-red-900 font-mono tracking-widest border-t border-red-900/20">
+                            ERR_CODE_0x882 // AUTH_DENIED
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Background Aesthetic */}
