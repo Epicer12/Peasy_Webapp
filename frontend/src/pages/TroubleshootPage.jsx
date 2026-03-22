@@ -534,10 +534,21 @@ const TroubleshootPage = () => {
                                         placeholder=">>_WAITING_FOR_INPUT_<<"
                                         className="w-full bg-black border-2 border-[#1a1a1a] p-10 text-6xl font-black text-cyan-400 placeholder-[#111] focus:border-cyan-400/40 outline-none transition-all font-mono text-center tracking-tighter"
                                     />
-                                    <div className="flex justify-between text-[11px] text-[#333] font-mono p-4 bg-black/50 border border-[#111] uppercase tracking-widest">
-                                        <span>Syntax_Requirement: {selectedBrand.includes('Dell') ? 'INT_X, INT_Y' : 'SPECIFIC_SEQUENCE'}</span>
-                                        <span className="text-[#ff4400]/20 underline">View_Brand_Protocols</span>
-                                    </div>
+                                    
+                                    {/* Format Guidance Pills - Hidden for ASUS as it uses special protocols */}
+                                    {!selectedBrand.includes('ASUS') && (
+                                        <div className="flex flex-wrap items-center gap-4 px-2">
+                                            <span className="text-xs text-[#444] font-mono uppercase tracking-widest font-black">Syntax_Examples //</span>
+                                            <div className="flex flex-wrap gap-3">
+                                                {['2, 3', '3, 4', '5, 1'].map(ex => (
+                                                    <span key={ex} className="px-5 py-2 bg-[#0a0a0a] border border-[#1a1a1a] text-[#777] font-mono text-sm uppercase tracking-widest font-black">
+                                                        {ex}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
 
                                     {/* ASUS Specific Error Codes Helper */}
                                     {selectedBrand.includes('ASUS') && (
