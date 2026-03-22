@@ -2,7 +2,7 @@ import os
 import json
 from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from supabase import create_client
 from groq import Groq
 from openai import OpenAI
