@@ -455,7 +455,7 @@ const TroubleshootPage = () => {
                                         setCameraOn(false);
                                         setResult(null);
                                     }}
-                                    className={`w-full py-5 font-mono text-sm uppercase tracking-[0.2em] border-2 transition-all ${method === 'manual' ? 'bg-cyan-400/10 border-cyan-400 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]' : 'bg-[#050505] border-[#111] text-[#444] hover:border-[#333]'}`}
+                                    className={`w-full py-5 font-mono text-base uppercase tracking-[0.2em] border-2 transition-all ${method === 'manual' ? 'bg-cyan-400/10 border-cyan-400 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]' : 'bg-[#050505] border-[#111] text-[#888] hover:border-[#333] hover:text-[#eee]'}`}
                                 >
                                     [ MANUAL_ENTRY ]
                                 </button>
@@ -467,7 +467,7 @@ const TroubleshootPage = () => {
                                         setMethod('camera');
                                         setResult(null);
                                     }}
-                                    className={`w-full py-5 font-mono text-sm uppercase tracking-[0.2em] border-2 transition-all ${method === 'camera' ? 'bg-cyan-400/10 border-cyan-400 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]' : 'bg-[#050505] border-[#111] text-[#444] hover:border-[#333]'}`}
+                                    className={`w-full py-5 font-mono text-base uppercase tracking-[0.2em] border-2 transition-all ${method === 'camera' ? 'bg-cyan-400/10 border-cyan-400 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]' : 'bg-[#050505] border-[#111] text-[#888] hover:border-[#333] hover:text-[#eee]'}`}
                                 >
                                     [ CAMERA_AI ]
                                 </button>
@@ -494,9 +494,9 @@ const TroubleshootPage = () => {
                                                     panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                                 }, 100);
                                             }}
-                                            className={`text-left px-5 py-4 font-mono text-lg border-2 transition-all ${selectedBrand === brand
+                                            className={`text-left px-5 py-4 font-mono text-xl border-2 transition-all ${selectedBrand === brand
                                                 ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
-                                                : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
+                                                : 'border-[#111] bg-[#050505] text-[#888] hover:border-[#333] hover:text-[#eee]'
                                                 }`}
                                         >
                                             {brand}
@@ -585,7 +585,7 @@ const TroubleshootPage = () => {
                                 ) : (
                                     <div className="space-y-6">
                                         <div className="relative aspect-video max-h-[600px] w-full mx-auto bg-black border-2 border-[#222] overflow-hidden group">
-                                            <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-contain grayscale brightness-50 contrast-125" />
+                                            <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-contain grayscale brightness-90 contrast-110" />
                                             <canvas ref={canvasRef} className="hidden" />
 
                                             {/* Advanced HUD */}
