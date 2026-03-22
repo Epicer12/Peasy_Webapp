@@ -14,6 +14,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+<<<<<<< HEAD
+from .routers import models, component_identification, components
+app.include_router(models.router, prefix="/api")
+app.include_router(component_identification.router, prefix="/api") 
+app.include_router(components.router, prefix="/api")
+from .routers import builder
+app.include_router(builder.router, prefix="/api")
+=======
 # --- Routers ---
 from .routers import (
     models, 
