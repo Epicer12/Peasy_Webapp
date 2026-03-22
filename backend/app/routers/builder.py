@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 # Import the parser
 from app.utils.component_parser import ComponentParser
+from app.utils.image_vault import get_component_image
 
 router = APIRouter()
 
@@ -26,45 +27,62 @@ class ComponentResponse(BaseModel):
     specs: dict
     category: str
 
-# Mapping of frontend category names to DB tables
+# Mapping of frontend category names to authoritative DB tables
 CATEGORY_TABLE_MAP = {
-    "processors": "processors_prices",
-    "motherboards": "motherboards_prices",
-    "memory": "memory_prices",
-    "graphic_cards": "graphic_cards_prices",
-    "storage": "storage_prices", # This might need splitting if SSD/HDD are separate in UI but same table?
-    "power_supply": "power_supply_units_prices", # Verify this table name from list
-    "cases": "cases", # This one is tricky, check if there's a price table
+    # Core _final tables
+    "processors": "cpu_final",
+    "cpu": "cpu_final",
+    "motherboards": "motherboard_final",
+    "motherboard": "motherboard_final",
+    "mobo": "motherboard_final",
+    "memory": "ram_final",
+    "ram": "ram_final",
+    "graphic_cards": "gpu_final",
+    "gpu": "gpu_final",
+    "graphics card": "gpu_final",
+    "ssd": "ssd_final",
+    "nvme": "ssd_final",
+    "hdd": "hdd_final",
+    "power_supply": "psu_final",
+    "psu": "psu_final",
+    "cases": "cases_final",
+    "case": "cases_final",
+    "coolers": "cpu_coolers_final",
+    "cooler": "cpu_coolers_final",
+
+    # Peripheral / Software tables (_prices tables)
     "monitors": "monitors_prices",
-    "coolers": "cooling_prices",
     "keyboards": "peripherals_prices",
     "mice": "peripherals_prices",
     "headphones": "peripherals_prices",
     "headsets": "peripherals_prices",
     "speakers": "peripherals_prices",
     "printers": "printers_prices",
+    "printer": "printers_prices",
     "software": "os_software_prices",
     "os": "os_software_prices"
 }
 
-# Add fallback for some categories if needed
-# Based on user list: 
-# case_prices exists
-# housing -> case_prices
-# cooler -> cooling_prices
+# The name/model column name varies across _final tables
+SEARCH_COLUMN_MAP = {
+    "cpu_final": "model",
+    "gpu_final": "name",
+    "ram_final": "name",
+    "ssd_final": "final_model_name",
+    "hdd_final": "name",
+    "motherboard_final": "name",
+    "psu_final": "final_model_name",
+    "cases_final": "name",
+    "cpu_coolers_final": "model_name"
+}
 
-CATEGORY_TABLE_MAP.update({
-    "cpu": "processors_prices",
-    "mobo": "motherboards_prices",
-    "ram": "memory_prices",
-    "gpu": "graphic_cards_prices",
-    "psu": "power_supply_units_prices",
-    "case": "case_prices",
-    "cooler": "cooling_prices",
-    "ssd": "storage_prices",
-    "hdd": "storage_prices",
-    "printer": "printers_prices"
-})
+# Real price columns to check, in order of priority (or we pick best)
+PRICE_COLS = [
+    "nanotek_price", "nanotek_price_lkr", "price_nanotek",
+    "computerzone_price", "computerzone_price_lkr", "cz_price", "price_computerzone",
+    "pc_builders_price", "pc_builders_price_lkr", "price_pcbuilders",
+    "winsoft_price", "winsoft_price_lkr", "price_winsoft"
+]
 
 @router.get("/components/{category}", response_model=List[ComponentResponse])
 def get_components(category: str, search: Optional[str] = None):
@@ -98,54 +116,62 @@ def get_components(category: str, search: Optional[str] = None):
                 # Filter for SSDs (keywords: SSD, NVMe, M.2)
                 query = query.or_("component_name.ilike.%SSD%,component_name.ilike.%NVMe%,component_name.ilike.%M.2%")
             elif category_lower in ["hdd", "hard drive", "disk"]:
-                # Filter for HDDs (Exclude SSD terms)
-                # Supabase-py syntax for NOT is usually filter('col', 'not.ilike', val)
-                # We chain filters to exclude all SSD keywords
-                query = query.filter("component_name", "not.ilike", "%SSD%")\
-                             .filter("component_name", "not.ilike", "%NVMe%")\
-                             .filter("component_name", "not.ilike", "%M.2%")
+                # The hdd_final table is dedicated, no extra filters needed for now
+                pass
+
+        # Use the correct name column for this table
+        name_col = SEARCH_COLUMN_MAP.get(table_name, "component_name")
 
         if search:
-            query = query.ilike("component_name", f"%{search}%")
+            query = query.ilike(name_col, f"%{search}%")
         
-        # We need to limit because some tables are huge? Or just fetch all?
-        # 200 items should be enough for a single fetch, maybe pagination later
         result = query.limit(500).execute()
         
         components = []
         for item in result.data:
-            # Determine price (some have multiple columns like nanotek_price, etc.)
-            # We'll pick the first available non-null price for now
-            price = 0
-            if item.get("nanotek_price"): price = item["nanotek_price"]
-            elif item.get("computerzone_price"): price = item["computerzone_price"]
-            elif item.get("pcbuilders_price"): price = item["pcbuilders_price"]
+            # Determine "Real Price" - find the best available shop price
+            prices = []
+            for col in PRICE_COLS:
+                val = item.get(col)
+                if val:
+                    try:
+                        # Clean if string (e.g. "Rs. 10,000")
+                        if isinstance(val, str):
+                            import re
+                            val = re.sub(r'[^0-9.]', '', val)
+                        f_val = float(val)
+                        if f_val > 0:
+                            prices.append(f_val)
+                    except:
+                        pass
             
-            # Skip items with no price? Or show as "Out of stock"? 
-            # User wants "Real-time pricing", so assume 0 is bad.
-            # But let's keep them so user sees inventory.
+            # Pick min price if multiple, skip if no local price found
+            if not prices:
+                continue
             
-            name = item.get("component_name", "Unknown Component")
+            price = min(prices)
+            
+            name = item.get(name_col, item.get("component_name", "Unknown Component"))
             
             # specs parsing
             specs = {}
-            if category in ["processors", "cpu"]:
+            if category_lower in ["processors", "cpu"]:
                 specs = ComponentParser.parse_cpu(name)
-            elif category in ["motherboards", "mobo"]:
+            elif category_lower in ["motherboards", "motherboard", "mobo"]:
                 specs = ComponentParser.parse_motherboard(name)
-            elif category in ["memory", "ram"]:
+            elif category_lower in ["memory", "ram"]:
                 specs = ComponentParser.parse_ram(name)
-            elif category in ["storage", "ssd", "hdd"]:
+            elif category_lower in ["storage", "ssd", "hdd", "nvme"]:
                 specs = ComponentParser.parse_storage(name)
-            elif category in ["graphic_cards", "gpu", "graphics card"]:
+            elif category_lower in ["graphic_cards", "gpu", "graphics card"]:
                 specs = ComponentParser.parse_gpu(name)
-            elif category in ["power_supply", "psu", "power supply", "power_supply_units"]:
+            elif category_lower in ["power_supply", "psu", "power supply"]:
                 specs = ComponentParser.parse_psu(name)
-            elif category in ["cases", "case", "housing"]:
+            elif category_lower in ["cases", "case", "housing"]:
                 specs = ComponentParser.parse_case(name)
-            elif category in ["coolers", "cooler", "cpu cooler", "cooling"]:
+            elif category_lower in ["coolers", "cooler", "cpu cooler", "cooling"]:
                 specs = ComponentParser.parse_cooler(name)
-            elif category in ["printers", "printer"]:
+            elif category_lower in ["printers", "printer"]:
                 specs = ComponentParser.parse_printer(name)
             elif category in ["os", "software", "operating system"]:
                 specs = ComponentParser.parse_os(name)
@@ -153,11 +179,13 @@ def get_components(category: str, search: Optional[str] = None):
             # Map DB ID or generate one
             c_id = str(item.get("id", item.get("normalized_name", name)))
 
+            img_data = get_component_image(category, name)
             components.append({
                 "id": c_id,
                 "name": name,
                 "price": float(price) if price else 0.0,
-                "image": specs.get("image", "https://via.placeholder.com/150"),
+                "image": img_data["url"],
+                "image_rotate": img_data["rotate"],
                 "specs": specs,
                 "category": category
             })

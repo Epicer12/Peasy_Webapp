@@ -15,7 +15,9 @@ onnxruntime
 opencv-python-headless==4.10.0.84
 numpy
 cog==0.16.12
+
 # --- Testing (used by CI) ---
 pytest==8.3.5
+pytest-asyncio==0.23.5
 
 ultralytics==8.3.70

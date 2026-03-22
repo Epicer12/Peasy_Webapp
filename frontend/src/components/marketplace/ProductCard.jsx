@@ -26,7 +26,8 @@ const ProductCard = ({ product, onClick }) => {
                 <img 
                     src={imageUrl} 
                     alt={product.name} 
-                    className="object-contain w-full h-full p-4 filter grayscale group-hover:grayscale-0 transform group-hover:scale-105 group-hover:-translate-y-2 transition-all duration-700 ease-out"
+                    style={{ transform: product.image_rotate ? `rotate(${product.image_rotate}deg)` : 'none' }}
+                    className="object-contain w-full h-full p-4 filter grayscale group-hover:grayscale-0 transition-all duration-700 ease-out"
                 />
             </div>
 
