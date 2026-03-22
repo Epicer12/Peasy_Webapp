@@ -3,9 +3,11 @@ import json
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
+from app.utils.image_vault import get_component_image
 from supabase import create_client
 from groq import Groq
 from openai import OpenAI
+from ..services.bottleneck_service import calculate_bottleneck
 
 router = APIRouter()
 
@@ -22,24 +24,43 @@ try:
 except Exception as e:
     print(f"Supabase init error: {e}")
 
-price_columns = {
-    "case_fans_final": "estimated_price_lkr",
-    "cases_final": "estimated_price_lkr",
-    "cpu_coolers_final": "estimated_price_lkr",
-    "cpu_final": "estimated_price",
-    "gpu_final": "estimated_lkr_price",
-    "hdd_final": "estimated_price_lkr",
-    "motherboard_final": "estimated_price",
-    "psu_final": "estimated_price_lkr",
-    "ram_final": "estimated_price",
-    "ssd_final": "estimated_price_lkr"
-}
+# Real price columns to check, in order of priority (or we pick best)
+PRICE_COLS = [
+    "nanotek_price", "nanotek_price_lkr", "price_nanotek",
+    "computerzone_price", "computerzone_price_lkr", "cz_price", "price_computerzone",
+    "pc_builders_price", "pc_builders_price_lkr", "price_pcbuilders",
+    "winsoft_price", "winsoft_price_lkr", "price_winsoft"
+]
+
+def get_local_price(item: Dict) -> float:
+    prices = []
+    for col in PRICE_COLS:
+        val = item.get(col)
+        if val:
+            try:
+                if isinstance(val, str):
+                    import re
+                    val = re.sub(r'[^0-9.]', '', val)
+                f_val = float(val)
+                if f_val > 0:
+                    prices.append(f_val)
+            except:
+                pass
+    return min(prices) if prices else 0.0
+
 
 import time
 
 def fetch_candidates(table: str, alloc: float, max_budget: float, min_alloc: float = 0) -> List[Dict]:
     if not supabase: return []
-    price_col = price_columns.get(table, "estimated_price_lkr")
+    
+    # Use estimated_price_lkr as a proxy for the initial query range
+    # Component specific fallbacks if the table doesn't have estimated_price_lkr
+    price_col = "estimated_price_lkr"
+    if table == "cpu_final" or table == "ram_final" or table == "motherboard_final":
+        price_col = "estimated_price"
+    elif table == "gpu_final":
+        price_col = "estimated_lkr_price"
     
     base_min_prices = {
         "cpu_final": 15000,
@@ -140,10 +161,10 @@ class BuildRequest(BaseModel):
 
 def format_comp(table: str, item: Dict) -> Dict:
     # Standardize and minify everything for LLM ingestion to save tokens
-    pcol = price_columns.get(table, "estimated_price_lkr")
+    local_price = get_local_price(item)
     base = {
         "id": item.get("id", ""),
-        "price": float(item.get(pcol, 0) or 0)
+        "price": local_price
     }
     
     if table == "cpu_final":
@@ -675,11 +696,15 @@ def clean_build_result(data: Dict, owned_comps: Dict = None) -> Dict:
                     brand = "None"
                     model = "Not included (Budget constraint)"
             
+            img_data = get_component_image(ctype, model)
             comp_obj = {
                 "type": ctype,
+                "id": c.get("id", ""),
                 "brand": brand,
                 "model": model,
                 "price": price,
+                "image": img_data["url"],
+                "image_rotate": img_data["rotate"],
                 "details": str(c.get("details", ""))
             }
             mapped_comps[ctype] = comp_obj
@@ -703,6 +728,25 @@ def clean_build_result(data: Dict, owned_comps: Dict = None) -> Dict:
         
         # Always use the recalculated sum for precision
         clean_build["total_price"] = build_total
+        
+        # --- Bottleneck Analysis ---
+        try:
+            # Prepare components for bottleneck service
+            # bottleneck_service expects [{type, name, brand, id}]
+            analysis_comps = []
+            for c in clean_build["components"]:
+                if c["model"] and c["model"] != "Not included":
+                    analysis_comps.append({
+                        "type": c["type"],
+                        "name": c["model"],
+                        "brand": c["brand"]
+                    })
+            
+            # Default to 1440p as the middle ground
+            clean_build["analysis"] = calculate_bottleneck(analysis_comps, "1440p")
+        except Exception as ae:
+            print(f"Error calculating bottleneck for build {clean_build['name']}: {ae}")
+            clean_build["analysis"] = None
             
         clean_data["builds"].append(clean_build)
 

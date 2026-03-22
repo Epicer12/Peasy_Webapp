@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 # Import the parser
 from app.utils.component_parser import ComponentParser
+from app.utils.image_vault import get_component_image
 
 router = APIRouter()
 
@@ -144,11 +145,11 @@ def get_components(category: str, search: Optional[str] = None):
                     except:
                         pass
             
-            # Pick min price if multiple, fallback to estimated_price or 0
-            if prices:
-                price = min(prices)
-            else:
-                price = item.get("estimated_price") or item.get("estimated_price_lkr") or item.get("estimated_lkr_price") or 0
+            # Pick min price if multiple, skip if no local price found
+            if not prices:
+                continue
+            
+            price = min(prices)
             
             name = item.get(name_col, item.get("component_name", "Unknown Component"))
             
@@ -178,11 +179,13 @@ def get_components(category: str, search: Optional[str] = None):
             # Map DB ID or generate one
             c_id = str(item.get("id", item.get("normalized_name", name)))
 
+            img_data = get_component_image(category, name)
             components.append({
                 "id": c_id,
                 "name": name,
                 "price": float(price) if price else 0.0,
-                "image": specs.get("image", "https://via.placeholder.com/150"),
+                "image": img_data["url"],
+                "image_rotate": img_data["rotate"],
                 "specs": specs,
                 "category": category
             })

@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { generateBuilds, generateBuildSummary, saveProject, analyzeBottleneck } from "../services/componentService";
 import { auth } from "../firebase";
-import BottleneckAnalysisModal from "../components/modals/BottleneckAnalysisModal";
-import PerformanceDashboardModal from "../components/modals/PerformanceDashboardModal";
+import BuildComparison from "../components/build/BuildComparison";
 
 /* ── Build type definitions ──────────────────────────────────────────────── */
 const BUILD_TYPES = [
@@ -73,6 +72,7 @@ export default function BuildSuggestions() {
     const [shownExtras, setShownExtras] = useState(new Set());
     const [panelOpen, setPanelOpen] = useState(false);
     const [comparing, setComparing] = useState(false);
+    const [comparingAnalysis, setComparingAnalysis] = useState(false);
     const [summaries, setSummaries] = useState([]);
     const [summarizing, setSummarizing] = useState(false);
 
@@ -80,15 +80,6 @@ export default function BuildSuggestions() {
     const [savingBuild, setSavingBuild] = useState(null);
     const [saveForm, setSaveForm] = useState({ name: "", status: "Planned", description: "" });
     const [isSaving, setIsSaving] = useState(false);
-
-    // Bottleneck Analysis
-    const [isBottleneckModalOpen, setIsBottleneckModalOpen] = useState(false);
-    const [bottleneckReport, setBottleneckReport] = useState(null);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-
-    // Performance Estimator
-    const [isPerfModalOpen, setIsPerfModalOpen] = useState(false);
-    const [isPerfAnalyzing, setIsPerfAnalyzing] = useState(false);
 
     const openSaveModal = (build) => {
         setSavingBuild(build);
@@ -145,25 +136,6 @@ export default function BuildSuggestions() {
         BUILD_TYPES.filter((bt) => shownExtras.has(bt.key)),
         [shownExtras]
     );
-
-    const handleDetectBottlenecks = useCallback(async () => {
-        const build = balancedBuild;
-        if (!build?.components?.length) return;
-        const components = build.components.map((c) => ({
-            name: c.model,
-            type: c.type,
-        }));
-        setIsAnalyzing(true);
-        try {
-            const report = await analyzeBottleneck(components);
-            setBottleneckReport(report);
-            setIsBottleneckModalOpen(true);
-        } catch (error) {
-            console.error('Error analyzing bottleneck:', error);
-        } finally {
-            setIsAnalyzing(false);
-        }
-    }, [balancedBuild]);
 
     // Final comparable list
     const comparableBuilds = useMemo(() => [
@@ -283,7 +255,7 @@ export default function BuildSuggestions() {
         </div>
     );
 
-    /* ── Compare overlay ───────────────────────────────────────────────── */
+    /* ── Legacy Compare overlay ─────────────────────────────────────────── */
     const renderCompare = () => {
         if (!comparing) return null;
 
@@ -304,7 +276,7 @@ export default function BuildSuggestions() {
 
                 <div style={{ maxWidth: "1400px", margin: "0 auto", width: "100%" }}>
                     <h2 style={{ color: "white", fontSize: "32px", fontWeight: "900", textAlign: "center", marginBottom: "40px", letterSpacing: "2px" }}>
-                        BUILD COMPARISON ANALYSIS
+                        BUILD COMPONENT COMPARISON
                     </h2>
 
                     <div style={{ border: "1px solid #333", borderRadius: "12px", overflow: "hidden", boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}>
@@ -410,6 +382,11 @@ export default function BuildSuggestions() {
         );
     };
 
+    const renderAnalysisCompare = () => {
+        if (!comparingAnalysis) return null;
+        return <BuildComparison builds={comparableBuilds} onClose={() => setComparingAnalysis(false)} />;
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-[#050505] text-[#00f3ff] flex items-center justify-center font-mono">
@@ -512,9 +489,7 @@ export default function BuildSuggestions() {
                 <h1 style={{ fontSize: "34px", fontWeight: "900", marginBottom: "28px", textTransform: "uppercase", letterSpacing: "-0.02em", borderBottom: "2px solid #1a1a1a", paddingBottom: "16px", color: "#eeeeee" }}>SYSTEM_ARCHITECTURES</h1>
                 {warning && <div style={{ backgroundColor: "rgba(255,68,0,0.08)", border: "1px solid #ff4400", padding: "14px 18px", marginBottom: "28px", color: "#ff4400", fontSize: "12px", letterSpacing: "0.05em", fontWeight: "bold", textTransform: "uppercase" }}>⚠ {warning}</div>}
 
-                {/* Two-column layout: builds left, panel right */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "32px", alignItems: "start" }}>
-                    {/* Left: Build Cards */}
+                <div style={{ display: "block" }}>
                     <div>
                         {balancedBuild && renderBuildCard(balancedBuild, "#a3ff00", true)}
 
@@ -535,7 +510,53 @@ export default function BuildSuggestions() {
 
                         {totalVisible >= 2 && (
                             <div style={{ marginTop: "28px" }}>
-                                <button onClick={() => setComparing(true)} style={{ width: "100%", padding: "18px", background: "transparent", border: "1px solid #ccff00", color: "#ccff00", cursor: "pointer", fontWeight: "900", fontSize: "15px", textTransform: "uppercase", letterSpacing: "0.18em", transition: "all 0.25s ease", fontFamily: "'Space Mono', monospace" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#ccff00"; e.currentTarget.style.color = "#000"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#ccff00" }}>⇄ &nbsp; Compare {totalVisible} Builds</button>
+                                <button 
+                                    onClick={() => setComparing(true)} 
+                                    style={{ 
+                                        width: "100%", 
+                                        padding: "18px", 
+                                        background: "transparent", 
+                                        border: "1px solid #ccff00", 
+                                        color: "#ccff00", 
+                                        cursor: "pointer", 
+                                        fontWeight: "900", 
+                                        fontSize: "15px", 
+                                        textTransform: "uppercase", 
+                                        letterSpacing: "0.18em", 
+                                        transition: "all 0.25s ease", 
+                                        fontFamily: "'Space Mono', monospace" 
+                                    }} 
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = "#ccff00"; e.currentTarget.style.color = "#000"; }} 
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#ccff00" }}
+                                >
+                                    ⇄ &nbsp; Compare {totalVisible} Builds
+                                </button>
+                            </div>
+                        )}
+
+                        {totalVisible >= 1 && (
+                            <div style={{ marginTop: "12px" }}>
+                                <button 
+                                    onClick={() => setComparingAnalysis(true)} 
+                                    style={{ 
+                                        width: "100%", 
+                                        padding: "18px", 
+                                        background: "transparent", 
+                                        border: "1px solid #00f3ff", 
+                                        color: "#00f3ff", 
+                                        cursor: "pointer", 
+                                        fontWeight: "900", 
+                                        fontSize: "15px", 
+                                        textTransform: "uppercase", 
+                                        letterSpacing: "0.18em", 
+                                        transition: "all 0.25s ease", 
+                                        fontFamily: "'Space Mono', monospace" 
+                                    }} 
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = "#00f3ff"; e.currentTarget.style.color = "#000"; }} 
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#00f3ff" }}
+                                >
+                                    ⚡ &nbsp; {totalVisible === 1 ? 'Analyze Performance' : 'Compare Bottlenecks'}
+                                </button>
                             </div>
                         )}
 
@@ -563,60 +584,11 @@ export default function BuildSuggestions() {
                         </div>
                         <div style={{ height: "80px" }} />
                     </div>
-
-                    {/* Right: CORE_COMMAND_PANEL */}
-                    <div style={{ position: "sticky", top: "24px" }}>
-                        <div className="bg-[#0a0a0a] border border-[#333] p-6 shadow-2xl">
-                            <div className="text-[11px] font-black font-mono text-[#00f3ff] border-b-2 border-[#1a1a1a] pb-4 mb-6 uppercase tracking-[0.3em]">CORE_COMMAND_PANEL</div>
-                            <div className="flex flex-col gap-3">
-                                <button
-                                    className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[12px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all flex items-center justify-center gap-2"
-                                    onClick={handleDetectBottlenecks}
-                                    disabled={isAnalyzing || !balancedBuild}
-                                    style={{ opacity: (!balancedBuild || isAnalyzing) ? 0.5 : 1, cursor: (!balancedBuild || isAnalyzing) ? 'not-allowed' : 'pointer' }}
-                                >
-                                    {isAnalyzing
-                                        ? <svg className="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                                        : <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L17.25 9m0 0L21 12.75M17.25 9v12" /></svg>
-                                    }
-                                    {isAnalyzing ? 'CALCULATING_BALANCE...' : 'DETECT_BOTTLENECKS'}
-                                </button>
-                                <button
-                                    className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[12px] font-black uppercase tracking-widest hover:border-[#ccff00] transition-all flex items-center justify-center gap-2"
-                                    onClick={async () => {
-                                        if (!balancedBuild?.components?.length) return;
-                                        const components = balancedBuild.components.map((c) => ({ name: c.model, type: c.type }));
-                                        setIsPerfAnalyzing(true);
-                                        try {
-                                            const report = await analyzeBottleneck(components);
-                                            setBottleneckReport(report);
-                                            setIsPerfModalOpen(true);
-                                        } catch (e) {
-                                            console.error('Performance analysis error:', e);
-                                        } finally {
-                                            setIsPerfAnalyzing(false);
-                                        }
-                                    }}
-                                    disabled={isPerfAnalyzing || !balancedBuild}
-                                    style={{ opacity: (!balancedBuild || isPerfAnalyzing) ? 0.5 : 1, cursor: (!balancedBuild || isPerfAnalyzing) ? 'not-allowed' : 'pointer' }}
-                                >
-                                    {isPerfAnalyzing
-                                        ? <svg className="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                                        : <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25M3.75 14.25a2.25 2.25 0 0 0 4.5 0m-4.5 0H3m1.5 0h7.5M13.5 3v11.25m0 0a2.25 2.25 0 0 0 4.5 0m-4.5 0H12m1.5 0h7.5" /></svg>
-                                    }
-                                    {isPerfAnalyzing ? 'ESTIMATING...' : 'PERFORMANCE_ESTIMATOR'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
-            <PerformanceDashboardModal
-                isOpen={isPerfModalOpen}
-                onClose={() => setIsPerfModalOpen(false)}
-                report={bottleneckReport}
-            />
+            {renderCompare()}
+            {renderAnalysisCompare()}
 
         </div>
     );

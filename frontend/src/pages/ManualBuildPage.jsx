@@ -503,7 +503,7 @@ const ManualBuildPage = () => {
 
                         {/* Total Price Area */}
                         <div className="p-6 bg-neutral-950 border-t border-neutral-800 shrink-0 z-10">
-                            <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Estimated Total</div>
+                            <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Local Price Total</div>
                             <div className="text-2xl font-black text-[#00f3ff]">
                                 LKR {totalPrice.toLocaleString()}
                             </div>
@@ -699,7 +699,8 @@ const ManualBuildPage = () => {
                                                     <img
                                                         src={item.image_url}
                                                         alt={item.name}
-                                                        className="w-full h-full object-contain p-2"
+                                                        style={{ transform: item.image_rotate ? `rotate(${item.image_rotate}deg)` : 'none' }}
+                                                        className="w-full h-full object-contain p-2 transition-transform duration-500"
                                                         onError={(e) => {
                                                             e.target.onerror = null;
                                                             e.target.style.display = 'none';

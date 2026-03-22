@@ -120,7 +120,13 @@ const PurchaseSummaryPage = () => {
                                                 {/* Main row */}
                                                 <div className="flex items-center p-4">
                                                     <div className="w-16 h-16 bg-neutral-950 border border-neutral-800 flex items-center justify-center mr-4 shrink-0">
-                                                        <img src={item.image} alt={item.name} className="w-full h-full object-cover opacity-80" onError={(e) => e.target.style.display = 'none'} />
+                                                        <img 
+                                                            src={item.image} 
+                                                            alt={item.name} 
+                                                            style={{ transform: item.image_rotate ? `rotate(${item.image_rotate}deg)` : 'none' }}
+                                                            className="w-full h-full object-contain opacity-80 transition-transform duration-500" 
+                                                            onError={(e) => e.target.style.display = 'none'} 
+                                                        />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2 mb-1">
