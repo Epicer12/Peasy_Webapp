@@ -535,7 +535,12 @@ const TroubleshootPage = () => {
                                         className="w-full bg-black border-2 border-[#1a1a1a] p-10 text-6xl font-black text-cyan-400 placeholder-[#111] focus:border-cyan-400/40 outline-none transition-all font-mono text-center tracking-tighter"
                                     />
                                     
-                                    {/* Format Guidance Pills - Hidden for ASUS as it uses special protocols */}
+                                    {/* 
+                                      * Format Guidance Pills:
+                                      * These show users common diagnostic patterns for standard brands 
+                                      * (like Dell/Lenovo) to ensure the space-after-comma format is clear.
+                                      * Hidden for ASUS because it uses specific predefined protocol buttons below.
+                                      */}
                                     {!selectedBrand.includes('ASUS') && (
                                         <div className="flex flex-wrap items-center gap-4 px-2">
                                             <span className="text-xs text-[#444] font-mono uppercase tracking-widest font-black">Syntax_Examples //</span>
