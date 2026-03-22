@@ -527,20 +527,31 @@ const TroubleshootPage = () => {
                                         </div>
                                         <span className="text-[#222] font-mono text-[10px]">VER: PC_IO_LATEST</span>
                                     </div>
-                                    <input
-                                        type="text"
-                                        value={manualCode}
-                                        onChange={(e) => {
-                                            let val = e.target.value;
-                                            // Real-time syntax formatting: insert space after comma if missing
-                                            if (val.includes(',') && !val.includes(', ')) {
-                                                val = val.replace(/,([^ ])/g, ', $1');
-                                            }
-                                            setManualCode(val.toUpperCase()); // Also enforce uppercase for consistency
-                                        }}
-                                        placeholder=">>_WAITING_FOR_INPUT_<<"
-                                        className="w-full bg-black border-2 border-[#1a1a1a] p-10 text-6xl font-black text-cyan-400 placeholder-[#111] focus:border-cyan-400/40 outline-none transition-all font-mono text-center tracking-tighter"
-                                    />
+                                    <div className="relative group/input">
+                                        <input
+                                            type="text"
+                                            value={manualCode}
+                                            onChange={(e) => {
+                                                let val = e.target.value;
+                                                // Real-time syntax formatting: insert space after comma if missing
+                                                if (val.includes(',') && !val.includes(', ')) {
+                                                    val = val.replace(/,([^ ])/g, ', $1');
+                                                }
+                                                setManualCode(val.toUpperCase()); // Also enforce uppercase for consistency
+                                            }}
+                                            placeholder=">>_WAITING_FOR_INPUT_<<"
+                                            className="w-full bg-black border-2 border-[#1a1a1a] p-10 text-6xl font-black text-cyan-400 placeholder-[#111] focus:border-cyan-400/40 outline-none transition-all font-mono text-center tracking-tighter"
+                                        />
+                                        {manualCode && (
+                                            <button 
+                                                onClick={() => setManualCode('')}
+                                                className="absolute right-8 top-1/2 -translate-y-1/2 text-[#222] hover:text-[#ff4400] transition-colors font-mono text-4xl"
+                                                title="Clear Input"
+                                            >
+                                                [×]
+                                            </button>
+                                        )}
+                                    </div>
                                     
                                     {/* 
                                       * Format Guidance Pills:
