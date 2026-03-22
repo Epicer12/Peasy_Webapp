@@ -515,6 +515,10 @@ const TroubleshootPage = () => {
                     <div className="w-full" ref={panelRef}>
                         {selectedBrand && method === 'manual' && (
                             <div className="bg-[#050505] p-12 border-2 border-[#1a1a1a] space-y-8 animate-in zoom-in-95 duration-500">
+                                <h3 className="text-3xl font-black text-cyan-400 uppercase tracking-tighter flex items-center gap-4">
+                                    <span className="w-2 h-8 bg-cyan-400"></span>
+                                    3. Capture Pattern
+                                </h3>
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
                                         <div className="text-[#ff4400] font-mono text-[11px] uppercase tracking-widest flex items-center gap-2">
@@ -576,6 +580,10 @@ const TroubleshootPage = () => {
 
                         {selectedBrand && method === 'camera' && (
                             <div className="bg-[#050505] p-10 border-2 border-[#1a1a1a] space-y-8 animate-in zoom-in-95 duration-500">
+                                <h3 className="text-3xl font-black text-[#ff4400] uppercase tracking-tighter flex items-center gap-4">
+                                    <span className="w-2 h-8 bg-[#ff4400]"></span>
+                                    3. Synchronize Link
+                                </h3>
                                 {!cameraOn ? (
                                     <div className="aspect-[21/9] bg-black flex flex-col items-center justify-center border-2 border-[#111] relative group overflow-hidden">
                                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#ff440011_0%,_transparent_75%)] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
