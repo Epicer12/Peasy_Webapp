@@ -12,7 +12,10 @@ const cleanPrice = (priceStr) => {
 const getBestPrice = (item) => {
     const priceFields = [
         'computerzone_price', 'nanotek_price', 'pcbuilders_price',
-        'winsoft_price', 'laptops_price', 'price'
+        'winsoft_price', 'laptops_price', 'price',
+        'computerzone_price_lkr', 'nanotek_price_lkr', 'pc_builders_price_lkr',
+        'winsoft_price_lkr', 'cz_price',
+        'price_computerzone', 'price_nanotek', 'price_pcbuilders', 'price_winsoft'
     ];
     let minPrice = Infinity;
     let found = false;
@@ -105,7 +108,7 @@ const parseSpecs = (name, type) => {
 
 const transformData = (items, type) => {
     return items.map(item => {
-        const name = item.component_name || item.processor_name || item.name || "Unknown Component";
+        const name = item.component_name || item.processor_name || item.name || item.model || item.model_name || item.final_model_name || "Unknown Component";
         return {
             ...item,
             id: item.id || item.component_name || Math.random().toString(36).substr(2, 9),
@@ -121,37 +124,52 @@ export const searchComponents = async (query, type) => {
     try {
         console.log(`[ComponentService] searchComponents called for ${type}, Query: ${query}`);
 
-        // Correct mappings based on Database Inspection
+        // Maps component type to its Supabase table
         const tableMap = {
-            "cpu": "processors_prices",
-            "motherboard": "motherboards_prices", // Added for clarity
-            "mobo": "motherboards_prices",
-            "ram": "memory_prices",
-            "gpu": "graphic_cards_prices",
-            "ssd": "storage_prices",
-            "hdd": "storage_prices",
-            "psu": "power_supply_units_prices",
-            "case": "case_prices",
-            "cooler": "cooling_prices",
+            // --- _final tables (authoritative dataset used by the build AI) ---
+            "cpu": "cpu_final",
+            "gpu": "gpu_final",
+            "ram": "ram_final",
+            "ssd": "ssd_final",
+            "hdd": "hdd_final",
+            "psu": "psu_final",
+            "case": "cases_final",
+            "motherboard": "motherboard_final",
+            "mobo": "motherboard_final",
+            "cooler": "cpu_coolers_final",
+
+            // --- _prices tables (used for the component browser / shop pages) ---
             "software": "os_software_prices",
-            "os": "os_software_prices", // Keep for backward compat
+            "os": "os_software_prices",
             "mice": "peripherals_prices",
             "headsets": "peripherals_prices",
-            "consoles": "console_handheld_gaming_prices",
-            "monitors": "monitors_prices",
             "keyboards": "peripherals_prices",
-
-            // New ones - keeping mapping if they exist
+            "consoles": "console_handheld_gaming_prices",
+            "console": "console_handheld_gaming_prices",
+            "monitors": "monitors_prices",
             "all_in_one": "all_in_one_systems_prices",
             "desktop": "desktop_pcs_prices",
             "system": "desktop_systems_prices",
             "expansion": "expansion_cards_networking_prices",
             "connector": "cable_connector_prices",
-            "converter": "cable_converter_prices",
-            "console": "console_handheld_gaming_prices",
-            "party": "party_box_pricing",
             "connectors": "cable_connector_prices",
-            "converters": "cable_converter_prices"
+            "converter": "cable_converter_prices",
+            "converters": "cable_converter_prices",
+            "party": "party_box_pricing",
+        };
+
+        // Name column differs per table — _final tables don't use 'component_name'
+        const searchColumnMap = {
+            "cpu_final": "model",
+            "gpu_final": "name",
+            "ram_final": "name",
+            "ssd": "ssd_final",
+            "ssd_final": "final_model_name",
+            "hdd_final": "name",
+            "psu_final": "final_model_name",
+            "cases_final": "name",
+            "motherboard_final": "name",
+            "cpu_coolers_final": "model_name",
         };
 
         // Special Multi-Table Fetch for Speakers
@@ -186,15 +204,23 @@ export const searchComponents = async (query, type) => {
             return [...transformedPB, ...transformedP]; // PartyBox first? or mixed?
         }
 
-        const tableName = tableMap[type?.toLowerCase()] || type;
+        const normalizedType = type?.toLowerCase() || '';
+        const tableName = tableMap[normalizedType];
+
+        if (!tableName) {
+            console.warn(`[ComponentService] No table mapping found for type: '${type}'. Skipping fetch.`);
+            return [];
+        }
 
         let queryBuilder = supabase
             .from(tableName)
             .select('*');
 
+        // Use the correct name column for this table (defaults to 'component_name' for _prices tables)
+        const nameCol = searchColumnMap[tableName] || 'component_name';
+
         if (query && query.trim()) {
-            // Most _prices tables use 'component_name'
-            queryBuilder = queryBuilder.ilike('component_name', `%${query}%`);
+            queryBuilder = queryBuilder.ilike(nameCol, `%${query}%`);
         }
 
         // Strict Filtering for Peripherals (Keyboards vs Mice vs Others)
@@ -350,6 +376,33 @@ export const analyzeBottleneck = async (components) => {
             body: JSON.stringify(components)
         });
         if (!response.ok) throw new Error('Failed to analyze bottleneck');
+        return await response.json();
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
+};
+
+export const deleteProject = async (id, email) => {
+    try {
+        const response = await fetch(`/api/projects/${id}?user_email=${email}`, {
+            method: 'DELETE'
+        });
+        if (!response.ok) throw new Error('Failed to delete project');
+        return await response.json();
+    } catch (e) {
+        console.error(e);
+        throw e;
+    }
+};
+
+export const deleteWarranty = async (id, token) => {
+    try {
+        const response = await fetch(`/api/warranty/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Failed to delete warranty');
         return await response.json();
     } catch (e) {
         console.error(e);

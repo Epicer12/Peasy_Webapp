@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
     CloudArrowUpIcon,
     ChevronDownIcon,
@@ -11,6 +11,8 @@ import {
     ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { auth } from '../firebase';
+import { TrashIcon, PencilIcon } from '@heroicons/react/24/solid';
+import { getWarranties } from '../services/warrantyService';
 
 const WarrantyPage = () => {
     const [file, setFile] = useState(null);
@@ -24,16 +26,81 @@ const WarrantyPage = () => {
     const [showDetails, setShowDetails] = useState(false);
     const [warrantyStats, setWarrantyStats] = useState({ percentage: 0, daysLeft: 0, status: 'calculating', completeness: 0 });
     const navigate = useNavigate();
+    const location = useLocation();
+    const [savedWarranties, setSavedWarranties] = useState([]);
+    const [fetchingSaved, setFetchingSaved] = useState(false);
 
-    // Calculate warranty statistics as the user types
+    // Initial Load & State Check
     useEffect(() => {
-        if (editableData) {
-            calculateWarranty();
+        fetchSavedWarranties();
+
+        // Check if we came from another page with a record to edit
+        if (location.state?.existingRecord) {
+            const record = location.state.existingRecord;
+            setResult({ id: record.id, image_url: record.image_url });
+            setEditableData(record.extraction_data);
+            window.scrollTo(0, 0);
         }
-    }, [editableData, calculateWarranty]);
+    }, [location.state]);
+
+    const fetchSavedWarranties = async () => {
+        setFetchingSaved(true);
+        try {
+            const data = await getWarranties();
+            // We need the raw data for editing, but getWarranties returns transformed data.
+            // Let's call the API directly to get the full records.
+            let token = localStorage.getItem('token');
+            const currentUser = auth.currentUser;
+            if (currentUser) token = await currentUser.getIdToken();
+
+            const response = await fetch('/api/warranty/list', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const fullData = await response.json();
+                setSavedWarranties(fullData || []);
+            }
+        } catch (err) {
+            console.error("Failed to fetch saved warranties", err);
+        } finally {
+            setFetchingSaved(false);
+        }
+    };
+
+    const handleDeleteRecord = async (e, id) => {
+        e.stopPropagation();
+        if (!window.confirm("Delete this warranty record?")) return;
+
+        try {
+            let token = localStorage.getItem('token');
+            const currentUser = auth.currentUser;
+            if (currentUser) token = await currentUser.getIdToken();
+
+            const response = await fetch(`/api/warranty/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                setSavedWarranties(prev => prev.filter(w => w.id !== id));
+                if (result?.id === id) {
+                    setResult(null);
+                    setEditableData(null);
+                }
+            }
+        } catch (err) {
+            alert("Deletion failed");
+        }
+    };
+
+    const handleSelectForEdit = (record) => {
+        setResult({ id: record.id, image_url: record.image_url });
+        setEditableData(record.extraction_data);
+        setFinalized(false);
+        window.scrollTo(0, 0);
+    };
 
     const calculateWarranty = useCallback(() => {
-        if (!editableData) return;
         const info = editableData.warranty_info || {};
 
         // 1. Calculate Completeness
@@ -110,6 +177,13 @@ const WarrantyPage = () => {
             setWarrantyStats({ percentage: 0, daysLeft: '!', status: 'calculating', completeness });
         }
     }, [editableData]);
+
+    // Calculate warranty statistics as the user types
+    useEffect(() => {
+        if (editableData) {
+            calculateWarranty();
+        }
+    }, [editableData, calculateWarranty]);
 
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
@@ -198,6 +272,7 @@ const WarrantyPage = () => {
             }
 
             setFinalized(true);
+            fetchSavedWarranties(); // Refresh the list
         } catch (err) {
             setError(err.message);
         } finally {
@@ -523,6 +598,68 @@ const WarrantyPage = () => {
                     <p className="font-black uppercase text-xs tracking-tight">Need Help?</p>
                     <p className="text-[10px] font-bold opacity-80 mt-1">Make sure the purchase date is in YYYY-MM-DD format for live calculation.</p>
                 </div>
+            </div>
+
+            {/* Saved Warranties List - THE NEW SECTION */}
+            <div className="space-y-6 pt-12 border-t border-[#111]">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-black uppercase italic tracking-tighter">stored <span className="text-[#00f3ff]">records</span></h2>
+                    <span className="text-[10px] font-black text-[#444] uppercase tracking-widest">{savedWarranties.length} items logged</span>
+                </div>
+
+                {fetchingSaved ? (
+                    <div className="py-12 text-center bg-[#0a0a0a] border-2 border-[#111] animate-pulse">
+                        <p className="text-[10px] font-black text-[#333] tracking-[0.4em] uppercase">QUERY_IN_PROGRESS...</p>
+                    </div>
+                ) : savedWarranties.length === 0 ? (
+                    <div className="py-12 text-center bg-[#0a0a0a] border-2 border-[#111] border-dashed">
+                        <p className="text-[10px] font-black text-[#222] tracking-widest uppercase italic">NO_RECORDS_MATCH_IDENTITY</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                        {savedWarranties.map((w) => {
+                            const info = w.extraction_data?.warranty_info || {};
+                            return (
+                                <div
+                                    key={w.id}
+                                    onClick={() => handleSelectForEdit(w)}
+                                    className={`
+                                        group bg-[#0a0a0a] border-2 p-4 flex items-center gap-6 cursor-pointer transition-all
+                                        ${result?.id === w.id ? 'border-[#00f3ff] bg-[#00f3ff]/5' : 'border-[#1a1a1a] hover:border-[#333]'}
+                                    `}
+                                >
+                                    <div className="w-12 h-12 bg-black flex items-center justify-center shrink-0 border border-[#111] overflow-hidden">
+                                        {w.image_url ? (
+                                            <img src={w.image_url} alt="Item" className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity" />
+                                        ) : (
+                                            <CheckBadgeIcon className="w-6 h-6 text-[#222] " />
+                                        )}
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="text-xs font-black uppercase text-[#eeeeee] truncate group-hover:text-[#00f3ff] transition-colors">{info.product_name || 'Generic Product'}</h4>
+                                        <p className="text-[8px] font-black text-[#555] uppercase mt-1">SN: {w.id.substring(0, 8)}...</p>
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleSelectForEdit(w); }}
+                                            className="w-8 h-8 flex items-center justify-center bg-[#111] text-[#444] hover:text-[#00f3ff] hover:bg-[#00f3ff]/10 transition-colors"
+                                        >
+                                            <PencilIcon className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleDeleteRecord(e, w.id)}
+                                            className="w-8 h-8 flex items-center justify-center bg-[#111] text-[#444] hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                                        >
+                                            <TrashIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         </div>
     );

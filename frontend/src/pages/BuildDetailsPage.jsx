@@ -251,7 +251,7 @@ const BuildDetailsPage = () => {
                                         <div className="flex-grow min-w-0 h-full flex flex-col">
                                             <div className="flex justify-between items-start gap-6 mb-4">
                                                 <div className="min-w-0 flex-grow">
-                                                    <div className="text-[#00f3ff] text-[10px] font-black font-mono-tech uppercase tracking-widest border-b border-[#1a1a1a] inline-block pb-1">{comp.type || "UNKNOWN"}</div>
+                                                    <div className="text-[#00f3ff] text-[10px] font-black font-mono-tech uppercase tracking-widest border-b border-[#1a1a1a] inline-block pb-1">{comp.type || ""}</div>
                                                     <h3 className="text-2xl font-black uppercase tracking-tight text-white group-hover:text-[#00f3ff] transition-colors leading-tight">{comp.name}</h3>
                                                 </div>
                                                 <div className="flex gap-3 flex-shrink-0">
@@ -333,7 +333,12 @@ const BuildDetailsPage = () => {
                                     COMPARE_BUILDS
                                 </button>
                                 <button className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[13px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all font-mono-tech">GET_ASSEMBLY_GUIDE</button>
-                                <button className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[13px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all font-mono-tech">SHARE_WITH_COMMUNITY</button>
+                                <button 
+                                    className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[13px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all font-mono-tech"
+                                    onClick={() => navigate('/community/upload', { state: { prefillBuildId: project.id } })}
+                                >
+                                    SHARE_WITH_COMMUNITY
+                                </button>
                             </div>
                         </div>
                     </div>

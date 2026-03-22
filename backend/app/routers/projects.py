@@ -25,6 +25,7 @@ class ProjectCreate(BaseModel):
     components: List[dict]
     status: str = "Planned"
     progress: int = 0
+    image_url: Optional[str] = None
 
 @router.post("")
 def save_project(project: ProjectCreate):

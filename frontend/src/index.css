@@ -17,6 +17,7 @@
         background-color: var(--color-deep-black);
         color: var(--color-off-white);
         font-family: var(--font-mono);
+        color-scheme: dark;
     }
 
     h1,
@@ -177,7 +178,8 @@
     text-transform: uppercase;
     letter-spacing: 0.1em;
     margin-bottom: 1.5rem;
-    font-size: 1.25rem; /* Equivalent to text-xl */
+    font-size: 1.25rem;
+    /* Equivalent to text-xl */
 }
 
 .ai-content-header::before {
@@ -227,4 +229,54 @@
     font-weight: 700;
     color: #ff6666;
     letter-spacing: 0.05em;
+}
+
+/* Custom Webkit Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #050505;
+    border-left: 1px solid #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-neon-blue);
+}
+
+/* Utilities */
+@layer utilities {
+    .hide-scrollbar {
+        -ms-overflow-style: none;
+        /* IE and Edge */
+        scrollbar-width: none;
+        /* Firefox */
+    }
+
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+/* Custom Number Input Spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    cursor: pointer;
+    opacity: 0.5;
+    transition: all 0.2s ease;
+}
+
+input[type="number"]::-webkit-inner-spin-button:hover,
+input[type="number"]::-webkit-outer-spin-button:hover,
+input[type="number"]::-webkit-inner-spin-button:active,
+input[type="number"]::-webkit-outer-spin-button:active {
+    opacity: 1;
+    background-color: var(--color-neon-blue);
 }

@@ -159,7 +159,6 @@ export default function BuildSuggestions() {
         balancedBuild,
         ...unlockedExtras.map((bt) => getBuild(bt.nameKeyword)),
     ].filter(Boolean), [balancedBuild, unlockedExtras, getBuild]);
-    // Added builds to deps as getBuild uses builds.find
 
     const totalVisible = comparableBuilds.length;
     const allUnlocked = shownExtras.size === BUILD_TYPES.length;
