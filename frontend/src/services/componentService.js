@@ -1,298 +1,28 @@
-import { supabase } from '../supabaseClient';
-
-console.log("[ComponentService] Module Loaded - Direct Supabase Version");
-
-const cleanPrice = (priceStr) => {
-    if (!priceStr) return null;
-    if (typeof priceStr === 'number') return priceStr;
-    const clean = priceStr.toString().replace(/[^0-9.]/g, '');
-    return parseFloat(clean) || null;
-};
-
-const getBestPrice = (item) => {
-    const priceFields = [
-        'computerzone_price', 'nanotek_price', 'pcbuilders_price',
-        'winsoft_price', 'laptops_price', 'price',
-        'price_computerzone', 'price_nanotek', 'price_pcbuilders', 'price_winsoft', 'estimated_price',
-        'pc_builders_price', 'estimated_lkr_price', 'estimated_price_lkr', 'cz_price',
-        'computerzone_price_lkr', 'nanotek_price_lkr', 'pc_builders_price_lkr', 'winsoft_price_lkr'
-    ];
-    let minPrice = Infinity;
-    let found = false;
-    for (const field of priceFields) {
-        const val = cleanPrice(item[field]);
-        if (val && val > 0 && val < minPrice) {
-            minPrice = val;
-            found = true;
-        }
-    }
-    return found ? minPrice : null;
-};
-
-const parseSpecs = (item, type) => {
-    const specs = {};
-    const name = (item.name || item.final_model_name || item.model_name || '');
-    const n = name.toUpperCase();
-
-    if (type === 'cpu') {
-        // Brand
-        specs.brand = item.brand || (n.includes('INTEL') ? 'Intel' : n.includes('AMD') ? 'AMD' : null);
-        // Socket — use the native cpu_socket column directly from the DB
-        specs.socket = item.cpu_socket || null;
-        // Memory type the CPU supports (DDR3/DDR4/DDR5)
-        specs.mem_type = item.sys_mem_type || null;
-        // TDP in watts
-        specs.tdp = item.default_tdp ? parseInt(item.default_tdp) : null;
-    }
-
-    if (type === 'mobo' || type === 'motherboard') {
-        // Socket — use native socket column directly
-        specs.socket = item.socket || null;
-        // Form factor from DB; normalise casing
-        const ff = (item.form_factor || '').toLowerCase();
-        if (ff.includes('itx')) specs.form_factor = 'ITX';
-        else if (ff.includes('micro') || ff.includes('matx') || ff.includes('m-atx')) specs.form_factor = 'Micro-ATX';
-        else if (ff.includes('e-atx') || ff.includes('eatx')) specs.form_factor = 'E-ATX';
-        else specs.form_factor = 'ATX';
-        // RAM type supported by mobo
-        specs.ram_type = item.memory_type || null;
-    }
-
-    if (type === 'ram') {
-        // RAM type (DDR4/DDR5) from the DB 'type' column or name
-        let ramType = item.type || item.memory_type || null;
-        if (!ramType) {
-            const tempName = item.name || item.component_name || item.final_model_name || '';
-            const match = tempName.match(/DDR[3-5]/i);
-            if (match) ramType = match[0].toUpperCase();
-        }
-        specs.type = ramType;
-        specs.speed_mhz = item.speed_mhz || null;
-    }
-
-    if (type === 'gpu') {
-        // Physical length in mm so we can check against case clearance
-        specs.length_mm = item.length ? parseInt(item.length) : null;
-        specs.tdp = item.tdp ? parseInt(item.tdp) : null;
-        specs.manufacturer = item.manufacturer || null;
-    }
-
-    if (type === 'psu') {
-        // Wattage from native DB column
-        const wattVal = item.wattage ? parseInt(item.wattage) : null;
-        specs.wattage = (wattVal && wattVal > 0) ? wattVal : null;
-        // If wattage is 0 or unknown, try parsing from name string
-        if (!specs.wattage) {
-            const wMatch = n.match(/(\d{3,4})\s?W/);
-            if (wMatch) specs.wattage = parseInt(wMatch[1]);
-        }
-        specs.form_factor = item.form_factor || 'ATX';
-    }
-
-    if (type === 'case') {
-        // Motherboard form factor support from DB column
-        const ms = (item.motherboard_support || '').toLowerCase();
-        if (ms.includes('itx')) specs.mobo_support = 'ITX';
-        else if (ms.includes('micro') || ms.includes('matx')) specs.mobo_support = 'Micro-ATX';
-        else if (ms.includes('e-atx') || ms.includes('eatx')) specs.mobo_support = 'E-ATX';
-        else specs.mobo_support = 'ATX';
-        // GPU clearance
-        const gpuClearanceStr = (item.supported_gpu_length_mm || '').replace(/[^\d]/g, '');
-        specs.gpu_clearance_mm = gpuClearanceStr ? parseInt(gpuClearanceStr) : null;
-        // CPU cooler clearance
-        const coolerClearanceStr = (item.supported_cpu_cooler_height_mm || '').replace(/[^\d]/g, '');
-        specs.cooler_clearance_mm = coolerClearanceStr ? parseInt(coolerClearanceStr) : null;
-        // PSU form factor the case accepts
-        specs.psu_form_factor = item.psu_form_factor || 'ATX';
-    }
-
-    if (type === 'cooler') {
-        // Supported sockets is a comma-separated string e.g. "LGA1155, LGA1150, AM4"
-        specs.supported_sockets = item.supported_sockets
-            ? item.supported_sockets.split(',').map(s => s.trim().toUpperCase())
-            : [];
-        // TDP the cooler can handle e.g "65W"
-        const tdpStr = (item.tdp || '').replace(/[^\d]/g, '');
-        specs.tdp_rating = tdpStr ? parseInt(tdpStr) : null;
-        // Physical height
-        const heightStr = (item.height_size || '').replace(/[^\d]/g, '');
-        specs.height_mm = heightStr ? parseInt(heightStr) : null;
-    }
-
-    return specs;
-};
-
-const transformData = (items, type) => {
-    return items.map(item => {
-        const name = item.component_name || item.processor_name || item.name || item.final_model_name || item.model_name ||
-            (item.brand && item.line && item.model ? `${item.brand} ${item.line} ${item.model}` : "Unknown Component");
-        const specs = parseSpecs(item, type);
-        return {
-            ...item,
-            id: item.id || item.component_name || Math.random().toString(36).substr(2, 9),
-            name: name,
-            price: getBestPrice(item),
-            image_url: item.image_url || null,
-            image: item.image || null,
-            specs: specs
-        };
-    });
-};
+// [ComponentService] Unified API Version
+// Centralized service for PC parts, project management, and hardware analysis.
 
 export const searchComponents = async (query, type) => {
     try {
-        console.log(`[ComponentService] searchComponents called for ${type}, Query: ${query}`);
-
-        // Maps component type to its Supabase table
-        const tableMap = {
-            "cpu": "cpu_final",
-            "motherboard": "motherboard_final",
-            "mobo": "motherboard_final",
-            "ram": "ram_final",
-            "gpu": "gpu_final",
-            "ssd": "ssd_final",
-            "hdd": "hdd_final",
-            "psu": "psu_final",
-            "case": "cases_final",
-            "cooler": "cpu_coolers_final",
-            "case_fans": "case_fans_final",
-            "software": "os_software_prices",
-            "os": "os_software_prices",
-            "mice": "peripherals_prices",
-            "headsets": "peripherals_prices",
-            "keyboards": "peripherals_prices",
-            "consoles": "console_handheld_gaming_prices",
-            "console": "console_handheld_gaming_prices",
-            "monitors": "monitors_prices",
-            "keyboards": "peripherals_prices",
-            "all_in_one": "all_in_one_systems_prices",
-            "desktop": "desktop_pcs_prices",
-            "system": "desktop_systems_prices",
-            "expansion": "expansion_cards_networking_prices",
-            "connector": "cable_connector_prices",
-            "connectors": "cable_connector_prices",
-            "converter": "cable_converter_prices",
-            "converters": "cable_converter_prices",
-            "party": "party_box_pricing",
-        };
-
-        // Name column differs per table — _final tables don't use 'component_name'
-        const searchColumnMap = {
-            "cpu_final": "model",
-            "gpu_final": "name",
-            "ram_final": "name",
-            "ssd": "ssd_final",
-            "ssd_final": "final_model_name",
-            "hdd_final": "name",
-            "psu_final": "final_model_name",
-            "cases_final": "name",
-            "motherboard_final": "name",
-            "cpu_coolers_final": "model_name",
-        };
-
-        // Special Multi-Table Fetch for Speakers
-        if (type === 'speakers') {
-            let peripheralsQuery = supabase
-                .from('peripherals_prices')
-                .select('*')
-                .ilike('component_name', '%speaker%');
-
-            let partyBoxQuery = supabase
-                .from('party_box_pricing')
-                .select('*');
-
-            if (query && query.trim()) {
-                peripheralsQuery = peripheralsQuery.ilike('component_name', `%${query}%`);
-                partyBoxQuery = partyBoxQuery.ilike('component_name', `%${query}%`);
-            }
-
-            const [peripheralsRes, partyBoxRes] = await Promise.all([
-                peripheralsQuery.limit(50),
-                partyBoxQuery.limit(50)
-            ]);
-
-            const pData = peripheralsRes.data || [];
-            const pbData = partyBoxRes.data || [];
-
-            console.log(`[Speakers] Peripherals: ${pData.length}, PartyBox: ${pbData.length}`);
-
-            const transformedP = transformData(pData, 'speakers');
-            const transformedPB = transformData(pbData, 'speakers');
-
-            return [...transformedPB, ...transformedP];
+        console.log(`[ComponentService] searchComponents calling API for ${type}, Query: ${query}`);
+        
+        const response = await fetch(`/api/components/search?type=${encodeURIComponent(type)}&q=${encodeURIComponent(query || "")}`);
+        if (!response.ok) {
+            throw new Error(`API error: ${response.statusText}`);
         }
-
-        const tableName = tableMap[type?.toLowerCase()] || type;
-
-        let queryBuilder = supabase
-            .from(tableName)
-            .select('*')
-            .not('image_url', 'is', null);
-
-        // Sort by benchmark/performance so the "perfect" / best components show on top
-        if (tableName === 'cpu_final') queryBuilder = queryBuilder.order('cpu_mark', { ascending: false, nullsFirst: false });
-        else if (tableName === 'gpu_final') queryBuilder = queryBuilder.order('g3_dmark', { ascending: false, nullsFirst: false });
-        else if (tableName === 'ram_final') queryBuilder = queryBuilder.order('read_speed_mb_s', { ascending: false, nullsFirst: false });
-        else if (tableName === 'ssd_final') queryBuilder = queryBuilder.order('benchmark_score', { ascending: false, nullsFirst: false });
-        // Fallback sort: estimated_price descending (higher price often means higher tier)
-        else if (['motherboard_final', 'cases_final', 'psu_final', 'cpu_coolers_final'].includes(tableName)) {
-            const priceCol = tableName === 'motherboard_final' ? 'estimated_price' : 'estimated_price_lkr';
-            queryBuilder = queryBuilder.order(priceCol, { ascending: false, nullsFirst: false });
-        }
-
-        if (query && query.trim()) {
-            if (tableName === 'cpu_final') {
-                queryBuilder = queryBuilder.or(`brand.ilike.%${query}%,line.ilike.%${query}%,model.ilike.%${query}%`);
-            } else {
-                let searchColumn = 'component_name';
-                if (['gpu_final', 'cases_final', 'motherboard_final', 'ram_final'].includes(tableName)) searchColumn = 'name';
-                else if (['ssd_final', 'hdd_final', 'psu_final'].includes(tableName)) searchColumn = 'final_model_name';
-                else if (tableName === 'cpu_coolers_final') searchColumn = 'model_name';
-
-                queryBuilder = queryBuilder.ilike(searchColumn, `%${query}%`);
-            }
-        }
-
-        // Strict Filtering for Peripherals (Keyboards vs Mice vs Others)
-        if (type === 'keyboards') {
-            queryBuilder = queryBuilder.ilike('component_name', '%keyboard%');
-        } else if (type === 'mice') {
-            queryBuilder = queryBuilder.ilike('component_name', '%mouse%');
-        } else if (type === 'headsets') {
-            queryBuilder = queryBuilder.or('component_name.ilike.%headset%,component_name.ilike.%headphone%');
-            queryBuilder = queryBuilder.not('component_name', 'ilike', '%speaker%');
-        } else if (type === 'consoles') {
-            queryBuilder = queryBuilder.or('component_name.ilike.%console%,component_name.ilike.%handheld%,component_name.ilike.%ps5%,component_name.ilike.%playstation%,component_name.ilike.%xbox%,component_name.ilike.%switch%,component_name.ilike.%nintendo%');
-            queryBuilder = queryBuilder.not('component_name', 'ilike', '%controller%');
-            queryBuilder = queryBuilder.not('component_name', 'ilike', '%stand%');
-            queryBuilder = queryBuilder.not('component_name', 'ilike', '%station%');
-            queryBuilder = queryBuilder.not('component_name', 'ilike', '%cooling%');
-            queryBuilder = queryBuilder.not('component_name', 'ilike', '%remote%');
-            queryBuilder = queryBuilder.not('component_name', 'ilike', '%headset%');
-            queryBuilder = queryBuilder.not('component_name', 'ilike', '%headphone%');
-        } else if (type === 'monitors') {
-            // Just in case monitors table has other stuff? Unlikely but safe.
-        }
-        // We limit to 800 to ensure we pull enough variations (e.g. DDR3 vs DDR4 vs DDR5) so the user isn't stuck with 0 compatible components in the UI.
-        const { data, error } = await queryBuilder.limit(800);
-
-        if (error) {
-            console.error(`Supabase error fetching ${type} from ${tableName}:`, error);
-            return [];
-        }
-
-        console.log(`[ComponentService] Fetched raw data for ${type} from ${tableName}. Length:`, data?.length);
-
-        if (data && data.length > 0) {
-            console.log(`[ComponentService] Raw Item 0:`, data[0]);
-            const transformed = transformData(data, type);
-            console.log(`[ComponentService] Transformed Item 0:`, transformed[0]);
-            return transformed;
-        }
-
-        return [];
+        const data = await response.json();
+        
+        // Standardize formatting for frontend consumption
+        return data.map(item => ({
+            ...item,
+            id: item.id || Math.random().toString(36).substr(2, 9),
+            name: item.name || "Unknown Component",
+            price: item.price || 0,
+            image_url: item.image_url || null,
+            image: item.image_url || null, // fallback for legacy code
+            specs: item.specs || {}
+        }));
     } catch (error) {
-        console.error("Error searching components:", error);
+        console.error("Component Search Error:", error);
         return [];
     }
 };
@@ -318,7 +48,7 @@ export const generateBuilds = async (payload) => {
         }
         return await response.json();
     } catch (e) {
-        console.error(e);
+        console.error("Generate Builds Error:", e);
         return { builds: [], warning: "" };
     }
 };
@@ -333,13 +63,29 @@ export const generateBuildSummary = async (builds) => {
         if (!response.ok) throw new Error('Failed to generate summary');
         return await response.json();
     } catch (e) {
-        console.error(e);
+        console.error("Generate Summary Error:", e);
         return { summaries: [] };
     }
 };
 
+const BUILD_IMAGES = [
+    "https://images.unsplash.com/photo-1587202376775-67b146200632?q=80&w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1591405351990-4726e331f141?q=80&w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1547082299-de196ea013d6?q=80&w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?q=80&w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1555680202-c86f0e12f086?q=80&w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1624701928517-44c8ac49d93c?q=80&w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1587302912306-cf1ed9c33146?q=80&w=800&auto=format&fit=crop"
+];
+
 export const saveProject = async (projectData) => {
     try {
+        // Assign a random build image if none exists
+        if (!projectData.image_url) {
+            const randomIndex = Math.floor(Math.random() * BUILD_IMAGES.length);
+            projectData.image_url = BUILD_IMAGES[randomIndex];
+        }
+
         const response = await fetch('/api/projects', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -348,7 +94,7 @@ export const saveProject = async (projectData) => {
         if (!response.ok) throw new Error('Failed to save project');
         return await response.json();
     } catch (e) {
-        console.error(e);
+        console.error("Save Project Error:", e);
         throw e;
     }
 };
@@ -360,7 +106,7 @@ export const getProjects = async (email) => {
         if (!response.ok) throw new Error('Failed to fetch projects');
         return await response.json();
     } catch (e) {
-        console.error(e);
+        console.error("Fetch Projects Error:", e);
         return [];
     }
 };
@@ -372,7 +118,7 @@ export const getProjectById = async (id, email) => {
         if (!response.ok) throw new Error('Failed to fetch project');
         return await response.json();
     } catch (e) {
-        console.error(e);
+        console.error("Fetch Project by ID Error:", e);
         throw e;
     }
 };
@@ -387,10 +133,11 @@ export const updateProject = async (id, projectData) => {
         if (!response.ok) throw new Error('Failed to update project');
         return await response.json();
     } catch (e) {
-        console.error(e);
+        console.error("Update Project Error:", e);
         throw e;
     }
 };
+
 export const analyzeBottleneck = async (components) => {
     try {
         const response = await fetch('/api/analyze/bottleneck', {
@@ -401,7 +148,7 @@ export const analyzeBottleneck = async (components) => {
         if (!response.ok) throw new Error('Failed to analyze bottleneck');
         return await response.json();
     } catch (e) {
-        console.error(e);
+        console.error("Analyze Bottleneck Error:", e);
         throw e;
     }
 };
@@ -414,7 +161,7 @@ export const deleteProject = async (id, email) => {
         if (!response.ok) throw new Error('Failed to delete project');
         return await response.json();
     } catch (e) {
-        console.error(e);
+        console.error("Delete Project Error:", e);
         throw e;
     }
 };
@@ -428,7 +175,7 @@ export const deleteWarranty = async (id, token) => {
         if (!response.ok) throw new Error('Failed to delete warranty');
         return await response.json();
     } catch (e) {
-        console.error(e);
+        console.error("Delete Warranty Error:", e);
         throw e;
     }
 };

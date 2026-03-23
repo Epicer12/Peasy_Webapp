@@ -35,7 +35,6 @@ const MainLayout = () => {
         { name: 'MARKET', href: '/marketplace', icon: ShoppingBagIcon },
         { name: 'COMMUNITY', href: '/community', icon: UserGroupIcon },
         { name: 'WARRANTY', href: '/warranty', icon: WrenchScrewdriverIcon },
-        { name: 'PROFILE', href: '/profile', icon: UserGroupIcon },
     ];
 
     const getPageTitle = () => {
