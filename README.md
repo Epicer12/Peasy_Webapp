@@ -1,245 +1,128 @@
-# Peasy Web App – Team Setup Guide
+# Peasy Web App – Advanced PC Builder & Identifier
 
-<p><strong>Audience:</strong> Internal team members</p>
-<p>This document explains how to set up and run the Peasy Web App locally. Specifically for the <strong>React Frontend</strong> and <strong>FastAPI Backend</strong>.</p>
+Peasy is an intelligent PC building platform that combines real-time hardware identification, 3D visualization, and a comprehensive marketplace.
 
-<hr/>
+## 🚀 Key Features
 
-## 📌 Requirements
+- **3D PC Visualizer**: Interactive 3D rendering of builds using React Three Fiber.
+- **Hardware Identification**: Real-time component detection using local ONNX inference (YOLOv8) and OpenAI Vision API for precise model matching.
+- **Component Marketplace**: Integrated marketplace with automated pricing and availability updates via a custom crawler.
+- **Warranty & Profiles**: Secure authentication with Firebase OTP and detailed profile/warranty management powered by Supabase.
 
-Install these **before cloning the repository**:
+---
 
-- **Node.js** (v18 or higher)  
-  👉 https://nodejs.org
-- **Python** (v3.10 or higher)
-  👉 https://python.org
-- **Git**  
-  👉 https://git-scm.com
+## 🛠️ Tech Stack
 
-### Verify Installation
+### Frontend
+- **Framework**: React 19 (Vite)
+- **Styling**: Tailwind CSS 4
+- **3D Engine**: React Three Fiber / Three.js
+- **State & Data**: Supabase JS, Axios
+- **Auth**: Firebase Authentication (OTP)
+- **Icons**: Heroicons, Lucide
 
-```bash
-node -v
-npm -v
-python --version
-git --version
+### Backend
+- **Framework**: FastAPI (Python 3.10+)
+- **AI/ML**: ONNX Runtime (Local Inference), Ultralytics (YOLOv8), OpenAI Vision API
+- **Computer Vision**: OpenCV
+- **Database**: Supabase (PostgreSQL)
+- **Auth Admin**: Firebase Admin SDK
+- **Async**: WebSockets for real-time inference
+
+### Data & Tools
+- **Crawler**: BeautifulSoup4 & Requests (Automated component data scraping)
+- **Vision Model**: Custom YOLOv8 training/deployment assets
+
+---
+
+## 📁 Project Structure
+
+```text
+Peasy_WebApp/
+├── frontend/        # React 19 + Vite + Tailwind 4
+├── backend/         # FastAPI + Local ONNX + OpenAI
+├── crawler/         # Python-based component data scraper
+├── vision_model/    # YOLOv8 model training and deployment assets
+└── README.md
 ```
 
-<hr/>
+---
 
-## 📥 Clone the Repository
+## ⚙️ Setup & Installation
 
-Use **HTTPS (recommended)**:
+### 1. Requirements
+- **Node.js**: v18+
+- **Python**: v3.10+
+- **Git**
 
+### 2. Clone the Repository
 ```bash
 git clone https://github.com/Epicer12/Peasy_Webapp.git
 cd Peasy_Webapp
 ```
 
-> ⚠️ If Git asks for credentials repeatedly, see the **SSH Setup (macOS/Linux)** section below.
-
-<hr/>
-
-## 📁 Project Structure (Do NOT change)
-
-```text
-Peasy_Webapp/
-│
-├── frontend/      # React frontend (Vite)
-├── backend/       # Python FastAPI Backend
-└── README.md
-```
-
-❌ Do **NOT** move files between folders.
-
-<hr/>
-
-## 🖥️ Frontend Setup (Required)
-
+### 3. Frontend Setup
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+Runs on: `http://localhost:5173`
 
-Frontend runs on:
-```
-http://localhost:5173
-```
-
-<hr/>
-
-## 🧠 Backend Setup (Python / FastAPI)
-
-Open a **new terminal**:
-
-1. Navigate to backend:
-   ```bash
-   cd backend
-   ```
-
-2. (Optional but Recommended) Create a Virtual Environment:
-   ```bash
-   # Windows
-   python -m venv venv
-   .\venv\Scripts\activate
-   
-   # Mac/Linux
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-3. Install Dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-   *Note: This includes FastAPI, Uvicorn, OpenCV, Ultralytics (YOLO), and WebSockets.*
-
-4. Run the Server:
-   ```bash
-   python -m uvicorn app.main:app --reload
-   ```
-
-Backend runs on:
-```
-http://localhost:8000
-```
-
-<hr/>
-
-## 🔁 Running the Full App
-
-You need **two terminals**:
-
-- Terminal 1 → `frontend` → `npm run dev`
-- Terminal 2 → `backend` → `python -m uvicorn app.main:app --reload`
-
-<hr/>
-
-## 🌱 Git Workflow Rules
-
-- ❌ Do **NOT** push directly to `main`
-- ❌ Do **NOT** commit:
-  - `node_modules/`
-  - `venv/`
-  - `__pycache__/`
-  - `.env`
-- ✅ Always pull latest changes before starting work
-
-```bash
-git pull origin main
-```
-
-### Create a Feature Branch
-
-```bash
-git checkout -b feature-your-name
-```
-
-### Push Your Branch
-
-```bash
-git push origin feature-your-name
-```
-
-Open a **Pull Request** after pushing.
-
-<hr/>
-
-## 🔑 SSH Setup (macOS / Linux – Recommended)
-
-> This is optional but recommended if HTTPS authentication fails.
-
-### Generate SSH Key
-
-```bash
-ssh-keygen -t ed25519 -C "your-email@example.com"
-```
-
-Press **Enter** for all prompts.
-
-### Start SSH Agent & Add Key
-
-```bash
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/id_ed25519
-```
-
-### Copy Public Key
-
-```bash
-pbcopy < ~/.ssh/id_ed25519.pub
-```
-
-### Add to GitHub
-1. GitHub → Settings → SSH and GPG keys
-2. New SSH key
-3. Paste the key and save
-
-### Test Connection
-
-```bash
-ssh -T git@github.com
-```
-
-Expected:
-```
-Hi username! You've successfully authenticated...
-```
-
-After this, you can use:
-```bash
-git clone git@github.com:Epicer12/Peasy_Webapp.git
-```
-
-<hr/>
-
-## 🐞 Common Issues
-
-### `npm install` fails
-```bash
-rm -rf node_modules
-npm install
-```
-
-### Backend "Module Not Found"
-Ensure you activated your virtual environment (`venv`) and ran `pip install -r requirements.txt`.
-
-### App not loading
-- Check terminal errors
-- Make sure backend is running on port 8000.
-
-<hr/>
-
-## 🤖 Vision API Setup (Optional - For Detailed Component Identification)
-
-The app uses OpenAI Vision API to identify component brands and models after YOLO detection.
-
-### 1. Get API Key
-1. Sign up at [OpenAI Platform](https://platform.openai.com/)
-2. Generate an API key from [API Keys page](https://platform.openai.com/api-keys)
-
-### 2. Configure Backend
+### 4. Backend Setup
 ```bash
 cd backend
-cp .env.example .env
-# Edit .env and add:
-OPENAI_API_KEY=sk-your-actual-key-here
+python -m venv venv
+source venv/bin/activate  # Windows: .\venv\Scripts\activate
+pip install -r requirements.txt
+python -m uvicorn app.main:app --reload
+```
+Runs on: `http://localhost:8000`
+
+### 5. Crawler Setup (Optional)
+To update marketplace data:
+```bash
+cd crawler
+pip install -r requirements.txt
+python main.py
 ```
 
-### 3. Cost Information
-- **Model**: gpt-4o-mini (cost-optimized)
-- **Image Size**: 512×512 (optimized)
-- **Cost**: ~$0.0015 per session (10 components)
-- **1000 sessions**: ~$1.50
+---
 
-<hr/>
+## 🔑 Configuration (.env)
 
-## 📄 Notes
+### Backend `.env`
+```env
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_anon_key
+FIREBASE_SERVICE_ACCOUNT=path_to_firebase_json
+OPENAI_API_KEY=sk-your-openai-key
+GROQ_API_KEY=your-groq-key
+```
 
-- **AI Features:** Component identification is powered by YOLOv8 hosted on Hugging Face Spaces. The backend proxies requests to the Space API, keeping the model deployment private and the backend lightweight.
-- **WebSockets:** The backend exposes a `/ws/identify` endpoint for real-time inference.
-- **Vision API:** Optional but recommended for detailed brand/model identification.
+### Frontend `.env`
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_FIREBASE_API_KEY=your_firebase_key
+```
 
 ---
-**Deployment Note:** When deploying to Vercel Hobby accounts, ensure the pushing developer's `git config user.email` matches the Vercel account owner's email to prevent deployment blocks.
+
+## 🤖 AI Vision System
+The identification system uses a hybrid approach:
+1. **Local Detection**: YOLOv8 via `onnxruntime` detects component types (GPU, RAM, etc.) in real-time via WebSockets.
+2. **Vision Refinement**: OpenAI Vision API analyzes detected bounding boxes to identify specific models and brands.
+
+---
+
+## 🌱 Git Workflow
+- ❌ Do **NOT** push directly to `main`.
+- ✅ Create feature branches: `git checkout -b feature/your-feature`.
+- ✅ Open a Pull Request for review.
+
+---
+
+## 📄 Notes
+- **Deployment**: Configured for Vercel (Frontend) and Render/Fly.io (Backend).
+- **Automation**: Component data is refreshed periodically via the `crawler` module.
