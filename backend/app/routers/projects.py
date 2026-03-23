@@ -31,11 +31,27 @@ class ProjectCreate(BaseModel):
 @router.post("")
 def save_project(project: ProjectCreate):
     try:
-        # Pydantic model to dict
-        data = project.dict()
-        # Supabase insert
+        # Extract guide content before removing it from main data
+        guide_content = project.assembly_guide
+
+        # Pydantic model to dict, drop unset to avoid sending unintended nulls
+        data = project.dict(exclude_unset=True)
+        data.pop('assembly_guide', None)
+        
+        # Supabase insert project
         res = supabase.table("user_projects").insert(data).execute()
-        return {"success": True, "project": res.data[0]}
+        new_project = res.data[0]
+
+        # Insert assembly guide if passed
+        if guide_content:
+            guide_data = {
+                "build_id": new_project["id"],
+                "user_email": project.user_email or "anonymous@peasy.com",
+                "guide_content": guide_content
+            }
+            supabase.table("assembly_guides").insert(guide_data).execute()
+
+        return {"success": True, "project": new_project}
     except Exception as e:
         print(f"Error saving project: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -112,8 +128,27 @@ def update_project(project_id: str, project: ProjectUpdate):
             raise HTTPException(status_code=403, detail="Unauthorized to update this project")
 
         data = project.dict(exclude_unset=True)
+        guide_content = data.pop('assembly_guide', None)
+
         res = supabase.table("user_projects").update(data).eq("id", project_id).execute()
-        return {"success": True, "project": res.data[0]}
+        updated_project = res.data[0]
+
+        if guide_content is not None:
+            # Upsert the guide content - check if it exists first
+            guide_check = supabase.table("assembly_guides").select("id").eq("build_id", project_id).execute()
+            
+            guide_data = {
+                "build_id": project_id,
+                "user_email": check.data[0]["user_email"],
+                "guide_content": guide_content
+            }
+
+            if guide_check.data:
+                supabase.table("assembly_guides").update({"guide_content": guide_content}).eq("build_id", project_id).execute()
+            else:
+                supabase.table("assembly_guides").insert(guide_data).execute()
+
+        return {"success": True, "project": updated_project}
     except Exception as e:
         print(f"Error updating project: {e}")
         raise HTTPException(status_code=500, detail=str(e))
