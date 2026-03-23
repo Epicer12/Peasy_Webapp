@@ -1,0 +1,101 @@
+{
+  "name": "PC Assembly Guide AI Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "assembly-guide",
+        "options": {}
+      },
+      "name": "Start Guide Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "id": "webhook-start"
+    },
+    {
+      "parameters": {
+        "model": "llama3",
+        "prompt": "=Generate a comprehensive PC assembly guide for these components: {{ $json.body.components.map(c => c.name).join(', ') }}.\n\nREQUIRED STRUCTURE:\n1. Total exactly 10 major steps.\n2. Each step MUST contain at least 5 detailed sub-instructions.\n3. Keep the tone professional but guide-like.\n4. Output as a JSON array of strings, where each string is a full 'Step' (including its 5 instructions).\n\nEXAMPLE FORMAT: [\"Step 1: Motherboard Prep \\n1. ...\\n2. ...\\n3. ...\\n4. ...\\n5. ...\", ...]",
+        "options": {}
+      },
+      "name": "Ollama Generate Steps",
+      "type": "n8n-nodes-base.ollama",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ],
+      "id": "ollama-node"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "table": "assembly_guides",
+        "columns": "steps,current_step,project_id,user_id,user_email,build_name",
+        "options": {}
+      },
+      "name": "Supabase Save Guide",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ],
+      "id": "supabase-node"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"step\": {{ $json.steps[0] }},\n  \"current\": 1,\n  \"total\": {{ $json.steps.length }}\n}",
+        "options": {}
+      },
+      "name": "Respond with First Step",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        850,
+        300
+      ],
+      "id": "respond-node"
+    }
+  ],
+  "connections": {
+    "Start Guide Webhook": {
+      "main": [
+        [
+          {
+            "node": "Ollama Generate Steps",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Generate Steps": {
+      "main": [
+        [
+          {
+            "node": "Supabase Save Guide",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Save Guide": {
+      "main": [
+        [
+          {
+            "node": "Respond with First Step",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
