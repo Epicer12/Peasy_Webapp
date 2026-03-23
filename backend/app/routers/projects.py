@@ -1,8 +1,8 @@
-from fastapi import APIRouter, HTTPException, Body
-from supabase import create_client
+from fastapi import APIRouter, HTTPException, Body  # type: ignore
+from supabase import create_client  # type: ignore
 import os
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel  # type: ignore
 from datetime import datetime
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -39,6 +39,8 @@ def save_project(project: ProjectCreate):
         print(f"Error saving project: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+from app.utils.image_vault import get_component_image  # type: ignore
+
 @router.get("")
 def get_projects(user_email: str):
     try:
@@ -47,7 +49,17 @@ def get_projects(user_email: str):
             .eq("user_email", user_email) \
             .order("created_at", desc=True) \
             .execute()
-        return res.data
+        
+        projects = res.data
+        for p in projects:
+            components_list = p.get("components") or []
+            for comp in components_list:
+                if "image_url" not in comp:
+                    img_data = get_component_image(comp.get("type", ""), comp.get("name", ""))
+                    comp["image_url"] = img_data["url"]
+                    comp["image_rotate"] = img_data["rotate"]
+                    
+        return projects
     except Exception as e:
         print(f"Error fetching projects: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -62,7 +74,17 @@ def get_project(project_id: str, user_email: Optional[str] = None):
         res = query.execute()
         if not res.data:
             raise HTTPException(status_code=404, detail="Project not found or access denied")
-        return res.data[0]
+            
+        project = res.data[0]
+        # Inject images into components if not present
+        components_list = project.get("components") or []
+        for comp in components_list:
+            if "image_url" not in comp:
+                img_data = get_component_image(comp.get("type", ""), comp.get("name", ""))
+                comp["image_url"] = img_data["url"]
+                comp["image_rotate"] = img_data["rotate"]
+                
+        return project
     except Exception as e:
         print(f"Error fetching project: {e}")
         raise HTTPException(status_code=500, detail=str(e))

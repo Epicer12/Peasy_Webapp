@@ -326,8 +326,15 @@ const ManualBuildPage = () => {
                 {/* Composite Header */}
                 <div className="flex h-20 shrink-0 bg-[#050505] z-50">
                     {/* Logo Area */}
-                    <div className="w-[300px] flex justify-start items-center pl-4 border-r-2 border-b-2 border-[#333333] shrink-0">
-                        <img src={logo} alt="PEASY" className="h-full max-h-12 object-contain" />
+                    <div className="w-[300px] flex justify-start items-center pl-4 pr-4 border-r-2 border-b-2 border-[#333333] shrink-0 gap-6">
+                        <button 
+                            onClick={() => navigate(-1)}
+                            className="w-8 h-8 rounded-full border border-[#333] hover:border-[#00f3ff] flex items-center justify-center text-[#888] hover:text-[#00f3ff] transition-colors"
+                            title="Go Back"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                        <img src={logo} alt="PEASY" className="h-full max-h-8 object-contain cursor-pointer transition-opacity hover:opacity-80" onClick={() => navigate('/home')} />
                     </div>
 
                     {/* Main Header Area */}

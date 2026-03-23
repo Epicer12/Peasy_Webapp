@@ -1,12 +1,12 @@
-from fastapi import APIRouter, HTTPException, Query
-from supabase import create_client
+from fastapi import APIRouter, HTTPException, Query  # type: ignore
+from supabase import create_client  # type: ignore
 import os
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel  # type: ignore
 
 # Import the parser
-from app.utils.component_parser import ComponentParser
-from app.utils.image_vault import get_component_image
+from app.utils.component_parser import ComponentParser  # type: ignore
+from app.utils.image_vault import get_component_image  # type: ignore
 
 router = APIRouter()
 

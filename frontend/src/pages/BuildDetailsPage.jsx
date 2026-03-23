@@ -13,13 +13,15 @@ import {
     XMarkIcon,
     CheckIcon,
     PhotoIcon,
-    PresentationChartLineIcon
+    PresentationChartLineIcon,
+    CubeTransparentIcon
 } from '@heroicons/react/24/outline';
 import { getProjectById, updateProject, getProjects, analyzeBottleneck } from '../services/componentService';
 import { auth } from '../firebase';
 import BottleneckAnalysisModal from '../components/modals/BottleneckAnalysisModal';
 import PerformanceDashboardModal from '../components/modals/PerformanceDashboardModal';
 import PerformanceSummary from '../components/build/PerformanceSummary';
+import SecureModelViewer from '../components/SecureModelViewer';
 
 const BuildDetailsPage = () => {
     const { projectId } = useParams();
@@ -31,6 +33,7 @@ const BuildDetailsPage = () => {
 
     // UI States
     const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+    const [is3DModalOpen, setIs3DModalOpen] = useState(false);
     const [editingCompIndex, setEditingCompIndex] = useState(null);
     const [editForm, setEditForm] = useState(null);
 
@@ -153,6 +156,8 @@ const BuildDetailsPage = () => {
         }
     }, [project, bottleneckReport, isAnalyzing, handleDetectBottlenecks]);
 
+    const active3DModel = 'pc2';
+
     if (loading) {
         return (
             <div className="min-h-screen bg-[#050505] flex items-center justify-center">
@@ -244,8 +249,17 @@ const BuildDetailsPage = () => {
                             {project.components && project.components.map((comp, idx) => (
                                 <div key={idx} className={`group bg-[#0a0a0a] border ${comp.isBought ? 'border-[#ccff00]/40' : 'border-[#1a1a1a]'} p-8 hover:border-[#00f3ff44] transition-all relative overflow-hidden`}>
                                     <div className="flex flex-col md:flex-row gap-8 items-start relative z-10">
-                                        <div className={`w-28 h-28 bg-[#1a1a1a] border-2 ${comp.isBought ? 'border-[#ccff00]' : 'border-[#222]'} flex-shrink-0 flex items-center justify-center relative overflow-hidden`}>
-                                            <div className="text-[#333] text-[10px] font-mono-tech uppercase transform -rotate-12 group-hover:text-[#00f3ff] transition-colors font-black">HW_NODE</div>
+                                        <div className={`w-28 h-28 bg-[#1a1a1a] border-2 ${comp.isBought ? 'border-[#ccff00]' : 'border-[#222]'} flex-shrink-0 flex items-center justify-center relative overflow-hidden group/img`}>
+                                            {(comp.image || comp.image_url) ? (
+                                                <img
+                                                    src={comp.image || comp.image_url}
+                                                    alt={comp.name}
+                                                    style={{ transform: comp.image_rotate ? `rotate(${comp.image_rotate}deg)` : 'none' }}
+                                                    className="object-contain w-full h-full p-2 filter grayscale group-hover/img:grayscale-0 transition-all duration-700 ease-out"
+                                                />
+                                            ) : (
+                                                <div className="text-[#333] text-[10px] font-mono-tech uppercase transform -rotate-12 group-hover/img:text-[#00f3ff] transition-colors font-black">HW_NODE</div>
+                                            )}
                                         </div>
 
                                         <div className="flex-grow min-w-0 h-full flex flex-col">
@@ -263,7 +277,7 @@ const BuildDetailsPage = () => {
                                             {/* Attribute mapping */}
                                             <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8 border-t border-[#1a1a1a] pt-4 mb-8">
                                                 {Object.entries(comp).map(([key, value]) => {
-                                                    if (['name', 'type', 'id', 'image', 'price', 'specs', 'isBought'].includes(key)) return null;
+                                                    if (['name', 'type', 'id', 'image', 'image_url', 'image_rotate', 'price', 'specs', 'isBought'].includes(key)) return null;
                                                     if (!value) return null;
                                                     return (
                                                         <div key={key} className="flex flex-col">
@@ -302,7 +316,7 @@ const BuildDetailsPage = () => {
 
                     {/* Action Panel */}
                     <div className="space-y-8">
-                        <div className="bg-[#0a0a0a] border border-[#333] p-8 space-y-8 sticky top-10 shadow-2xl">
+                        <div className="bg-[#0a0a0a] border border-[#333] p-8 space-y-8 sticky top-[-15px] shadow-2xl">
                             <div className="text-[11px] font-black font-mono-tech text-[#00f3ff] border-b-2 border-[#1a1a1a] pb-6 uppercase tracking-[0.3em]">CORE_COMMAND_PANEL</div>
                             <div className="flex flex-col gap-4">
                                 <button className="w-full bg-[#ccff00] text-black py-4 text-[12px] font-black uppercase tracking-widest hover:bg-white transition-all flex items-center justify-center gap-2 group">
@@ -333,7 +347,14 @@ const BuildDetailsPage = () => {
                                     COMPARE_BUILDS
                                 </button>
                                 <button className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[13px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all font-mono-tech">GET_ASSEMBLY_GUIDE</button>
-                                <button 
+                                <button
+                                    className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[13px] font-black uppercase tracking-widest hover:border-[#00f3ff] hover:text-[#00f3ff] transition-all flex items-center justify-center gap-2 group"
+                                    onClick={() => setIs3DModalOpen(true)}
+                                >
+                                    <CubeTransparentIcon className="w-5 h-5 group-hover:text-[#00f3ff] transition-colors" />
+                                    3D_HARDWARE_PREVIEW
+                                </button>
+                                <button
                                     className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[13px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all font-mono-tech"
                                     onClick={() => navigate('/community/upload', { state: { prefillBuildId: project.id } })}
                                 >
@@ -386,7 +407,7 @@ const BuildDetailsPage = () => {
 
                                 {/* Dynamic Attributes Editing */}
                                 {Object.entries(editForm).map(([key, value]) => {
-                                    if (['name', 'type', 'id', 'image', 'price', 'specs', 'isBought'].includes(key)) return null;
+                                    if (['name', 'type', 'id', 'image', 'image_url', 'image_rotate', 'price', 'specs', 'isBought'].includes(key)) return null;
                                     return (
                                         <div key={key} className="space-y-4">
                                             <label className="text-[10px] font-black font-mono-tech text-[#555] uppercase tracking-widest">{key.replace(/_/g, ' ')}</label>
@@ -455,6 +476,35 @@ const BuildDetailsPage = () => {
                 onClose={() => setIsPerfModalOpen(false)}
                 report={bottleneckReport}
             />
+
+            {/* 3D Hardware Preview Modal */}
+            {is3DModalOpen && (
+                <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-6">
+                    <div className="bg-[#0a0a0a] border-2 border-[#00f3ff] w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden shadow-[0_0_50px_rgba(0,243,255,0.15)] relative">
+                        <div className="bg-[#111] p-6 border-b border-[#333] flex justify-between items-center shrink-0">
+                            <div className="flex items-center gap-4">
+                                <div className="text-[#00f3ff] text-xs font-black font-mono-tech uppercase tracking-widest flex items-center gap-2">
+                                    <CubeTransparentIcon className="w-5 h-5" />
+                                    3D_HARDWARE_PREVIEW // {active3DModel.toUpperCase()}
+                                </div>
+                                <div className="text-[10px] text-[#666] font-mono-tech border border-[#333] px-2 py-0.5 rounded-sm">
+                                    REPRESENTATIVE_MODEL
+                                </div>
+                            </div>
+                            <button onClick={() => setIs3DModalOpen(false)} className="text-[#444] hover:text-white transition-colors"><XMarkIcon className="w-6 h-6" /></button>
+                        </div>
+                        <div className="flex-1 bg-black relative">
+                            <SecureModelViewer modelId={active3DModel} />
+
+                            {/* Overlay UI elements for aesthetics */}
+                            <div className="absolute bottom-6 right-6 pointer-events-none text-right">
+                                <div className="text-[10px] text-[#00f3ff] font-mono-tech font-bold uppercase tracking-widest">INTERACTIVE_PREVIEW</div>
+                                <div className="text-[8px] text-[#444] font-mono-tech">DRAG TO ROTATE // SCROLL TO ZOOM</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

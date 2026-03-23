@@ -8,13 +8,18 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
+@app.middleware("http")
+async def log_requests(request, call_next):
+    print(f"DEBUG: Incoming request: {request.method} {request.url.path}")
+    response = await call_next(request)
+    print(f"DEBUG: Response status: {response.status_code}")
+    return response
 
 # --- Routers ---
 from .routers import (
@@ -29,21 +34,25 @@ from .routers import (
     warranty,
     community,
     marketplace,
-    analysis
+    analysis,
+    auth,
+    user
 )
 
 app.include_router(models.router, prefix="/api")
 app.include_router(component_identification.router, prefix="/api")
 app.include_router(troubleshoot.router, prefix="/api/troubleshoot", tags=["troubleshoot"])
 app.include_router(assembly_instructions.router, prefix="/api")  # new router
+app.include_router(components.router, prefix="/api")
 app.include_router(builder.router, prefix="/api")
 app.include_router(warranty.router, prefix="/api")
 app.include_router(community.router, prefix="/api")
-app.include_router(components.router, prefix="/api")
 app.include_router(build_suggestions.router, prefix="/api")
 app.include_router(projects.router, prefix="/api")
 app.include_router(marketplace.router, prefix="/api")
 app.include_router(analysis.router, prefix="/api")
+app.include_router(auth.router, prefix="/api")
+app.include_router(user.router, prefix="/api")
 
 @app.get("/")
 def root():
