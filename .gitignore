@@ -1,18 +1,14 @@
 # System
 .DS_Store
-.DS_Store?
 Thumbs.db
 
 # VS Code / Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
 # Frontend (React)
 node_modules/
 frontend/dist/
-frontend/build/
 frontend/.env
 frontend/.env.local
 
@@ -24,33 +20,20 @@ venv/
 .venv/
 env/
 backend/.env
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.python-version
+.pytest_cache
 
 # YOLO / AI
 runs/
-vision_model/
 
 # Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-logs/
 
-# Data & Temporary
-*.csv
-*.xlsx
-*.sql
-*.sqlite
-*.zip
-*.tar.gz
-debug_out.txt
-legacy_data.txt
-test_results.txt
 lint_errors.json
 docs/
 
 *.bak
+debug_out.txt
+legacy_data.txt
