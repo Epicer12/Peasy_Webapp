@@ -25,6 +25,7 @@ class ProjectCreate(BaseModel):
     components: List[dict]
     status: str = "Planned"
     progress: int = 0
+    assembly_guide: Optional[list] = None
 
 @router.post("")
 def save_project(project: ProjectCreate):
@@ -66,8 +67,18 @@ def get_project(project_id: str, user_email: Optional[str] = None):
         print(f"Error fetching project: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+class ProjectUpdate(BaseModel):
+    user_email: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    total_price: Optional[float] = None
+    components: Optional[List[dict]] = None
+    status: Optional[str] = None
+    progress: Optional[int] = None
+    assembly_guide: Optional[list] = None
+
 @router.put("/{project_id}")
-def update_project(project_id: str, project: ProjectCreate):
+def update_project(project_id: str, project: ProjectUpdate):
     try:
         # First verify ownership before updating
         check = supabase.table("user_projects").select("user_email").eq("id", project_id).execute()
