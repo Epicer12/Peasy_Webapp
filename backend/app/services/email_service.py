@@ -3,9 +3,19 @@ import httpx
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv()
+# Try default first, then try specified paths
+if not load_dotenv():
+    # If we are in backend/app/services/email_service.py, the .env is up two levels
+    env_path = os.path.join(os.path.dirname(__file__), '..', '..', '.env')
+    load_dotenv(dotenv_path=env_path)
 
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+if not RESEND_API_KEY:
+    # Try one more level up just in case (if run from root)
+    env_path_root = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'backend', '.env')
+    load_dotenv(dotenv_path=env_path_root)
+    RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+
 FROM_EMAIL = os.getenv("FROM_EMAIL", "onboarding@resend.dev")
 
 async def send_otp_email(to_email: str, otp: str):

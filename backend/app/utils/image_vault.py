@@ -117,7 +117,11 @@ def get_component_image(category: str, name: str) -> Dict[str, Any]:
 
     # Map category IDs to vault keys
     cat_key = "default"
-    if any(k in cat for k in ["cpu", "processor"]):
+    if "cooler" in cat or "cooling" in cat:
+        cat_key = "cooler"
+    elif "fan" in cat:
+        cat_key = "case_fan"
+    elif any(k in cat for k in ["cpu", "processor"]):
         cat_key = "cpu"
     elif any(k in cat for k in ["gpu", "graphic", "video"]):
         cat_key = "gpu"
@@ -135,10 +139,6 @@ def get_component_image(category: str, name: str) -> Dict[str, Any]:
         cat_key = "psu"
     elif "case" in cat or "housing" in cat:
         cat_key = "case"
-    elif "cooler" in cat or "cooling" in cat:
-        cat_key = "cooler"
-    elif "fan" in cat:
-        cat_key = "case_fan"
 
     if cat_key not in IMAGE_VAULT:
         return _FALLBACK

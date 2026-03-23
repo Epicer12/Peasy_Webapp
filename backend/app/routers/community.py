@@ -1,11 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends, Body
-from supabase import create_client
 import os
 import requests
 from typing import List, Optional
 from pydantic import BaseModel
-from datetime import datetime
-from ..dependencies import get_current_user, User, get_warranty_supabase
+from app.dependencies import get_current_user, User, get_warranty_supabase
+from app.utils.hydration import hydrate_components
 
 router = APIRouter(prefix="/community", tags=["community"])
 
@@ -74,7 +73,17 @@ def get_community_build_details(build_id: str):
         likes_res = supabase.table("community_likes").select("count", count="exact").eq("project_id", build_id).execute()
         build["likes"] = likes_res.count if likes_res.count is not None else 0
         
+        # Hydrate components with full details from master tables (non-blocking)
+        try:
+            raw_components = build.get("components") or build.get("project_components") or build.get("items") or []
+            if raw_components:
+                build["components"] = hydrate_components(raw_components)
+        except Exception as hydrate_err:
+            print(f"Hydration skipped due to error: {hydrate_err}")
+
         return build
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error fetching build details: {e}")
         raise HTTPException(status_code=500, detail=str(e))

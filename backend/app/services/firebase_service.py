@@ -1,28 +1,22 @@
-import firebase_admin
-from firebase_admin import auth, credentials
 import os
+from google.oauth2 import id_token
+from google.auth.transport import requests
 
-# Initialize Firebase Admin if not already initialized
-try:
-    if not firebase_admin._apps:
-        # Check for service account path or default initialization
-        cred_path = os.getenv("FIREBASE_SERVICE_ACCOUNT")
-        if cred_path and os.path.exists(cred_path):
-            cred = credentials.Certificate(cred_path)
-            firebase_admin.initialize_app(cred)
-        else:
-            # Fallback to default credentials (from environment or ADC)
-            firebase_admin.initialize_app()
-except Exception as e:
-    print(f"DEBUG: Firebase already initialized or failed: {e}")
+# Create a global request object for caching certificates
+_request = requests.Request()
 
-def verify_firebase_token(id_token: str):
+def verify_firebase_token(token_str: str):
     """
     Verifies a Firebase ID token.
     Returns decoded token if valid, raises error otherwise.
     """
+    project_id = os.getenv("FIREBASE_PROJECT_ID")
+    if not project_id:
+        print("ERROR: FIREBASE_PROJECT_ID environment variable is missing.")
+        return None
+
     try:
-        decoded_token = auth.verify_id_token(id_token)
+        decoded_token = id_token.verify_firebase_token(token_str, _request, audience=project_id, clock_skew_in_seconds=10)
         return decoded_token
     except Exception as e:
         print(f"ERROR: FIREBASE_VERIFICATION_FAILED: {e}")

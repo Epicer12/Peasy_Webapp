@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from ..services.otp_service import send_otp, verify_otp
 from ..services.firebase_service import verify_firebase_token
-from ..dependencies import get_warranty_supabase
+from ..dependencies import get_warranty_supabase, get_supabase_user_token
 
 router = APIRouter(
     prefix="/auth",
@@ -72,29 +72,34 @@ async def register_user(
     if not decoded_token:
         raise HTTPException(status_code=401, detail="INVALID_FIREBASE_TOKEN")
     
-    firebase_uid = decoded_token.get("uid")
+    firebase_uid = decoded_token.get("uid") or decoded_token.get("sub")
     email = decoded_token.get("email")
     
-    # Update Supabase user_mappings
+    # 1. Generate/fetch the linked Supabase UUID for the Firebase user
+    # This automatically provisions a shadow user in auth.users if needed
+    _, sb_uid, _ = get_supabase_user_token(firebase_uid, email)
+    
+    if not sb_uid:
+        raise HTTPException(status_code=500, detail="FAILED_TO_PROVISION_INTERNAL_USER")
+    
+    # 2. Update Supabase user_mappings
     supabase = get_warranty_supabase()
     try:
-        # Check if username exists
-        user_check = supabase.table("user_mappings").select("*").eq("username", payload.username).execute()
+        # Check if username exists for OTHER users
+        user_check = supabase.table("user_mappings").select("*").eq("username", payload.username).neq("firebase_uid", firebase_uid).execute()
         if user_check.data:
-            # If it's the same user, it's fine, otherwise it's taken
-            if user_check.data[0]['email'] != email:
-                raise HTTPException(status_code=400, detail="USERNAME_TAKEN")
+            raise HTTPException(status_code=400, detail="USERNAME_TAKEN")
 
-        # Upsert mapping
+        # Upsert mapping using the genuine UUID
         data = {
-            "supabase_id": firebase_uid, # Using Firebase UID as primary ID in mappings
+            "firebase_uid": firebase_uid,
+            "supabase_id": sb_uid,
             "username": payload.username,
-            "email": email,
-            "firebase_uid": firebase_uid
+            "email": email
         }
         supabase.table("user_mappings").upsert(data).execute()
         
-        return {"message": "USER_REGISTERED", "uid": firebase_uid}
+        return {"message": "USER_REGISTERED", "uid": firebase_uid, "supabase_id": sb_uid}
         
     except HTTPException:
         raise

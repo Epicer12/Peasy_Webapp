@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS public.user_mappings (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Ensure photo_url exists if table was created earlier without it
+-- Ensure missing columns exist if table was created earlier without them
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -17,6 +17,24 @@ BEGIN
         AND column_name = 'photo_url'
     ) THEN
         ALTER TABLE public.user_mappings ADD COLUMN photo_url TEXT;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'user_mappings' 
+        AND column_name = 'username'
+    ) THEN
+        ALTER TABLE public.user_mappings ADD COLUMN username TEXT UNIQUE;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'user_mappings' 
+        AND column_name = 'email'
+    ) THEN
+        ALTER TABLE public.user_mappings ADD COLUMN email TEXT;
     END IF;
 END $$;
 
