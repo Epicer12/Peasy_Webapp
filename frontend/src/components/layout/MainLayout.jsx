@@ -15,6 +15,12 @@ import {
 const MainLayout = () => {
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    
+    // Pages that take over the top dashboard bar entirely
+    const isHeadlessMode = 
+        location.pathname.startsWith('/guide') || 
+        location.pathname.startsWith('/build-details') || 
+        location.pathname === '/build';
 
     const navigation = [
         { name: 'HOME', href: '/home', icon: HomeIcon },
@@ -94,24 +100,26 @@ const MainLayout = () => {
             {/* Main Content Wrapper */}
             <div className="flex-1 flex flex-col min-w-0">
 
-                {/* Brutalist Header */}
-                <header className="h-16 md:h-20 flex items-end justify-between px-6 md:px-8 pb-3 border-b-2 border-[#333333] bg-[#050505]">
-                    <div className="flex flex-col w-full">
-                        <div className="flex justify-between items-start mb-1">
-                            {/* Hamburger for mobile */}
-                            <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-[#eeeeee]">
-                                <Bars3Icon className="w-6 h-6" />
-                            </button>
-                            <span className="text-[10px] font-mono text-[#666666] ml-auto">SYS.VER.2.0.5 // ONLINE</span>
+                {/* Brutalist Header - Hidden on specific pages to let them take over */}
+                {!isHeadlessMode && (
+                    <header className="h-16 md:h-20 flex items-end justify-between px-6 md:px-8 pb-3 border-b-2 border-[#333333] bg-[#050505]">
+                        <div className="flex flex-col w-full">
+                            <div className="flex justify-between items-start mb-1">
+                                {/* Hamburger for mobile */}
+                                <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-[#eeeeee]">
+                                    <Bars3Icon className="w-6 h-6" />
+                                </button>
+                                <span className="text-[10px] font-mono text-[#666666] ml-auto">SYS.VER.2.0.5 // ONLINE</span>
+                            </div>
+                            <h2 className="text-2xl md:text-4xl font-black tracking-[-0.05em] uppercase leading-none text-[#eeeeee]">
+                                {getPageTitle()}
+                            </h2>
                         </div>
-                        <h2 className="text-2xl md:text-4xl font-black tracking-[-0.05em] uppercase leading-none text-[#eeeeee]">
-                            {getPageTitle()}
-                        </h2>
-                    </div>
-                </header>
+                    </header>
+                )}
 
-                {/* Page Content - Added bottom padding */}
-                <main className="flex-1 overflow-y-auto p-6 md:p-12 pb-32 relative scrollbar-thin scrollbar-thumb-[#333333] scrollbar-track-transparent">
+                {/* Page Content - Dynamic padding based on mode */}
+                <main className={`flex-1 overflow-y-auto pb-32 relative scrollbar-thin scrollbar-thumb-[#333333] scrollbar-track-transparent ${isHeadlessMode ? '' : 'p-6 md:p-12'}`}>
                     <Outlet />
                 </main>
             </div>
