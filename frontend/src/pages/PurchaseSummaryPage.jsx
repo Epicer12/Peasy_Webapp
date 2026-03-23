@@ -105,6 +105,11 @@ const PurchaseSummaryPage = () => {
         }
     };
 
+    const handleAddToCart = () => {
+        alert("COMMUNICATION_LINK_ESTABLISHED: Preparing purchase sequence...");
+        navigate('/marketplace');
+    };
+
     return (
         <div className="h-screen overflow-hidden bg-[#050505] text-[#eeeeee] font-mono selection:bg-[#ccff00] selection:text-black flex flex-col relative">
             
@@ -491,19 +496,6 @@ const PurchaseSummaryPage = () => {
 
             </div>
 
-            {/* Bottleneck Analysis Modal */}
-            <BottleneckAnalysisModal
-                isOpen={isBottleneckModalOpen}
-                onClose={() => setIsBottleneckModalOpen(false)}
-                report={bottleneckReport}
-            />
-
-            {/* Performance Dashboard Modal — same logic as BuildDetailsPage */}
-            <PerformanceDashboardModal
-                isOpen={isPerfModalOpen}
-                onClose={() => setIsPerfModalOpen(false)}
-                report={bottleneckReport}
-            />
         </div>
     );
 };
