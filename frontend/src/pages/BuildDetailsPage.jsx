@@ -24,12 +24,16 @@ const BuildDetailsPage = () => {
     const [allProjects, setAllProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [updatingStatus, setUpdatingStatus] = useState(false);
+    const [guideData, setGuideData] = useState(null);
+    const [isGuideLoading, setIsGuideLoading] = useState(false);
 
     // UI States
     const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
     const [editingCompIndex, setEditingCompIndex] = useState(null);
     const [editForm, setEditForm] = useState(null);
 
+    const [sessionId] = useState(() => "build_" + Math.floor(Math.random() * 1000000));
+    
     useEffect(() => {
         const fetchProject = async () => {
             try {
@@ -120,6 +124,103 @@ const BuildDetailsPage = () => {
         }
     };
 
+    // --- AI Agent: Assembly Guide Logic ---
+    const AGENT_BASE_URL = import.meta.env.VITE_AGENT_BASE_URL;
+
+    const handleGetAssemblyGuide = async () => {
+        setIsGuideLoading(true);
+        try {
+            const response = await fetch(`${AGENT_BASE_URL}/webhook/assembly-guide`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    projectId: projectId,
+                    userId: auth.currentUser?.uid,
+                    userEmail: auth.currentUser?.email,
+                    buildName: project?.name,
+                    components: project?.components,
+                    sessionId: sessionId
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to reach AI Agent');
+
+            let data;
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                data = await response.json();
+            } else {
+                // If it's text/plain, wrap it in our expected object format
+                const text = await response.text();
+                data = {
+                    step: text,
+                    current: 1, // Fallback
+                    total: 10   // Fallback
+                };
+            }
+
+            setGuideData(data);
+
+            // Navigate to GuidePage with the initial data and the current hardware list
+            // Navigate to GuidePage with the initial data, project ID, components, and the session ID
+            navigate('/guide', { 
+                state: { 
+                    initialGuide: data, 
+                    projectId: projectId, 
+                    existingComponents: project.components,
+                    sessionId: sessionId
+                } 
+            });
+        } catch (error) {
+            console.error("Agent communication error:", error);
+            // Check if it's a CORS issue or a JSON parsing issue
+            if (error.name === 'SyntaxError') {
+                console.warn("Agent returned non-JSON response. Attempting to recover...");
+            }
+            alert("The AI Agent is currently recalibrating. Please make sure the n8n workflow is ACTIVE and set to 'Respond to Webhook' correctly.");
+        } finally {
+            setIsGuideLoading(false);
+        }
+    };
+
+    const handleNextStep = async () => {
+        setIsGuideLoading(true);
+        try {
+            const response = await fetch(`${AGENT_BASE_URL}/webhook/assembly-guide`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    chatInput: "NEXT",
+                    projectId: projectId
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch next step');
+
+            let data;
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                data = {
+                    step: text,
+                    current: (guideData?.current || 0) + 1,
+                    total: guideData?.total || 10
+                };
+            }
+            setGuideData(data);
+        } catch (error) {
+            console.error("Error fetching next step:", error);
+        } finally {
+            setIsGuideLoading(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-[#050505] flex items-center justify-center">
@@ -153,6 +254,32 @@ const BuildDetailsPage = () => {
             default: return { color: "#eeeeee", borderColor: "#333" };
         }
     };
+
+    // Calculate Saved Guide Progress from components column
+    const savedGuideObj = project?.components?.find(c => c.type === 'assembly_guide');
+    const savedGuideSteps = savedGuideObj ? savedGuideObj.data : [];
+    const hasSavedGuide = savedGuideSteps.length > 0;
+
+    let savedGuideProgressPct = 0;
+    if (hasSavedGuide) {
+        let totalPct = 0;
+        savedGuideSteps.forEach(step => {
+            if (Array.isArray(step.instructions)) {
+                const instCount = step.instructions.length;
+                if (instCount === 0) {
+                    totalPct += 10;
+                } else {
+                    let tickedCount = 0;
+                    step.instructions.forEach(inst => {
+                        if (inst.status === 'ticked') tickedCount++;
+                    });
+                    totalPct += (tickedCount / instCount) * 10;
+                }
+            }
+        });
+        savedGuideProgressPct = Math.floor(totalPct);
+        if (savedGuideProgressPct > 100) savedGuideProgressPct = 100;
+    }
 
     return (
         <div className="min-h-screen bg-[#050505] text-[#eeeeee] p-5 md:p-10 selection:bg-[#00f3ff] selection:text-black">
@@ -208,7 +335,7 @@ const BuildDetailsPage = () => {
                         </div>
 
                         <div className="space-y-6">
-                            {project.components && project.components.map((comp, idx) => (
+                            {project.components && project.components.filter(c => c.type !== 'assembly_guide').map((comp, idx) => (
                                 <div key={idx} className={`group bg-[#0a0a0a] border ${comp.isBought ? 'border-[#ccff00]/40' : 'border-[#1a1a1a]'} p-8 hover:border-[#00f3ff44] transition-all relative overflow-hidden`}>
                                     <div className="flex flex-col md:flex-row gap-8 items-start relative z-10">
                                         <div className={`w-28 h-28 bg-[#1a1a1a] border-2 ${comp.isBought ? 'border-[#ccff00]' : 'border-[#222]'} flex-shrink-0 flex items-center justify-center relative overflow-hidden`}>
@@ -287,7 +414,24 @@ const BuildDetailsPage = () => {
                                     <ArrowsRightLeftIcon className="w-5 h-5" />
                                     COMPARE_BUILDS
                                 </button>
-                                <button className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[13px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all font-mono-tech">GET_ASSEMBLY_GUIDE</button>
+
+                                {hasSavedGuide ? (
+                                    <button
+                                        className="w-full border-2 border-[#00ff88] text-[#00ff88] py-4 text-[13px] font-black uppercase tracking-widest hover:bg-[#00ff88] hover:text-black transition-all font-mono-tech flex justify-center items-center gap-2 shadow-[0_0_15px_rgba(0,255,136,0.1)]"
+                                        onClick={() => navigate('/guide', { state: { initialGuide: savedGuideSteps, projectId: project.id, isViewingOnly: true, existingComponents: project.components } })}
+                                    >
+                                        VIEW SAVED GUIDE ({savedGuideProgressPct}%)
+                                    </button>
+                                ) : (
+                                    <button
+                                        className={`w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[13px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all font-mono-tech ${isGuideLoading ? 'animate-pulse opacity-50' : ''}`}
+                                        onClick={handleGetAssemblyGuide}
+                                        disabled={isGuideLoading}
+                                    >
+                                        {isGuideLoading ? 'AGENT_COMPUTING...' : 'GET_ASSEMBLY_GUIDE'}
+                                    </button>
+                                )}
+
                                 <button className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[13px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all font-mono-tech">SHARE_WITH_COMMUNITY</button>
                             </div>
                         </div>
