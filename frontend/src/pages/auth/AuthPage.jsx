@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../../index.css';
 import logo from '../../assets/logo-white.png';
@@ -8,14 +8,9 @@ import SignUpPage from './SignUpPage';
 function AuthPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState(location.pathname !== '/signup');
-
-  useEffect(() => {
-    setIsLogin(location.pathname !== '/signup');
-  }, [location.pathname]);
+  const isLogin = location.pathname !== '/signup';
 
   const toggleMode = () => {
-    setIsLogin(!isLogin);
     navigate(isLogin ? '/signup' : '/login', { replace: true });
   };
 
