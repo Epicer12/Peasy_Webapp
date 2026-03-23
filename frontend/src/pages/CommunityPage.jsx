@@ -195,17 +195,16 @@ const CommunityPage = () => {
 
             {/* Title Section */}
             <div className="border-b-2 border-[#333] pb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                <div>
-                    <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase leading-none italic">
-                        <span className="text-white">COMMUNITY_</span>
-                        <span className="text-[#ccff00]">HUB</span>
+                <div className="flex-grow">
+                    <h1 className="text-4xl md:text-6xl font-black text-[#eeeeee] tracking-tighter uppercase leading-none">
+                        COMMUNITY_<span className="text-[#ccff00]">HUB</span>
                     </h1>
-                    <p className="text-[8px] font-mono text-[#666] mt-2 uppercase tracking-[0.3em] block">
+                    <p className="text-sm font-mono text-[#666] mt-3 uppercase tracking-widest leading-none">
                         // DATA_FEED // HIVE_MIND // NETWORK_SYNC
                     </p>
                 </div>
-                <button onClick={() => setShowGuidelines(true)} className="text-[10px] text-gray-500 font-mono-tech flex-shrink-0 uppercase tracking-widest border-b border-gray-600 hover:text-[#ccff00] hover:border-[#ccff00] transition-colors">
-                    READ COMMUNITY GUIDELINES
+                <button onClick={() => setShowGuidelines(true)} className="text-[10px] text-gray-500 font-mono-tech flex-shrink-0 uppercase tracking-widest border-b border-gray-600 hover:text-[#ccff00] hover:border-[#ccff00] transition-colors mb-1">
+                    READ_COMMUNITY_GUIDELINES
                 </button>
             </div>
 

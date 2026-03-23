@@ -20,10 +20,10 @@ venv/
 .venv/
 env/
 backend/.env
+.pytest_cache
 
 # YOLO / AI
 runs/
-*.onnx
 
 # Logs
 *.log
@@ -33,4 +33,7 @@ yarn-error.log*
 
 lint_errors.json
 docs/
-vision_model/
+
+*.bak
+debug_out.txt
+legacy_data.txt

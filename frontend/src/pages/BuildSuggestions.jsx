@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { generateBuilds, generateBuildSummary, saveProject } from "../services/componentService";
-import { auth } from "../firebase"; // For user email if needed
+import { generateBuilds, generateBuildSummary, saveProject, analyzeBottleneck } from "../services/componentService";
+import { auth } from "../firebase";
+import BuildComparison from "../components/build/BuildComparison";
 
 /* ── Build type definitions ──────────────────────────────────────────────── */
 const BUILD_TYPES = [
@@ -71,6 +72,7 @@ export default function BuildSuggestions() {
     const [shownExtras, setShownExtras] = useState(new Set());
     const [panelOpen, setPanelOpen] = useState(false);
     const [comparing, setComparing] = useState(false);
+    const [comparingAnalysis, setComparingAnalysis] = useState(false);
     const [summaries, setSummaries] = useState([]);
     const [summarizing, setSummarizing] = useState(false);
 
@@ -112,7 +114,10 @@ export default function BuildSuggestions() {
         }
     };
 
+    const hasFetchedBuilds = useRef(false);
     useEffect(() => {
+        if (hasFetchedBuilds.current) return;
+        hasFetchedBuilds.current = true;
         const fetchBuilds = async () => {
             const summaryData = location.state?.summary;
             const res = await generateBuilds(summaryData || { basicPreferences: {} });
@@ -126,8 +131,11 @@ export default function BuildSuggestions() {
     const getBuild = useCallback((keyword) =>
         builds.find((b) => b.name.toLowerCase().includes(keyword)), [builds]);
 
-    const balancedBuild = getBuild("balance");
-    const unlockedExtras = BUILD_TYPES.filter((bt) => shownExtras.has(bt.key));
+    const balancedBuild = useMemo(() => getBuild("balance"), [getBuild]);
+    const unlockedExtras = useMemo(() => 
+        BUILD_TYPES.filter((bt) => shownExtras.has(bt.key)),
+        [shownExtras]
+    );
 
     // Final comparable list
     const comparableBuilds = useMemo(() => [
@@ -143,6 +151,7 @@ export default function BuildSuggestions() {
     useEffect(() => {
         const fetchSummary = async () => {
             if (comparing && comparableBuilds.length > 0) {
+                setSummaries([]); // Reset to prevent flickering old data
                 setSummarizing(true);
                 try {
                     const res = await generateBuildSummary(comparableBuilds);
@@ -246,7 +255,7 @@ export default function BuildSuggestions() {
         </div>
     );
 
-    /* ── Compare overlay ───────────────────────────────────────────────── */
+    /* ── Legacy Compare overlay ─────────────────────────────────────────── */
     const renderCompare = () => {
         if (!comparing) return null;
 
@@ -267,7 +276,7 @@ export default function BuildSuggestions() {
 
                 <div style={{ maxWidth: "1400px", margin: "0 auto", width: "100%" }}>
                     <h2 style={{ color: "white", fontSize: "32px", fontWeight: "900", textAlign: "center", marginBottom: "40px", letterSpacing: "2px" }}>
-                        BUILD COMPARISON ANALYSIS
+                        BUILD COMPONENT COMPARISON
                     </h2>
 
                     <div style={{ border: "1px solid #333", borderRadius: "12px", overflow: "hidden", boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}>
@@ -342,8 +351,11 @@ export default function BuildSuggestions() {
                             <div style={{ textAlign: "center", color: "#666", padding: "40px", fontSize: "16px", fontStyle: "italic" }}>Analysing hardware specs and generating pros/cons...</div>
                         ) : summaries.length > 0 ? (
                             <div style={{ display: "grid", gridTemplateColumns: `repeat(${comparableBuilds.length}, 1fr)`, gap: "30px" }}>
-                                {comparableBuilds.map((b) => {
-                                    const sum = summaries.find(s => s.name === b.name) || summaries[0];
+                                {comparableBuilds.map((b, idx) => {
+                                    // Use index-based fallback if names don't match exactly
+                                    const sum = summaries.find(s => s.name === b.name) || 
+                                               summaries.find(s => s.name?.toLowerCase().includes(b.name?.toLowerCase().split(' ')[0])) ||
+                                               summaries[idx];
                                     const typeInfo = BUILD_TYPES.find(bt => b.name.toLowerCase().includes(bt.nameKeyword));
                                     const accent = typeInfo?.color || "#a3ff00";
                                     return (
@@ -368,6 +380,11 @@ export default function BuildSuggestions() {
                 </div>
             </div>
         );
+    };
+
+    const renderAnalysisCompare = () => {
+        if (!comparingAnalysis) return null;
+        return <BuildComparison builds={comparableBuilds} onClose={() => setComparingAnalysis(false)} />;
     };
 
     if (loading) {
@@ -467,58 +484,112 @@ export default function BuildSuggestions() {
                 .opt-btn { transition: all 0.22s ease !important; }
                 .opt-btn:hover { transform: translateY(-3px) !important; }
             `}</style>
-            <div style={{ padding: "40px 20px", maxWidth: "900px", margin: "0 auto" }}>
+            <div style={{ padding: "40px 20px", maxWidth: "1200px", margin: "0 auto" }}>
                 <button onClick={() => navigate(-1)} style={{ color: "#00f3ff", border: "1px solid #00f3ff", padding: "7px 16px", background: "transparent", cursor: "pointer", marginBottom: "28px", fontSize: "13px", letterSpacing: "0.12em", textTransform: "uppercase", display: "flex", alignItems: "center", gap: "8px" }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#00f3ff22"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}>← REVISE CONFIG</button>
-                <h1 style={{ fontSize: "34px", fontWeight: "900", marginBottom: "10px", textTransform: "uppercase", letterSpacing: "-0.02em", borderBottom: "2px solid #1a1a1a", paddingBottom: "16px", color: "#eeeeee" }}>SYSTEM_ARCHITECTURES</h1>
+                <h1 style={{ fontSize: "34px", fontWeight: "900", marginBottom: "28px", textTransform: "uppercase", letterSpacing: "-0.02em", borderBottom: "2px solid #1a1a1a", paddingBottom: "16px", color: "#eeeeee" }}>SYSTEM_ARCHITECTURES</h1>
                 {warning && <div style={{ backgroundColor: "rgba(255,68,0,0.08)", border: "1px solid #ff4400", padding: "14px 18px", marginBottom: "28px", color: "#ff4400", fontSize: "12px", letterSpacing: "0.05em", fontWeight: "bold", textTransform: "uppercase" }}>⚠ {warning}</div>}
 
-                {balancedBuild && renderBuildCard(balancedBuild, "#a3ff00", true)}
+                <div style={{ display: "block" }}>
+                    <div>
+                        {balancedBuild && renderBuildCard(balancedBuild, "#a3ff00", true)}
 
-                {unlockedExtras.map((bt) => {
-                    const extraBuild = getBuild(bt.nameKeyword);
-                    if (!extraBuild) return null;
-                    return (
-                        <div key={bt.key} style={{ marginTop: "32px", animation: "fadeSlideIn 0.4s ease forwards" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "18px" }}>
-                                <div style={{ height: "1px", flex: 1, background: `linear-gradient(to right, transparent, ${bt.borderColor})` }} />
-                                <span style={{ color: bt.color, fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.18em", fontWeight: "800", whiteSpace: "nowrap" }}>{bt.icon} &nbsp; {bt.fullLabel}</span>
-                                <div style={{ height: "1px", flex: 1, background: `linear-gradient(to left, transparent, ${bt.borderColor})` }} />
+                        {unlockedExtras.map((bt) => {
+                            const extraBuild = getBuild(bt.nameKeyword);
+                            if (!extraBuild) return null;
+                            return (
+                                <div key={bt.key} style={{ marginTop: "32px", animation: "fadeSlideIn 0.4s ease forwards" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "18px" }}>
+                                        <div style={{ height: "1px", flex: 1, background: `linear-gradient(to right, transparent, ${bt.borderColor})` }} />
+                                        <span style={{ color: bt.color, fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.18em", fontWeight: "800", whiteSpace: "nowrap" }}>{bt.icon} &nbsp; {bt.fullLabel}</span>
+                                        <div style={{ height: "1px", flex: 1, background: `linear-gradient(to left, transparent, ${bt.borderColor})` }} />
+                                    </div>
+                                    {renderBuildCard(extraBuild, bt.color, false)}
+                                </div>
+                            );
+                        })}
+
+                        {totalVisible >= 2 && (
+                            <div style={{ marginTop: "28px" }}>
+                                <button 
+                                    onClick={() => setComparing(true)} 
+                                    style={{ 
+                                        width: "100%", 
+                                        padding: "18px", 
+                                        background: "transparent", 
+                                        border: "1px solid #ccff00", 
+                                        color: "#ccff00", 
+                                        cursor: "pointer", 
+                                        fontWeight: "900", 
+                                        fontSize: "15px", 
+                                        textTransform: "uppercase", 
+                                        letterSpacing: "0.18em", 
+                                        transition: "all 0.25s ease", 
+                                        fontFamily: "'Space Mono', monospace" 
+                                    }} 
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = "#ccff00"; e.currentTarget.style.color = "#000"; }} 
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#ccff00" }}
+                                >
+                                    ⇄ &nbsp; Compare {totalVisible} Builds
+                                </button>
                             </div>
-                            {renderBuildCard(extraBuild, bt.color, false)}
-                        </div>
-                    );
-                })}
+                        )}
 
-                {totalVisible >= 2 && (
-                    <div style={{ marginTop: "28px" }}>
-                        <button onClick={() => setComparing(true)} style={{ width: "100%", padding: "18px", background: "transparent", border: "1px solid #ccff00", color: "#ccff00", cursor: "pointer", fontWeight: "900", fontSize: "15px", textTransform: "uppercase", letterSpacing: "0.18em", transition: "all 0.25s ease", fontFamily: "'Space Mono', monospace" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#ccff00"; e.currentTarget.style.color = "#000"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#ccff00" }}>⇄ &nbsp; Compare {totalVisible} Builds</button>
+                        {totalVisible >= 1 && (
+                            <div style={{ marginTop: "12px" }}>
+                                <button 
+                                    onClick={() => setComparingAnalysis(true)} 
+                                    style={{ 
+                                        width: "100%", 
+                                        padding: "18px", 
+                                        background: "transparent", 
+                                        border: "1px solid #00f3ff", 
+                                        color: "#00f3ff", 
+                                        cursor: "pointer", 
+                                        fontWeight: "900", 
+                                        fontSize: "15px", 
+                                        textTransform: "uppercase", 
+                                        letterSpacing: "0.18em", 
+                                        transition: "all 0.25s ease", 
+                                        fontFamily: "'Space Mono', monospace" 
+                                    }} 
+                                    onMouseEnter={(e) => { e.currentTarget.style.background = "#00f3ff"; e.currentTarget.style.color = "#000"; }} 
+                                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#00f3ff" }}
+                                >
+                                    ⚡ &nbsp; {totalVisible === 1 ? 'Analyze Performance' : 'Compare Bottlenecks'}
+                                </button>
+                            </div>
+                        )}
+
+                        <div style={{ marginTop: "24px" }}>
+                            {allUnlocked ? (
+                                <div style={{ padding: "16px", border: "1px dashed #1e1e1e", color: "#333", fontSize: "12px", textAlign: "center", textTransform: "uppercase", letterSpacing: "0.12em" }}>All build types generated</div>
+                            ) : !panelOpen ? (
+                                <button onClick={() => setPanelOpen(true)} style={{ width: "100%", padding: "18px", backgroundColor: "transparent", border: "1px solid #00f3ff", color: "#00f3ff", cursor: "pointer", fontWeight: "900", fontSize: "15px", textTransform: "uppercase", letterSpacing: "0.18em", transition: "all 0.25s ease", fontFamily: "'Space Mono', monospace" }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#00f3ff"; e.currentTarget.style.color = "#000"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#00f3ff" }}>⊕ &nbsp; Generate More Builds</button>
+                            ) : (
+                                <div style={{ animation: "panelIn 0.28s ease forwards", border: "1px solid #1e1e1e", backgroundColor: "#080808", padding: "28px 24px" }}>
+                                    <p style={{ color: "#eeeeee", fontSize: "18px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.14em", textAlign: "center", marginBottom: "6px", fontFamily: "'Space Mono', monospace" }}>Select a Build Type</p>
+                                    <p style={{ color: "#555", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.1em", textAlign: "center", marginBottom: "22px" }}>Choose which configuration to explore next</p>
+                                    <div style={{ display: "grid", gridTemplateColumns: `repeat(${availableTypes.length}, 1fr)`, gap: "14px", marginBottom: "20px" }}>
+                                        {availableTypes.map((bt) => (
+                                            <button key={bt.key} className="opt-btn" onClick={() => handleSelectType(bt.key)} style={{ padding: "24px 16px", backgroundColor: bt.bgColor, border: `2px solid ${bt.borderColor}`, color: bt.color, cursor: "pointer", textAlign: "center", boxShadow: `0 0 16px ${bt.glowColor}`, fontFamily: "'Space Mono', monospace" }}>
+                                                <div style={{ fontSize: "28px", marginBottom: "10px" }}>{bt.icon}</div>
+                                                <div style={{ fontSize: "14px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.1em", lineHeight: "1.35" }}>{bt.label}</div>
+                                                <div style={{ fontSize: "10px", color: `${bt.color}99`, marginTop: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>{bt.desc}</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <button onClick={() => setPanelOpen(false)} style={{ width: "100%", padding: "14px", background: "transparent", border: "2px solid #ff4444", color: "#ff4444", cursor: "pointer", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.18em", transition: "all 0.22s", fontFamily: "'Space Mono', monospace" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#ff4444"; e.currentTarget.style.color = "#000"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#ff4444" }}>✕ &nbsp; Cancel</button>
+                                </div>
+                            )}
+                        </div>
+                        <div style={{ height: "80px" }} />
                     </div>
-                )}
-
-                <div style={{ marginTop: "24px" }}>
-                    {allUnlocked ? (
-                        <div style={{ padding: "16px", border: "1px dashed #1e1e1e", color: "#333", fontSize: "12px", textAlign: "center", textTransform: "uppercase", letterSpacing: "0.12em" }}>All build types generated</div>
-                    ) : !panelOpen ? (
-                        <button onClick={() => setPanelOpen(true)} style={{ width: "100%", padding: "18px", backgroundColor: "transparent", border: "1px solid #00f3ff", color: "#00f3ff", cursor: "pointer", fontWeight: "900", fontSize: "15px", textTransform: "uppercase", letterSpacing: "0.18em", transition: "all 0.25s ease", fontFamily: "'Space Mono', monospace" }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#00f3ff"; e.currentTarget.style.color = "#000"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#00f3ff" }}>⊕ &nbsp; Generate More Builds</button>
-                    ) : (
-                        <div style={{ animation: "panelIn 0.28s ease forwards", border: "1px solid #1e1e1e", backgroundColor: "#080808", padding: "28px 24px" }}>
-                            <p style={{ color: "#eeeeee", fontSize: "18px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.14em", textAlign: "center", marginBottom: "6px", fontFamily: "'Space Mono', monospace" }}>Select a Build Type</p>
-                            <p style={{ color: "#555", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.1em", textAlign: "center", marginBottom: "22px" }}>Choose which configuration to explore next</p>
-                            <div style={{ display: "grid", gridTemplateColumns: `repeat(${availableTypes.length}, 1fr)`, gap: "14px", marginBottom: "20px" }}>
-                                {availableTypes.map((bt) => (
-                                    <button key={bt.key} className="opt-btn" onClick={() => handleSelectType(bt.key)} style={{ padding: "24px 16px", backgroundColor: bt.bgColor, border: `2px solid ${bt.borderColor}`, color: bt.color, cursor: "pointer", textAlign: "center", boxShadow: `0 0 16px ${bt.glowColor}`, fontFamily: "'Space Mono', monospace" }}>
-                                        <div style={{ fontSize: "28px", marginBottom: "10px" }}>{bt.icon}</div>
-                                        <div style={{ fontSize: "14px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.1em", lineHeight: "1.35" }}>{bt.label}</div>
-                                        <div style={{ fontSize: "10px", color: `${bt.color}99`, marginTop: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>{bt.desc}</div>
-                                    </button>
-                                ))}
-                            </div>
-                            <button onClick={() => setPanelOpen(false)} style={{ width: "100%", padding: "14px", background: "transparent", border: "2px solid #ff4444", color: "#ff4444", cursor: "pointer", fontSize: "13px", fontWeight: "900", textTransform: "uppercase", letterSpacing: "0.18em", transition: "all 0.22s", fontFamily: "'Space Mono', monospace" }} onMouseEnter={(e) => { e.currentTarget.style.background = "#ff4444"; e.currentTarget.style.color = "#000"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#ff4444" }}>✕ &nbsp; Cancel</button>
-                        </div>
-                    )}
                 </div>
-                <div style={{ height: "80px" }} />
             </div>
+
+            {renderCompare()}
+            {renderAnalysisCompare()}
+
         </div>
     );
 }

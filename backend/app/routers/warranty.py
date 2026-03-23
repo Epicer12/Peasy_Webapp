@@ -1,10 +1,10 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException  # type: ignore
 from datetime import datetime
 import uuid
 import os
 import traceback
-from ..dependencies import get_current_user, User, get_warranty_supabase
-from ..services.openrouter_service import extract_warranty_info
+from ..dependencies import get_current_user, User, get_warranty_supabase  # type: ignore
+from ..services.openrouter_service import extract_warranty_info  # type: ignore
 
 router = APIRouter(
     prefix="/warranty",
@@ -343,79 +343,3 @@ async def list_warranties(current_user: User = Depends(get_current_user)):
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Database list failed: {str(e)}")
 
-# --- User Profile Endpoints ---
-
-@router.get("/profile")
-async def get_profile(current_user: User = Depends(get_current_user)):
-    """
-    Fetch user profile metadata (photo_url, etc.)
-    """
-    supabase = get_warranty_supabase()
-    try:
-        print(f"DEBUG: Fetching profile for user: {current_user.uid}")
-        res = supabase.table("user_mappings") \
-            .select("photo_url") \
-            .eq("firebase_uid", current_user.uid) \
-            .execute()
-        
-        if res.data:
-            return res.data[0]
-        return {"photo_url": None}
-    except Exception as e:
-        print(f"PROFILE FETCH ERROR: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Profile fetch failed: {str(e)}")
-
-@router.post("/profile-photo")
-async def upload_profile_photo(
-    file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Upload a profile photo to storage and update user_mappings record.
-    Saves in user-specific folder for privacy.
-    """
-    try:
-        if not file.content_type.startswith("image/"):
-            raise HTTPException(status_code=400, detail="File must be an image")
-
-        supabase = get_warranty_supabase()
-        bucket_name = "warranties"
-        
-        # 1. Upload to Storage in USER-SPECIFIC folder
-        content = await file.read()
-        file_ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
-        storage_user_id = current_user.supabase_uid or current_user.uid
-        file_path = f"{storage_user_id}/profile_photo.{file_ext}"
-        
-        print(f"DEBUG: Uploading profile photo to: {file_path}")
-        
-        try:
-            # Upsert will overwrite if it exists
-            res = supabase.storage.from_(bucket_name).upload(
-                path=file_path,
-                file=content,
-                file_options={"upsert": "true", "content-type": file.content_type}
-            )
-            
-            # 2. Get Public URL (bucket must be public or use signed URL)
-            # Using get_public_url for avatars is standard if bucket is public-read
-            photo_url_res = supabase.storage.from_(bucket_name).get_public_url(file_path)
-            photo_url = photo_url_res if isinstance(photo_url_res, str) else getattr(photo_url_res, "public_url", str(photo_url_res))
-
-            # 3. Update DB
-            print(f"DEBUG: Updating user_mappings with photo_url: {photo_url}")
-            supabase.table("user_mappings").update({
-                "photo_url": photo_url
-            }).eq("firebase_uid", current_user.uid).execute()
-
-            return {"status": "success", "photo_url": photo_url}
-            
-        except Exception as upload_err:
-            print(f"PROFILE PHOTO UPLOAD ERROR: {upload_err}")
-            raise HTTPException(status_code=500, detail=f"Upload failed: {str(upload_err)}")
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"CRITICAL ERROR in upload_profile_photo: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))

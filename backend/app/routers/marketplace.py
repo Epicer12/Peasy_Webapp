@@ -4,6 +4,8 @@ import os
 from supabase import create_client
 from dotenv import load_dotenv
 import asyncio
+import re
+from app.utils.image_vault import get_component_image
 from concurrent.futures import ThreadPoolExecutor
 
 load_dotenv()
@@ -37,8 +39,8 @@ TABLE_MAP = {
     "ssd": "ssd_final",
     "hdd": "hdd_final",
     "psu": "psu_final",
-    "case": "case_final",
-    "cooler": "cooler_final"
+    "case": "cases_final",
+    "cooler": "cpu_coolers_final"
 }
 
 KNOWN_SHOPS = [
@@ -52,6 +54,32 @@ KNOWN_SHOPS = [
     {"id": "winsoft", "name": "Winsoft"}
 ]
 
+# Authoritative list of local price columns — mirrors builder.py exactly, no estimated fallbacks
+PRICE_COLS = [
+    "nanotek_price", "nanotek_price_lkr", "price_nanotek",
+    "computerzone_price", "computerzone_price_lkr", "cz_price", "price_computerzone",
+    "pc_builders_price", "pc_builders_price_lkr", "price_pcbuilders",
+    "winsoft_price", "winsoft_price_lkr", "price_winsoft"
+]
+
+# Per-table name column — mirrors SEARCH_COLUMN_MAP in builder.py
+NAME_COL_MAP = {
+    "cpu_final": "model",
+    "gpu_final": "name",
+    "ram_final": "name",
+    "ssd_final": "final_model_name",
+    "hdd_final": "name",
+    "motherboard_final": "name",
+    "psu_final": "final_model_name",
+    "cases_final": "name",
+    "cpu_coolers_final": "model_name",
+}
+
+
+
+# Reverse map: table name -> category key (used to derive item_type)
+_TABLE_TO_CAT = {v: k for k, v in TABLE_MAP.items()}
+
 def standardize_product(item: dict, table_name: str, requested_shop: Optional[str]) -> Optional[dict]:
     """Standardize the product dictionary mapping specific shopX_price columns."""
     
@@ -59,32 +87,44 @@ def standardize_product(item: dict, table_name: str, requested_shop: Optional[st
     if "id" not in item:
         item["id"] = item.get("name", "unknown_id")
         
-    item_type = table_name.replace("_final", "")
+    # Use the reverse TABLE_MAP lookup so `cpu_coolers_final` -> `cooler`, `cases_final` -> `case`
+    item_type = _TABLE_TO_CAT.get(table_name, table_name.replace("_final", ""))
     
-    # Try to extract a brand if missing
-    brand = item.get("brand", "")
-    if not brand:
-        name = item.get("name", "")
-        brand = name.split()[0] if name else "Unknown"
+    # Use the per-table name column (some tables use final_model_name or model_name, not 'name')
+    name_col = NAME_COL_MAP.get(table_name, "name")
+    name = item.get(name_col) or item.get("name") or item.get("component_name") or "Unknown Component"
+
+    # Per-table brand extraction:
+    # cpu_coolers_final has a 'producer' column; ssd_final and psu_final have no brand column.
+    if table_name == "cpu_coolers_final":
+        brand = item.get("producer") or name.split()[0]
+    else:
+        brand = item.get("brand") or name.split()[0] if name else "Unknown"
 
     available_shops = []
     prices = []
     
-    # Scan columns for shop-specific pricing (e.g., nanotek_price, redline_price)
-    for key, value in item.items():
-        if key.endswith("_price") and value is not None:
-            # Explicitly ignore estimated or arbitrary pricing that isn't a direct shop listing
-            if "estimated" in key or key in ("average_price", "price"):
-                continue
+    # Authoritative scanning for local shop pricing
+    for col in PRICE_COLS:
+        value = item.get(col)
+        if value is not None:
+            # Determine shop prefix for the frontend mapping
+            shop_prefix = "unknown"
+            if "nanotek" in col: shop_prefix = "nanotek"
+            elif "computerzone" in col or "cz_" in col: shop_prefix = "computerzone"
+            elif "pc_builders" in col or "pcbuilders" in col: shop_prefix = "pcbuilders"
+            elif "winsoft" in col: shop_prefix = "winsoft"
+            # Add other vendors as needed for the frontend prefixes
                 
-            shop_prefix = key.replace("_price", "")  
             try:
-                price_float = float(value)
+                price_float = float(str(value).replace(',', '').replace('Rs.', '').replace('LKR', '').strip() or 0)
                 if price_float > 0:
-                    available_shops.append(shop_prefix)
+                    if shop_prefix not in available_shops:
+                        available_shops.append(shop_prefix)
                     prices.append((shop_prefix, price_float))
             except ValueError:
                 pass
+
                 
     if not prices:
         return None  # Discard if out of stock everywhere and has no valid price
@@ -99,17 +139,20 @@ def standardize_product(item: dict, table_name: str, requested_shop: Optional[st
     else:
         # Lowest available price across all shops if viewing aggregated "All Shops" catalog
         actual_price = min(p for _, p in prices)
-        
+            
+    img_data = get_component_image(item_type, name)
+    
     return {
         "id": item.get("id"),
-        "name": item.get("name"),
+        "name": name,
         "type": item_type,
         "brand": brand,
         "actual_price": actual_price,
         "available_shops": available_shops,
         "specs": item.get("specs", item.get("specifications")),
         "status": item.get("status", "In Stock"),
-        "image_url": item.get("image_url", "https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&q=80&w=400")
+        "image_url": img_data["url"],
+        "image_rotate": img_data["rotate"]
     }
 
 def fetch_table_data_sync(supabase, table_name: str, q: Optional[str], min_price: Optional[float], max_price: Optional[float], shop: Optional[str]):

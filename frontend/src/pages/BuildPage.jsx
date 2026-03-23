@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import Question from "../components/build/Question";
 import { searchComponents, submitBuildRequest } from "../services/componentService";
-
 export default function BuildPage() {
   // Tabs & Step
   const [activeTab, setActiveTab] = useState("basic");
@@ -92,6 +91,7 @@ export default function BuildPage() {
   };
 
   const handleOwnedDetailChange = async (part, value) => {
+    // If we're typing, we clear the selected object and just store the search string
     setOwnedDetails({ ...ownedDetails, [part]: value });
     if (selectedIndex !== -1) setSelectedIndex(-1);
     setLoadingState(prev => ({ ...prev, [part]: true }));
@@ -107,8 +107,9 @@ export default function BuildPage() {
     }
   };
 
-  const selectComponent = (part, componentName) => {
-    setOwnedDetails({ ...ownedDetails, [part]: componentName });
+  const selectComponent = (part, component) => {
+    // Store the full component object instead of just the name string
+    setOwnedDetails({ ...ownedDetails, [part]: component });
     setSelectedIndex(-1);
     setActiveSearchPart(null);
   };
@@ -116,7 +117,7 @@ export default function BuildPage() {
   const isPartOwned = (part) => answers.ownedParts.includes(part);
 
   const getComponentDisplayName = (res) => {
-    let displayName = res.name || res.model || res.title || res.product_name || res.item_name;
+    let displayName = res.name || res.model || res.model_name || res.final_model_name || res.title || res.product_name || res.item_name;
     if (!displayName) {
       if (res.line) displayName = res.line;
       else if (res.family) displayName = `${res.family} ${res.microarchitecture || ""}`.trim();
@@ -149,7 +150,6 @@ export default function BuildPage() {
       setActiveSearchPart(null);
     }
   };
-
 
   const handleTabChange = (tab) => { setActiveTab(tab); window.scrollTo(0, 0); };
 
@@ -191,8 +191,8 @@ export default function BuildPage() {
         state: {
           budget: budgetCategory,
           use: primaryUse.includes("gaming") ? "gaming" :
-               (primaryUse.includes("edit") || primaryUse.includes("design") || primaryUse.includes("render")) ? "editing" :
-               (primaryUse.includes("program") || primaryUse.includes("machine")) ? "programming" : "general",
+            (primaryUse.includes("edit") || primaryUse.includes("design") || primaryUse.includes("render")) ? "editing" :
+              (primaryUse.includes("program") || primaryUse.includes("machine")) ? "programming" : "general",
           aesthetics: aestheticsPref,
           summary: summaryData
         }
@@ -203,7 +203,7 @@ export default function BuildPage() {
     }
   };
 
-  // Styles reconciled from feature branch's rich aesthetics
+  // Styles
   const pageWrapper = { padding: "40px 20px", maxWidth: "850px", margin: "0 auto", minHeight: "100vh" };
   const titleStyle = { textAlign: "left", fontSize: "42px", fontWeight: "900", marginBottom: "30px", color: "#eeeeee", textTransform: "uppercase", letterSpacing: "-0.02em", borderBottom: "2px solid #333", paddingBottom: "15px" };
   const tabContainerStyle = { display: "flex", justifyContent: "flex-start", gap: "0px", marginBottom: "30px", borderBottom: "1px solid #1a1a1a" };
@@ -232,12 +232,12 @@ export default function BuildPage() {
       <input
         type="text"
         placeholder={`Search ${part}...`}
-        value={ownedDetails[part] || ""}
+        value={typeof ownedDetails[part] === 'object' ? getComponentDisplayName(ownedDetails[part]) : (ownedDetails[part] || "")}
         onChange={(e) => handleOwnedDetailChange(part, e.target.value)}
         onKeyDown={(e) => handleKeyDown(e, part)}
         style={{ width: "100%", padding: "8px 12px", borderRadius: "6px", border: "1px solid", borderColor: activeSearchPart === part ? "#00f3ff" : "#333", fontSize: "12px", height: "40px", outline: "none", transition: "all 0.2s ease", color: "#eeeeee", backgroundColor: "#0a0a0a", fontFamily: "'Space Mono', monospace" }}
-        onFocus={() => { setActiveSearchPart(part); handleOwnedDetailChange(part, ownedDetails[part] || ""); }}
-        onClick={(e) => { e.stopPropagation(); if (activeSearchPart !== part) { setActiveSearchPart(part); handleOwnedDetailChange(part, ownedDetails[part] || ""); } }}
+        onFocus={() => { setActiveSearchPart(part); handleOwnedDetailChange(part, typeof ownedDetails[part] === 'object' ? getComponentDisplayName(ownedDetails[part]) : (ownedDetails[part] || "")); }}
+        onClick={(e) => { e.stopPropagation(); if (activeSearchPart !== part) { setActiveSearchPart(part); handleOwnedDetailChange(part, typeof ownedDetails[part] === 'object' ? getComponentDisplayName(ownedDetails[part]) : (ownedDetails[part] || "")); } }}
       />
       {activeSearchPart === part && (loadingState[part] || (searchResults[part] && searchResults[part].length > 0) || (ownedDetails[part] && ownedDetails[part].length > 1)) && (
         <ul style={{ listStyle: "none", padding: "0", margin: "4px 0 0", border: "1px solid #333", borderRadius: "0px", maxHeight: "220px", overflowY: "auto", backgroundColor: "#111", position: "absolute", zIndex: 9999, width: "100%", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
@@ -249,7 +249,7 @@ export default function BuildPage() {
                 const displayName = getComponentDisplayName(res);
                 const isSelected = index === selectedIndex;
                 return (
-                  <li key={res.id || index} onMouseDown={(e) => { e.preventDefault(); selectComponent(part, displayName); }} style={{ padding: "12px 16px", cursor: "pointer", borderBottom: "1px solid #1a1a1a", fontSize: "11px", color: isSelected ? "#00f3ff" : "#888", lineHeight: "1.4", backgroundColor: isSelected ? "#1a1a1a" : "transparent", fontFamily: "'Space Mono', monospace", textTransform: "uppercase" }}>
+                  <li key={res.id || index} onMouseDown={(e) => { e.preventDefault(); selectComponent(part, res); }} style={{ padding: "12px 16px", cursor: "pointer", borderBottom: "1px solid #1a1a1a", fontSize: "11px", color: isSelected ? "#00f3ff" : "#888", lineHeight: "1.4", backgroundColor: isSelected ? "#1a1a1a" : "transparent", fontFamily: "'Space Mono', monospace", textTransform: "uppercase" }}>
                     {displayName}
                   </li>
                 );
@@ -274,12 +274,6 @@ export default function BuildPage() {
           <h1 style={{ ...titleStyle, textAlign: "center", fontSize: "40px", marginBottom: "30px", borderBottom: "none" }}>
             {activeTab === "advanced" ? "SUMMARY_ADVANCED" : "SUMMARY_BASIC"}
           </h1>
-          <div style={{ backgroundColor: "#0a0a0a", border: "1px solid #333", padding: "40px", position: "relative" }}>
-            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-[#00f3ff]"></div>
-            <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-[#00f3ff]"></div>
-            <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-[#00f3ff]"></div>
-            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#00f3ff]"></div>
-          </div>
 
           <div style={{ backgroundColor: "#111", border: "2px solid #333", padding: "40px" }}>
             <h3 style={{ color: "#00f3ff", marginBottom: "20px", borderBottom: "1px solid #333", paddingBottom: "10px" }}>CORE_PREFERENCES</h3>
@@ -332,13 +326,15 @@ export default function BuildPage() {
               <Question title="VISUAL_RESOLUTION" options={["1080p", "1440p", "4K", "Not sure"]} selected={answers.resolution} onSelect={(val) => updateAnswer("resolution", val)} layout="row" />
               <Question title="PERFORMANCE_TIER" options={["Entry Level", "Mid-Range", "High-End", "Enthusiast"]} selected={answers.performance} onSelect={(val) => updateAnswer("performance", val)} />
               <Question title="BUDGET_THRESHOLD" type="range" selected={answers.budget} onSelect={(val) => updateAnswer("budget", val)} min={100000} />
-              <Question title="EXISTING_HARDWARE" options={["CPU", "GPU", "RAM", "Storage", "PSU", "Case", "None"]} selected={answers.ownedParts} onSelect={(val) => handleOwnedPartsSelect(val)} multi={true} renderOptionExtra={(option) => option !== "None" && renderComponentSearch(option)} />
+              <Question title="EXISTING_HARDWARE" options={["CPU", "GPU", "RAM", "SSD", "HDD", "PSU", "Case", "None"]} selected={answers.ownedParts} onSelect={(val) => handleOwnedPartsSelect(val)} multi={true} renderOptionExtra={(option) => option !== "None" && renderComponentSearch(option)} />
               <Question title="PROCESSOR_PREFERENCE" subtitle={isPartOwned("CPU") ? "SECTOR_OWNED: CPU" : null} options={["Intel", "AMD", "No preference", isPartOwned("CPU") ? "ALREADY_OWNED" : null].filter(Boolean)} selected={answers.cpuBrand} onSelect={(val) => updateAnswer("cpuBrand", val)} layout="row" />
               <Question title="GRAPHICS_PREFERENCE" subtitle={isPartOwned("GPU") ? "SECTOR_OWNED: GPU" : null} options={["NVIDIA", "AMD", "No preference", isPartOwned("GPU") ? "ALREADY_OWNED" : null].filter(Boolean)} selected={answers.gpuBrand} onSelect={(val) => updateAnswer("gpuBrand", val)} layout="row" />
               <Question title="FUTURE_EXPANSION" options={["More RAM slots", "Extra storage slots", "Space for GPU upgrades", "No preference"]} selected={answers.expansion} onSelect={(val) => updateAnswer("expansion", val)} multi={true} exclusiveOption="No preference" />
               <Question title="FORM_FACTOR" subtitle={isPartOwned("Case") ? "SECTOR_OWNED: CASE" : null} options={["Mini ITX", "Micro ATX", "ATX", "No preference", isPartOwned("Case") ? "ALREADY_OWNED" : null].filter(Boolean)} selected={answers.caseSize} onSelect={(val) => updateAnswer("caseSize", val)} />
               <Question title="AESTHETIC_PROFILE" options={["Performance only", "Minimal build", "RGB build", "White themed build", "No preference"]} selected={answers.aesthetics} onSelect={(val) => updateAnswer("aesthetics", val)} />
               <Question title="UPGRADE_PRIORITY" options={["Not important", "Somewhat important", "Very important"]} selected={answers.upgrade} onSelect={(val) => updateAnswer("upgrade", val)} />
+              <Question title="OVERCLOCK_CONFIG" options={["Yes", "No", "Not sure"]} selected={answers.overclock} onSelect={(val) => updateAnswer("overclock", val)} layout="row" />
+              <Question title="WIRELESS_PROTOCOL" options={["Yes", "No", "Doesn't matter"]} selected={answers.wifi} onSelect={(val) => updateAnswer("wifi", val)} layout="row" />
 
               <div style={toggleContainerStyle}>
                 <p style={{ marginBottom: "15px", fontWeight: "900", color: "#666", fontSize: "10px", letterSpacing: "0.1em" }}>// OPTIMIZATION_AVAILABLE</p>
@@ -365,7 +361,7 @@ export default function BuildPage() {
               <Question title="PRIMARY_FOCUS" options={["Maximum gaming FPS", "Rendering performance", "Smooth multitasking", "Balanced performance"]} selected={advAnswers.priority} onSelect={(val) => updateAdvAnswer("priority", val)} />
               <Question title="BUDGET_OPTIMIZATION" options={["Lowest cost possible", "Best performance for money", "Long-term value"]} selected={advAnswers.budgetOpt} onSelect={(val) => updateAdvAnswer("budgetOpt", val)} />
               <Question title="WORKLOAD_RATIO" options={["GPU is more important", "CPU is more important", "Both equally important", "Not sure"]} selected={advAnswers.workloadFocus} onSelect={(val) => updateAdvAnswer("workloadFocus", val)} />
-              <Question title="STORAGE_CONFIG" options={["NVMe SSD (Fastish)", "SSD + HDD combo", "Large HDD storage", "Not sure"]} selected={advAnswers.storageSetup} onSelect={(val) => updateAdvAnswer("storageSetup", val)} />
+              <Question title="STORAGE_CONFIG" options={["NVMe SSD (Fastest)", "SSD + HDD combo", "Large HDD storage", "Not sure"]} selected={advAnswers.storageSetup} onSelect={(val) => updateAdvAnswer("storageSetup", val)} />
               <Question title="STORAGE_CAPACITY" options={["500GB", "1TB", "2TB", "4TB+", "Not sure"]} selected={advAnswers.storageSize} onSelect={(val) => updateAdvAnswer("storageSize", val)} layout="row" />
               <Question title="COOLING_PROFILE" options={["Air cooling", "Liquid cooling (AIO)", "Custom water cooling", "No preference"]} selected={advAnswers.coolingType} onSelect={(val) => updateAdvAnswer("coolingType", val)} />
               <Question title="ACOUSTIC_PROFILE" options={["Silent build", "Balanced", "Performance over noise"]} selected={advAnswers.noise} onSelect={(val) => updateAdvAnswer("noise", val)} layout="row" />
@@ -390,4 +386,3 @@ export default function BuildPage() {
     </div>
   );
 }
-

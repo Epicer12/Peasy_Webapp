@@ -56,6 +56,7 @@ const ProductModal = ({ product, isOpen, onClose }) => {
                     <img 
                         src={imageUrl} 
                         alt={product.name} 
+                        style={{ transform: product.image_rotate ? `rotate(${product.image_rotate}deg)` : 'none' }}
                         className="w-full h-auto max-h-[400px] object-contain drop-shadow-2xl filter group-hover:brightness-110 transition-all duration-500"
                     />
                 </div>
