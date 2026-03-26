@@ -77,7 +77,8 @@ const GuidePage = () => {
     const initialRawGuide = location.state?.initialGuide || JSON.parse(localStorage.getItem('current_assembly_guide'));
     const projectId = location.state?.projectId || localStorage.getItem('current_project_id');
     const existingComponents = location.state?.existingComponents || JSON.parse(localStorage.getItem('current_components')) || [];
-    const sessionId = location.state?.sessionId || useMemo(() => "build_" + Math.floor(Math.random() * 1000000), []);
+    const generatedSessionId = useMemo(() => "build_" + Math.floor(Math.random() * 1000000), []);
+    const sessionId = location.state?.sessionId || generatedSessionId;
 
     const [allSteps, setAllSteps] = useState([]);
     const [latestStepNumber, setLatestStepNumber] = useState(1);
@@ -113,7 +114,7 @@ const GuidePage = () => {
                 }
             }
         }
-    }, []);
+    }, [allSteps.length, existingComponents, initialRawGuide, isViewingOnly, navigate, projectId]);
 
     // Progress Calculation: Each major step is worth 10% (10 steps total = 100%).
     // Within each step, the 10% is divided equally among its instructions.
