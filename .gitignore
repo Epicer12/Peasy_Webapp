@@ -24,6 +24,7 @@ backend/.env
 
 # YOLO / AI
 runs/
+*.onnx
 
 # Logs
 *.log

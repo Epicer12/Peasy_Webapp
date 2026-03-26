@@ -5,10 +5,7 @@ import time
 import asyncio
 import traceback
 import os
-import tempfile
-import numpy as np
-import cv2
-import onnxruntime as ort
+import httpx
 from PIL import Image
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Response, UploadFile, File
@@ -20,107 +17,71 @@ router = APIRouter()
 
 DETECTION_CONFIDENCE = 0.25
 
-# ─── ONNX Inference Engine ───────────────────────────────────────────────────
-class ONNXDetector:
-    def __init__(self, model_path=None):
-        if model_path is None:
-            # Dynamically find the model relative to this file
-            base_dir = os.path.dirname(os.path.abspath(__file__))
-            self.model_path = os.path.join(base_dir, "best.onnx")
-        else:
-            self.model_path = model_path
+async def detect_via_hf(img_bytes, confidence_threshold=0.25):
+    """Call the remote Hugging Face Space for component detection."""
+    url = f"https://hasun20-peasy-vision.hf.space/detect?confidence={confidence_threshold}"
+    
+    try:
+        # Pre-process image: ensure RGB and reasonable size for HF Space (avoids 500 errors)
+        img = Image.open(io.BytesIO(img_bytes))
+        orig_w, orig_h = img.size
+        
+        # Convert to RGB if necessary (handles RGBA, CMYK etc.)
+        if img.mode != "RGB":
+            img = img.convert("RGB")
             
-        self.session = None
-        self.class_names = {0: 'CASE_FAN', 1: 'CPU', 2: 'CPU_COOLER', 3: 'GPU', 4: 'HDD', 5: 'MOTHERBOARD', 6: 'PC_CASE', 7: 'PSU', 8: 'RAM', 9: 'SSD'}
-        self.load_model()
-
-    def load_model(self):
-        try:
-            # Use CPU by default (lightweight)
-            providers = ['CPUExecutionProvider']
-            self.session = ort.InferenceSession(self.model_path, providers=providers)
-            print(f"[ONNX] Model loaded successfully from {self.model_path}")
-        except Exception as e:
-            print(f"[ONNX] Fatal: Could not load model: {e}")
-
-    def preprocess(self, img_bytes):
-        # Convert bytes to numpy array
-        nparr = np.frombuffer(img_bytes, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        if img is None: return None, None, None
-        
-        # Convert BGR to RGB (YOLOv8 standard)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-        # YOLOv8 expects 640x640
-        h, w = img.shape[:2]
-        input_img = cv2.resize(img, (640, 640))
-        input_img = input_img.transpose(2, 0, 1) # HWC to CHW
-        input_img = input_img.astype(np.float32) / 255.0
-        input_img = np.expand_dims(input_img, axis=0)
-        return input_img, w, h
-
-    def detect(self, img_bytes, confidence_threshold=0.25):
-        if not self.session: return []
-        
-        input_tensor, orig_w, orig_h = self.preprocess(img_bytes)
-        if input_tensor is None: return []
-
-        outputs = self.session.run(None, {self.session.get_inputs()[0].name: input_tensor})
-        
-        # YOLOv8 Output shape: [1, 14, 8400] (4 box coords + 10 classes)
-        output = outputs[0][0]
-        
-        # Check for [1, 14, 8400] (standard ultralytics export)
-        if outputs[0].shape[1] < outputs[0].shape[2]:
-             output = output.transpose() # Becomes [8400, 14]
-        
-        detections = []
-        for row in output:
-            classes_scores = row[4:]
-            max_score = np.amax(classes_scores)
+        # Resize if too large (HF Space has limited resources)
+        MAX_SIZE = 1024
+        sent_w, sent_h = orig_w, orig_h
+        if max(orig_w, orig_h) > MAX_SIZE:
+            ratio = MAX_SIZE / max(orig_w, orig_h)
+            sent_w, sent_h = int(orig_w * ratio), int(orig_h * ratio)
+            img = img.resize((sent_w, sent_h), Image.Resampling.LANCZOS)
             
-            if max_score >= confidence_threshold:
-                class_id = np.argmax(classes_scores)
+        # Prepare processed image bytes
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=85)
+        processed_bytes = buf.getvalue()
+        
+        async with httpx.AsyncClient(timeout=30) as client:
+            files = {'file': ('image.jpg', processed_bytes, 'image/jpeg')}
+            response = await client.post(url, files=files)
+            
+            if response.status_code != 200:
+                print(f"[HF-Space] Error {response.status_code}: {response.text}")
+                response.raise_for_status()
                 
-                # Box coordinates (center_x, center_y, width, height)
-                cx, cy, w, h = row[:4]
-                
-                # Rescale to original image size
-                x1 = (cx - w/2) * (orig_w / 640)
-                y1 = (cy - h/2) * (orig_h / 640)
-                x2 = (cx + w/2) * (orig_w / 640)
-                y2 = (cy + h/2) * (orig_h / 640)
-                
+            data = response.json()
+            
+            # Map and rescale detections
+            raw_detections = data.get("detections", [])
+            detections = []
+            
+            # Scaling factors
+            scale_x = orig_w / sent_w
+            scale_y = orig_h / sent_h
+            
+            for d in raw_detections:
+                box_dict = d.get("box", {})
                 detections.append({
-                    "class":  self.class_names.get(class_id, "Unknown"),
-                    "prob":   float(max_score),
-                    "box":    [float(x1), float(y1), float(x2), float(y2)],
+                    "class": d.get("class"),
+                    "prob": d.get("confidence"),
+                    "box": [
+                        float(box_dict.get("x1", 0)) * scale_x,
+                        float(box_dict.get("y1", 0)) * scale_y,
+                        float(box_dict.get("x2", 0)) * scale_x,
+                        float(box_dict.get("y2", 0)) * scale_y
+                    ],
                     "status": "DETECTED"
                 })
-        
-        # Simple NMS (Non-Maximum Suppression)
-        detections.sort(key=lambda x: x["prob"], reverse=True)
-        final_detections = []
-        while detections:
-            best = detections.pop(0)
-            final_detections.append(best)
-            detections = [d for d in detections if self.iou(best["box"], d["box"]) < 0.45]
+            return detections
             
-        return final_detections
-
-    def iou(self, box1, box2):
-        x1 = max(box1[0], box2[0])
-        y1 = max(box1[1], box2[1])
-        x2 = min(box1[2], box2[2])
-        y2 = min(box1[3], box2[3])
-        intersection = max(0, x2 - x1) * max(0, y2 - y1)
-        area1 = (box1[2] - box1[0]) * (box1[3] - box1[1])
-        area2 = (box2[2] - box2[0]) * (box2[3] - box2[1])
-        return intersection / (area1 + area2 - intersection + 1e-6)
-
-# Initialize Detector
-detector = ONNXDetector()
+    except Exception as e:
+        print(f"[HF-Space] Detection error: {e}")
+        # Only print traceback for non-HTTP errors to avoid cluttering logs
+        if not isinstance(e, httpx.HTTPStatusError):
+            traceback.print_exc()
+        return []
 
 # ─── Global Tracker ────────────────────────────────────────────────────────────
 global_tracker = ComponentTracker(mode="standard")
@@ -157,8 +118,8 @@ async def websocket_endpoint(websocket: WebSocket, mode: str = "standard"):
     try:
         while True:
             data = await websocket.receive_bytes()
-            # Perform Local Inference (Zero latency!)
-            detections = detector.detect(data, DETECTION_CONFIDENCE)
+            # Perform Remote Inference
+            detections = await detect_via_hf(data, DETECTION_CONFIDENCE)
             last_tracker_results = global_tracker.process_frame(detections, data)
             await websocket.send_json(last_tracker_results)
     except WebSocketDisconnect:
@@ -202,7 +163,7 @@ async def identify_upload(file: UploadFile = File(...)):
     """Identify a component from an uploaded image."""
     try:
         content = await file.read()
-        detections = detector.detect(content, confidence_threshold=0.15)
+        detections = await detect_via_hf(content, confidence_threshold=0.15)
 
         if not detections:
             return {"error": "No PC component detected in the image"}
