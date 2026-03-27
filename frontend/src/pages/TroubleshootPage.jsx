@@ -3,17 +3,28 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 const WS_BASE_URL = API_BASE_URL.replace(/^http/, "ws");
 
+const asusCodes = [
+    { code: "Fast Flash", prob: "No Memory or Memory Error" },
+    { code: "Slow Flash", prob: "No VGA/Graphics Error" },
+    { code: "Super Slow Flash", prob: "No Boot Device" },
+    { code: "CPU LED", prob: "No CPU or CPU Faulty" },
+    { code: "DRAM LED", prob: "No Memory or Memory Faulty" },
+    { code: "VGA LED", prob: "No Graphics Card detected" },
+    { code: "BOOT LED", prob: "No Bootable Drive found" }
+];
+
 const TroubleshootPage = () => {
     // viewMode: 'config' | 'dashboard'
     const [viewMode, setViewMode] = useState('config');
     const [brands, setBrands] = useState([]);
     const [selectedBrand, setSelectedBrand] = useState('');
-    const [method, setMethod] = useState('manual');
+    const [method, setMethod] = useState('');
     const [manualCode, setManualCode] = useState('');
     const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);
     const [aiAnalysis, setAiAnalysis] = useState({ deepDive: '', fixGuide: '' });
     const [aiLoading, setAiLoading] = useState({ deepDive: false, fixGuide: false });
+    const [errorPopup, setErrorPopup] = useState({ show: false, message: '' });
 
     // Camera/WebSocket State
     const [cameraOn, setCameraOn] = useState(false);
@@ -27,6 +38,7 @@ const TroubleshootPage = () => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const wsRef = useRef(null);
+    const panelRef = useRef(null);
 
     useEffect(() => {
         fetch(`${API_BASE_URL}/api/troubleshoot/brands`)
@@ -48,11 +60,13 @@ const TroubleshootPage = () => {
             if (res.ok) {
                 setResult(data);
                 setViewMode('dashboard');
+                window.scrollTo(0, 0);
             } else {
-                alert(data.detail || "Pattern not found");
+                setErrorPopup({ show: true, message: data.detail || "Diagnostic pattern mismatch detected." });
             }
         } catch (err) {
             console.error("Manual analysis error:", err);
+            setErrorPopup({ show: true, message: "System downlink failure. Authentication required." });
         } finally {
             setLoading(false);
         }
@@ -103,9 +117,11 @@ const TroubleshootPage = () => {
             if (res.ok) {
                 setResult(data);
                 setViewMode('dashboard');
+                window.scrollTo(0, 0);
             }
         } catch (err) {
             console.error("Auto analysis error:", err);
+            setErrorPopup({ show: true, message: "Optical sync failure. Pattern decoding interrupted." });
         } finally {
             setLoading(false);
         }
@@ -431,38 +447,11 @@ const TroubleshootPage = () => {
                 <div className="space-y-10">
                     {/* Horizontal Selectors Row */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                        {/* Target Brand Selection */}
-                        <section className="bg-black border-2 border-[#1a1a1a] p-8 space-y-6">
-                            <h3 className="text-3xl font-black text-[#ff4400] uppercase tracking-tighter flex items-center gap-4">
-                                <span className="w-2 h-8 bg-[#ff4400]"></span>
-                                1. Target Brand
-                            </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {brands
-                                    .filter(brand => method === 'camera' ? (!brand.includes('ASUS LED') && !brand.includes('Lenovo (Amber LED + Beeps)')) : true)
-                                    .map((brand) => (
-                                    <button
-                                        key={brand}
-                                        onClick={() => {
-                                            setSelectedBrand(brand);
-                                            setResult(null);
-                                        }}
-                                        className={`text-left px-5 py-4 font-mono text-lg border-2 transition-all ${selectedBrand === brand
-                                            ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
-                                            : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'
-                                            }`}
-                                    >
-                                        {brand}
-                                    </button>
-                                ))}
-                            </div>
-                        </section>
-
                         {/* Input Protocol Selection */}
-                        <section className={`bg-black border-2 transition-all duration-500 p-8 space-y-6 ${selectedBrand ? 'border-[#1a1a1a] opacity-100' : 'border-[#0a0a0a] opacity-20 pointer-events-none'}`}>
+                        <section className="bg-black border-2 border-[#1a1a1a] p-8 space-y-6">
                             <h3 className="text-3xl font-black text-cyan-400 uppercase tracking-tighter flex items-center gap-4">
                                 <span className="w-2 h-8 bg-cyan-400"></span>
-                                2. Input Protocol
+                                1. Input Protocol
                             </h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <button
@@ -471,7 +460,7 @@ const TroubleshootPage = () => {
                                         setCameraOn(false);
                                         setResult(null);
                                     }}
-                                    className={`w-full py-5 font-mono text-sm uppercase tracking-[0.2em] border-2 transition-all ${method === 'manual' ? 'bg-cyan-400/10 border-cyan-400 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]' : 'bg-[#050505] border-[#111] text-[#444] hover:border-[#333]'}`}
+                                    className={`w-full py-5 font-mono text-base uppercase tracking-[0.2em] border-2 transition-all ${method === 'manual' ? 'bg-cyan-400/10 border-cyan-400 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]' : 'bg-[#050505] border-[#111] text-[#888] hover:border-[#333] hover:text-[#eee]'}`}
                                 >
                                     [ MANUAL_ENTRY ]
                                 </button>
@@ -483,18 +472,53 @@ const TroubleshootPage = () => {
                                         setMethod('camera');
                                         setResult(null);
                                     }}
-                                    className={`w-full py-5 font-mono text-sm uppercase tracking-[0.2em] border-2 transition-all ${method === 'camera' ? 'bg-cyan-400/10 border-cyan-400 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]' : 'bg-[#050505] border-[#111] text-[#444] hover:border-[#333]'}`}
+                                    className={`w-full py-5 font-mono text-base uppercase tracking-[0.2em] border-2 transition-all ${method === 'camera' ? 'bg-cyan-400/10 border-cyan-400 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]' : 'bg-[#050505] border-[#111] text-[#888] hover:border-[#333] hover:text-[#eee]'}`}
                                 >
                                     [ CAMERA_AI ]
                                 </button>
                             </div>
                         </section>
+
+                        {/* Target Brand Selection */}
+                        <section className={`bg-black border-2 transition-all duration-500 p-8 space-y-6 ${method ? 'border-[#1a1a1a] opacity-100' : 'border-[#0a0a0a] opacity-20 pointer-events-none'}`}>
+                            <h3 className="text-3xl font-black text-[#ff4400] uppercase tracking-tighter flex items-center gap-4">
+                                <span className="w-2 h-8 bg-[#ff4400]"></span>
+                                2. Target Brand
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {brands
+                                    .filter(brand => method === 'camera' ? (!brand.includes('ASUS LED') && !brand.includes('Lenovo (Amber LED + Beeps)')) : true)
+                                    .map((brand) => (
+                                        <button
+                                            key={brand}
+                                            onClick={() => {
+                                                setSelectedBrand(brand);
+                                                setResult(null);
+                                                // Smooth scroll to the interaction panel
+                                                setTimeout(() => {
+                                                    panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                }, 100);
+                                            }}
+                                            className={`text-left px-5 py-4 font-mono text-xl border-2 transition-all ${selectedBrand === brand
+                                                ? 'border-[#ff4400] bg-[#ff4400]/10 text-white shadow-[0_0_15px_rgba(255,68,0,0.2)]'
+                                                : 'border-[#111] bg-[#050505] text-[#888] hover:border-[#333] hover:text-[#eee]'
+                                                }`}
+                                        >
+                                            {brand}
+                                        </button>
+                                    ))}
+                            </div>
+                        </section>
                     </div>
 
                     {/* Full Width Interaction Panel */}
-                    <div className="w-full">
+                    <div className="w-full" ref={panelRef}>
                         {selectedBrand && method === 'manual' && (
                             <div className="bg-[#050505] p-12 border-2 border-[#1a1a1a] space-y-8 animate-in zoom-in-95 duration-500">
+                                <h3 className="text-3xl font-black text-cyan-400 uppercase tracking-tighter flex items-center gap-4">
+                                    <span className="w-2 h-8 bg-cyan-400"></span>
+                                    3. Capture Pattern
+                                </h3>
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
                                         <div className="text-[#ff4400] font-mono text-[11px] uppercase tracking-widest flex items-center gap-2">
@@ -503,17 +527,80 @@ const TroubleshootPage = () => {
                                         </div>
                                         <span className="text-[#222] font-mono text-[10px]">VER: PC_IO_LATEST</span>
                                     </div>
-                                    <input
-                                        type="text"
-                                        value={manualCode}
-                                        onChange={(e) => setManualCode(e.target.value)}
-                                        placeholder=">>_WAITING_FOR_INPUT_<<"
-                                        className="w-full bg-black border-2 border-[#1a1a1a] p-10 text-6xl font-black text-cyan-400 placeholder-[#111] focus:border-cyan-400/40 outline-none transition-all font-mono text-center tracking-tighter"
-                                    />
-                                    <div className="flex justify-between text-[11px] text-[#333] font-mono p-4 bg-black/50 border border-[#111] uppercase tracking-widest">
-                                        <span>Syntax_Requirement: {selectedBrand.includes('Dell') ? 'INT_X, INT_Y' : 'SPECIFIC_SEQUENCE'}</span>
-                                        <span className="text-[#ff4400]/20 underline">View_Brand_Protocols</span>
+                                    <div className="relative group/input">
+                                        <input
+                                            type="text"
+                                            value={manualCode}
+                                            onChange={(e) => {
+                                                let val = e.target.value;
+                                                // Real-time syntax formatting: insert space after comma if missing
+                                                if (val.includes(',') && !val.includes(', ')) {
+                                                    val = val.replace(/,([^ ])/g, ', $1');
+                                                }
+                                                setManualCode(val.toUpperCase()); // Also enforce uppercase for consistency
+                                            }}
+                                            placeholder=">>_WAITING_FOR_INPUT_<<"
+                                            className="w-full bg-black border-2 border-[#1a1a1a] p-10 text-6xl font-black text-cyan-400 placeholder-[#111] focus:border-cyan-400/40 outline-none transition-all font-mono text-center tracking-tighter"
+                                        />
+                                        {manualCode && (
+                                            <button 
+                                                onClick={() => setManualCode('')}
+                                                className="absolute right-8 top-1/2 -translate-y-1/2 text-[#222] hover:text-[#ff4400] transition-colors font-mono text-4xl"
+                                                title="Clear Input"
+                                            >
+                                                [×]
+                                            </button>
+                                        )}
                                     </div>
+                                    
+                                    {/* 
+                                      * Format Guidance Pills:
+                                      * These show users common diagnostic patterns for standard brands 
+                                      * (like Dell/Lenovo) to ensure the space-after-comma format is clear.
+                                      * Hidden for ASUS because it uses specific predefined protocol buttons below.
+                                      */}
+                                    {!selectedBrand.includes('ASUS') && (
+                                        <div className="flex flex-wrap items-center gap-4 px-2">
+                                            <span className="text-xs text-[#444] font-mono uppercase tracking-widest font-black">Syntax_Examples //</span>
+                                            <div className="flex flex-wrap gap-3">
+                                                {['2, 3', '3, 4', '5, 1'].map(ex => (
+                                                    <span key={ex} className="px-5 py-2 bg-[#0a0a0a] border border-[#1a1a1a] text-[#777] font-mono text-sm uppercase tracking-widest font-black">
+                                                        {ex}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+
+                                    {/* ASUS Specific Error Codes Helper */}
+                                    {selectedBrand.includes('ASUS') && (
+                                        <div className="mt-6 border-2 border-[#1a1a1a] bg-[#050505] p-8 space-y-6">
+                                            <h3 className="text-3xl font-black text-cyan-400 uppercase tracking-tighter flex items-center gap-4">
+                                                <span className="w-2 h-8 bg-cyan-400"></span>
+                                                Known ASUS Protocols
+                                            </h3>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                                                {asusCodes.map((bc) => (
+                                                    <button
+                                                        key={bc.code}
+                                                        onClick={() => setManualCode(bc.code)}
+                                                        title={bc.prob}
+                                                        className={`text-left px-5 py-4 font-mono border-2 transition-all group ${manualCode === bc.code
+                                                            ? 'border-cyan-400 bg-cyan-400/10 text-white shadow-[0_0_15px_rgba(34,211,238,0.2)]'
+                                                            : 'border-[#111] bg-[#050505] text-[#444] hover:border-[#333] hover:text-[#888]'}`}
+                                                    >
+                                                        <div className={`text-lg font-black uppercase truncate ${manualCode === bc.code ? 'text-cyan-400' : 'text-[#eee] group-hover:text-cyan-400'}`}>
+                                                            {bc.code}
+                                                        </div>
+                                                        <div className={`text-xs mt-1 truncate whitespace-nowrap overflow-hidden text-ellipsis ${manualCode === bc.code ? 'text-cyan-100/50' : 'text-[#666]'}`}>
+                                                            // {bc.prob}
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                                 <button
                                     onClick={handleManualAnalyze}
@@ -527,6 +614,10 @@ const TroubleshootPage = () => {
 
                         {selectedBrand && method === 'camera' && (
                             <div className="bg-[#050505] p-10 border-2 border-[#1a1a1a] space-y-8 animate-in zoom-in-95 duration-500">
+                                <h3 className="text-3xl font-black text-[#ff4400] uppercase tracking-tighter flex items-center gap-4">
+                                    <span className="w-2 h-8 bg-[#ff4400]"></span>
+                                    3. Synchronize Link
+                                </h3>
                                 {!cameraOn ? (
                                     <div className="aspect-[21/9] bg-black flex flex-col items-center justify-center border-2 border-[#111] relative group overflow-hidden">
                                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#ff440011_0%,_transparent_75%)] opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
@@ -541,7 +632,7 @@ const TroubleshootPage = () => {
                                 ) : (
                                     <div className="space-y-6">
                                         <div className="relative aspect-video max-h-[600px] w-full mx-auto bg-black border-2 border-[#222] overflow-hidden group">
-                                            <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-contain grayscale brightness-50 contrast-125" />
+                                            <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-contain grayscale brightness-90 contrast-110" />
                                             <canvas ref={canvasRef} className="hidden" />
 
                                             {/* Advanced HUD */}
@@ -610,6 +701,40 @@ const TroubleshootPage = () => {
                 </div>
             ) : (
                 <DiagnosticDashboard />
+            )}
+
+            {/* Error Popup Modal */}
+            {errorPopup.show && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="w-full max-w-md bg-[#050505] border-2 border-red-600 shadow-[0_0_50px_rgba(220,38,38,0.2)] overflow-hidden">
+                        <div className="bg-red-600 p-3 flex justify-between items-center">
+                            <span className="text-black font-black uppercase text-xs tracking-widest flex items-center gap-2">
+                                <span className="w-2 h-2 bg-black animate-pulse"></span>
+                                System_Interrupt_Alert
+                            </span>
+                            <button 
+                                onClick={() => setErrorPopup({ ...errorPopup, show: false })}
+                                className="text-black hover:bg-white px-2 font-bold transition-colors"
+                            >
+                                [X]
+                            </button>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <div className="font-mono text-sm text-red-100 leading-relaxed uppercase tracking-tight">
+                                {errorPopup.message}
+                            </div>
+                            <button 
+                                onClick={() => setErrorPopup({ ...errorPopup, show: false })}
+                                className="w-full py-4 bg-red-600 text-black font-black uppercase text-xs tracking-[0.3em] hover:bg-white transition-all shadow-lg"
+                            >
+                                Acknowledge_&_Reset
+                            </button>
+                        </div>
+                        <div className="bg-black/50 p-2 text-center text-[8px] text-red-900 font-mono tracking-widest border-t border-red-900/20">
+                            ERR_CODE_0x882 // AUTH_DENIED
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Background Aesthetic */}

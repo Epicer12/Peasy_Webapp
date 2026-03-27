@@ -16,6 +16,7 @@ function Camera() {
   const captureCanvasRef = useRef(null);
   const overlayCanvasRef = useRef(null);
   const ws = useRef(null);
+  const streamRef = useRef(null); // Direct reference to MediaStream for cleanup
   const navigate = useNavigate();
 
   const [cameraOn, setCameraOn] = useState(false);
@@ -25,6 +26,9 @@ function Camera() {
   const [detailedResults, setDetailedResults] = useState({});
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [isAnalysing, setIsAnalysing] = useState(false);
+  const [isScanning, setIsScanning] = useState(false); // Manual scan feedback
+  const [isFlashing, setIsFlashing] = useState(false); // Shutter effect
+  const [identifyingItems, setIdentifyingItems] = useState(new Set()); // VLM in progress
 
   // Multi-mode state
   const [mode, setMode] = useState("standard"); // "standard" | "advanced"
@@ -36,22 +40,16 @@ function Camera() {
   const sendFrame = useCallback(() => {
     if (!ws.current || ws.current.readyState !== WebSocket.OPEN) return;
     if (!videoRef.current || !captureCanvasRef.current) {
-      // Retry shortly if video not ready (e.g. initial load)
-      requestAnimationFrame(sendFrame);
       return;
     }
     if (allFound) return;
 
     const video = videoRef.current;
-
-    // Safety check: video must have dimensions
     if (video.videoWidth === 0 || video.videoHeight === 0) {
-      requestAnimationFrame(sendFrame);
       return;
     }
 
     const canvas = captureCanvasRef.current;
-
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext("2d");
@@ -61,21 +59,36 @@ function Camera() {
       if (blob && ws.current && ws.current.readyState === WebSocket.OPEN) {
         ws.current.send(blob);
       } else {
-        // If send failed, maybe retry or just stop? 
-        // In ping-pong, if we fail to send, the loop dies. 
-        // So better to retry or log.
         console.warn("Frame send skipped/failed");
       }
     }, "image/jpeg", 0.7);
   }, [allFound]);
+
+  const handleManualCapture = () => {
+    if (isScanning || allFound) return;
+    
+    // Trigger Flash Effect
+    setIsFlashing(true);
+    setTimeout(() => setIsFlashing(false), 150);
+    
+    setIsScanning(true);
+    sendFrame();
+  };
 
   const handleDetectionResult = useCallback((data) => {
     // data: { objects: [...], locked_count: n, locked_items: [...] }
 
     // Update Locked Items State
     if (data.locked_items) {
+      const prevLocked = new Set(lockedItems);
       const newLocked = new Set(data.locked_items);
       setLockedItems(newLocked);
+
+      // Find components that were JUST locked and need VLM identification
+      const newlyLocked = data.locked_items.filter(item => !prevLocked.has(item));
+      if (newlyLocked.length > 0) {
+        autoIdentifyComponents(newlyLocked);
+      }
 
       // Check if all targets found
       const foundCount = TARGET_COMPONENTS.filter(t => newLocked.has(t)).length;
@@ -85,14 +98,10 @@ function Camera() {
       }
     }
 
-    // Draw Overlay
-    drawOverlay(data.objects || []);
-
-    // PING-PONG: Trigger next frame
-    // Use requestAnimationFrame to yield to UI thread if needed, or just call directly.
-    // requestAnimationFrame ensures smoother UI interaction.
-    requestAnimationFrame(() => sendFrame());
-  }, [sendFrame]);
+    // DRAW OVERLAY REMOVED FOR SEAMLESS UX
+    // drawOverlay(data.objects || []);
+    setIsScanning(false);
+  }, [sendFrame, lockedItems, allFound]);
 
   const drawOverlay = (objects) => {
     const canvas = overlayCanvasRef.current;
@@ -138,10 +147,12 @@ function Camera() {
 
   // Start Camera - Reverted to 640x480 for performance/latency balance
   const startCamera = async () => {
+    stopCamera(); // Clean up any existing trace
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480 }
       });
+      streamRef.current = stream; // Store for explicit cleanup
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.onloadedmetadata = () => {
@@ -164,59 +175,64 @@ function Camera() {
   };
 
   const stopCamera = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+    if (streamRef.current) {
+      console.log("Stopping all camera tracks...");
+      streamRef.current.getTracks().forEach(track => {
+        track.stop();
+        console.log(`Track ${track.label} stopped`);
+      });
+      streamRef.current = null;
+    }
+    
+    if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
   };
 
-  // Get detailed identification using Parallel Requests
-  const getComponentDetails = async () => {
-    setLoadingDetails(true);
+  // Automated Deep Identification for newly discovered components
+  const autoIdentifyComponents = async (components) => {
     setIsAnalysing(true);
-    setCameraOn(false); // Turn off camera immediately
-    const results = {};
+    
+    // Track which items are being identified
+    setIdentifyingItems(prev => {
+      const next = new Set(prev);
+      components.forEach(c => next.add(c));
+      return next;
+    });
 
     try {
-      if (mode === "standard") {
-        // Parallelized Standard Mode
-        const pool = Array.from(lockedItems).map(async (component) => {
+      const pool = components.map(async (component) => {
+        try {
           const quantity = MULTI_INSTANCE_ALLOWED.includes(component) ? quantities[component] : 1;
           const response = await fetch(
             `${API_BASE_URL}/api/identify-details?component_type=${component}&quantity=${quantity}`,
             { method: 'POST' }
           );
           const data = await response.json();
-          results[component] = { ...data, quantity };
-        });
-        await Promise.all(pool);
-      } else {
-        // Parallelized Advanced Mode
-        const pool = [];
-        for (const component of Array.from(lockedItems)) {
-          const count = instanceCounts[component] || 1;
-          results[component] = [];
-
-          for (let i = 0; i < count; i++) {
-            pool.push((async () => {
-              const response = await fetch(
-                `${API_BASE_URL}/api/identify-details?component_type=${component}&instance=${i}`,
-                { method: 'POST' }
-              );
-              const data = await response.json();
-              results[component][i] = data; // Assign to correct index
-            })());
-          }
+          
+          setDetailedResults(prev => ({
+            ...prev,
+            [component]: mode === "standard" ? { ...data, quantity } : data
+          }));
+        } catch (err) {
+          console.error(`Error identifying ${component}:`, err);
+        } finally {
+          setIdentifyingItems(prev => {
+            const next = new Set(prev);
+            next.delete(component);
+            return next;
+          });
         }
-        await Promise.all(pool);
-      }
-
-      setDetailedResults(results);
-    } catch (error) {
-      console.error('Error getting details:', error);
+      });
+      await Promise.all(pool);
     } finally {
-      setLoadingDetails(false);
+      setIsAnalysing(false);
     }
+  };
+
+  // Keep manual getComponentDetails as fallback or for re-scanning
+  const getComponentDetails = async () => {
+    autoIdentifyComponents(Array.from(lockedItems));
   };
 
   const unlockComponent = async (component, instance = null) => {
@@ -314,16 +330,16 @@ function Camera() {
       socket.onopen = () => {
         console.log("WS Connected");
         setConnectionStatus("connected");
-        // Kick off the loop
-        sendFrame();
       };
       socket.onclose = () => {
         console.log("WS Disconnected");
         setConnectionStatus("disconnected");
+        setIsScanning(false);
       };
       socket.onerror = (err) => {
         console.error("WS Error:", err);
         setConnectionStatus("error");
+        setIsScanning(false);
       };
 
       socket.onmessage = (event) => {
@@ -352,7 +368,7 @@ function Camera() {
       stopCamera();
       if (ws.current) ws.current.close();
     };
-  }, [cameraOn, handleDetectionResult, mode, sendFrame]);
+  }, [cameraOn, handleDetectionResult, mode]);
 
   return (
     <div className="flex flex-col h-full bg-[#050505] text-[#eeeeee] font-mono overflow-hidden">
@@ -390,7 +406,12 @@ function Camera() {
             {cameraOn ? (
               <div className="relative mb-6 bg-black border-2 border-[#333] aspect-[4/3]">
                 <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-contain" />
-                <canvas ref={overlayCanvasRef} className="absolute top-0 left-0 w-full h-full pointer-events-none" />
+                <canvas ref={overlayCanvasRef} className="absolute top-0 left-0 w-full h-full pointer-events-none hidden" />
+
+                {/* Shutter Flash Effect */}
+                {isFlashing && (
+                  <div className="absolute inset-0 bg-white z-[100] animate-pulse duration-75"></div>
+                )}
 
                 {allFound && cameraOn && (
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[#00ff88] text-black px-6 py-4 text-center border-2 border-white z-20">
@@ -400,10 +421,29 @@ function Camera() {
 
                 <button
                   onClick={() => setCameraOn(false)}
-                  className="absolute bottom-4 right-4 px-4 py-2 bg-[#ff4400] text-black font-bold uppercase tracking-widest border-2 border-[#ff4400] hover:bg-black hover:text-[#ff4400] transition-colors"
+                  className="absolute top-4 right-4 px-3 py-1 bg-black/50 text-[#ff4400] text-[10px] font-bold uppercase tracking-widest border border-[#ff4400] hover:bg-[#ff4400] hover:text-black transition-colors"
                 >
-                  TERMINATE_FEED
+                  HALT_SYSTEM
                 </button>
+
+                {!allFound && (
+                  <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2">
+                    <button
+                      onClick={handleManualCapture}
+                      disabled={isScanning}
+                      className={`px-10 py-4 font-black uppercase tracking-[0.2em] border-2 transition-all shadow-[0_0_20px_rgba(0,243,255,0.2)] ${
+                        isScanning 
+                          ? "bg-black border-[#666] text-[#666] cursor-wait" 
+                          : "bg-[#00f3ff] border-[#00f3ff] text-black hover:bg-black hover:text-[#00f3ff]"
+                      }`}
+                    >
+                      {isScanning ? "SCANNING_RESOURCES..." : "INITIATE_CAPTURE"}
+                    </button>
+                    <div className="text-[10px] text-[#666] bg-black/80 px-2 py-0.5 uppercase tracking-tighter">
+                      [ MANUAL_PULSE_REQUIRED ]
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-12 border-2 border-dashed border-[#333] bg-[#111] mb-6">
@@ -430,8 +470,12 @@ function Camera() {
               {TARGET_COMPONENTS.map(target => {
                 const isFound = lockedItems.has(target);
                 return (
-                  <div key={target} className={`p-3 bg-[#050505] flex items-center gap-4 border-2 ${isFound ? "border-[#00f3ff]" : "border-[#333]"}`}>
-                    <span className="text-xl">{isFound ? "▣" : "□"}</span>
+                  <div key={target} className={`p-3 bg-[#050505] flex items-center gap-4 border-2 transition-all ${isFound ? "border-[#00f3ff]" : "border-[#1a1a1a]"}`}>
+                    <span className="text-xl">
+                      {isFound ? (
+                        identifyingItems.has(target) ? "⚙️" : "▣"
+                      ) : "□"}
+                    </span>
 
                     {isFound && (
                       <img
@@ -443,7 +487,15 @@ function Camera() {
                     )}
 
                     <div className="flex-1">
-                      <div className={`font-bold uppercase tracking-wide ${isFound ? "text-[#00f3ff]" : "text-[#666]"}`}>{target.replace("_", " ")}</div>
+                      <div className={`font-bold uppercase tracking-wide transition-colors ${isFound ? (identifyingItems.has(target) ? "text-[#ffaa00]" : "text-[#00f3ff]") : "text-[#333]"}`}>
+                        {target.replace("_", " ")}
+                      </div>
+                      {identifyingItems.has(target) && (
+                        <div className="text-[9px] text-[#ffaa00] animate-pulse uppercase tracking-tighter">IDENTIFYING_MODEL...</div>
+                      )}
+                      {isFound && !identifyingItems.has(target) && detailedResults[target] && (
+                         <div className="text-[9px] text-[#00ff88] uppercase tracking-tighter">IDENTIFIED: {Array.isArray(detailedResults[target]) ? detailedResults[target][0]?.model : detailedResults[target].model}</div>
+                      )}
                     </div>
 
                     {isFound && (
@@ -473,98 +525,85 @@ function Camera() {
               })}
             </div>
           </div>
-
-          {lockedItems.size > 0 && (
-            <div className="p-6 bg-[#050505] border-t-2 border-[#333]">
-              <button
-                onClick={getComponentDetails}
-                disabled={loadingDetails}
-                className={`w-full py-4 bg-[#ccff00] text-black text-lg font-black uppercase tracking-widest border-2 border-[#ccff00] hover:bg-black hover:text-[#ccff00] transition-colors ${loadingDetails ? "opacity-50 cursor-not-allowed" : ""}`}
-              >
-                {loadingDetails ? "PROCESSING_DATA..." : "ANALYSE_SYSTEM"}
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Right Side: Results Panel */}
         <div className="flex-[1.2] bg-[#050505] flex flex-col overflow-hidden">
           <div className="p-6 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-[#333]">
-            {!loadingDetails && Object.keys(detailedResults).length === 0 && (
-              <div className="h-full flex flex-col items-center justify-center text-[#333]">
-                <div className="text-6xl mb-4 opacity-20">📊</div>
-                <p className="uppercase tracking-widest text-sm">// WAITING_FOR_DATA</p>
-              </div>
-            )}
-
-            {loadingDetails && (
-              <div className="h-full flex flex-col items-center justify-center">
-                <div className="w-12 h-12 border-4 border-[#333] border-t-[#00f3ff] rounded-none animate-spin mb-4"></div>
-                <p className="text-[#00f3ff] font-bold uppercase tracking-widest">RUNNING_NEURAL_NET...</p>
-              </div>
-            )}
-
-            {Object.keys(detailedResults).length > 0 && (
-              <h3 className="border-b-2 border-[#333] pb-2 mb-6 text-[#eeeeee] uppercase tracking-widest">DIAGNOSTIC_RESULTS</h3>
-            )}
-
-            {Object.entries(detailedResults).map(([component, details]) => {
-              const instances = Array.isArray(details) ? details : [details];
-              return (
-                <div key={component} className="mb-6 bg-[#050505] border-2 border-[#333]">
-                  <div className="p-2 bg-[#1a1a1a] border-b-2 border-[#333] flex justify-between">
-                    <h4 className="font-bold text-[#eeeeee] uppercase tracking-wider">{component.replace("_", " ")}</h4>
-                  </div>
-
-                  <div className="p-4">
-                    {instances.map((inst, i) => (
-                      <div key={i} className={`flex gap-4 ${i < instances.length - 1 ? "mb-6 border-b border-dashed border-[#333] pb-6" : ""}`}>
-                        <div className="w-24">
-                          <img
-                            src={`${API_BASE_URL}/api/snapshot/${component}${Array.isArray(details) ? `?instance=${i}` : ''}`}
-                            className="w-full border border-[#333] bg-[#111]"
-                            alt="Reference"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-lg font-bold text-[#00f3ff] uppercase leading-none mb-1">{inst.model || "UNKNOWN_MODEL"}</div>
-                          <div className="text-sm text-[#888] font-mono mb-2">{inst.brand} {inst.sub_brand}</div>
-
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="text-xs px-2 py-0.5 bg-[#111] border border-[#00f3ff] text-[#00f3ff]">
-                              CONF: {(inst.confidence * 100).toFixed(0)}%
-                            </div>
-                            {inst.is_ocr_confirmed && <div className="text-xs text-[#00ff88] uppercase">[OCR_VERIFIED]</div>}
-                          </div>
-
-                          {inst.notes && <p className="text-xs text-[#666] italic border-l-2 border-[#333] pl-2">"{inst.notes}"</p>}
-
-                          {inst.possible_models?.length > 0 && (
-                            <div className="mt-2">
-                              <div className="text-[10px] text-[#444] uppercase mb-1">ALTERNATIVES:</div>
-                              <div className="flex gap-2 flex-wrap">
-                                {inst.possible_models.map(m => (
-                                  <span key={m} className="text-[10px] px-1 bg-[#111] text-[#666] border border-[#333]">{m}</span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              {!loadingDetails && Object.keys(detailedResults).length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center text-[#333]">
+                  <div className="text-6xl mb-4 opacity-20">📊</div>
+                  <p className="uppercase tracking-widest text-sm">// WAITING_FOR_DATA</p>
                 </div>
-              );
-            })}
+              )}
+
+              {loadingDetails && (
+                <div className="h-full flex flex-col items-center justify-center">
+                  <div className="w-12 h-12 border-4 border-[#333] border-t-[#00f3ff] rounded-none animate-spin mb-4"></div>
+                  <p className="text-[#00f3ff] font-bold uppercase tracking-widest">RUNNING_NEURAL_NET...</p>
+                </div>
+              )}
+
+              {Object.keys(detailedResults).length > 0 && (
+                <h3 className="border-b-2 border-[#333] pb-2 mb-6 text-[#eeeeee] uppercase tracking-widest">DIAGNOSTIC_RESULTS</h3>
+              )}
+
+              {Object.entries(detailedResults).map(([component, details]) => {
+                const instances = Array.isArray(details) ? details : [details];
+                return (
+                  <div key={component} className="mb-6 bg-[#050505] border-2 border-[#333]">
+                    <div className="p-2 bg-[#1a1a1a] border-b-2 border-[#333] flex justify-between">
+                      <h4 className="font-bold text-[#eeeeee] uppercase tracking-wider">{component.replace("_", " ")}</h4>
+                    </div>
+
+                    <div className="p-4">
+                      {instances.map((inst, i) => (
+                        <div key={i} className={`flex gap-4 ${i < instances.length - 1 ? "mb-6 border-b border-dashed border-[#333] pb-6" : ""}`}>
+                          <div className="w-24">
+                            <img
+                              src={`${API_BASE_URL}/api/snapshot/${component}${Array.isArray(details) ? `?instance=${i}` : ''}`}
+                              className="w-full border border-[#333] bg-[#111]"
+                              alt="Reference"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-lg font-bold text-[#00f3ff] uppercase leading-none mb-1">{inst.model || "UNKNOWN_MODEL"}</div>
+                            <div className="text-sm text-[#888] font-mono mb-2">{inst.brand} {inst.sub_brand}</div>
+
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="text-xs px-2 py-0.5 bg-[#111] border border-[#00f3ff] text-[#00f3ff]">
+                                CONF: {(inst.confidence * 100).toFixed(0)}%
+                              </div>
+                              {inst.is_ocr_confirmed && <div className="text-xs text-[#00ff88] uppercase">[OCR_VERIFIED]</div>}
+                            </div>
+
+                            {inst.notes && <p className="text-xs text-[#666] italic border-l-2 border-[#333] pl-2">"{inst.notes}"</p>}
+
+                            {inst.possible_models?.length > 0 && (
+                              <div className="mt-2">
+                                <div className="text-[10px] text-[#444] uppercase mb-1">ALTERNATIVES:</div>
+                                <div className="flex gap-2 flex-wrap">
+                                  {inst.possible_models.map(m => (
+                                    <span key={m} className="text-[10px] px-1 bg-[#111] text-[#666] border border-[#333]">{m}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </main>
 
         {/* Hidden Capture Canvas */}
         <canvas ref={captureCanvasRef} className="hidden" />
-      </main>
-    </div>
-  );
-}
+      </div>
+    );
+  }
 
-
-export default Camera;
+  export default Camera;
