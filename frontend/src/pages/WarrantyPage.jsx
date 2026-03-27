@@ -13,6 +13,7 @@ import {
 import { auth } from '../firebase';
 import { TrashIcon, PencilIcon } from '@heroicons/react/24/solid';
 import { getWarranties } from '../services/warrantyService';
+import { API_BASE_URL } from '../utils/apiClient';
 
 const WarrantyPage = () => {
     const [file, setFile] = useState(null);
@@ -53,7 +54,7 @@ const WarrantyPage = () => {
             const currentUser = auth.currentUser;
             if (currentUser) token = await currentUser.getIdToken();
 
-            const response = await fetch('/api/warranty/list', {
+            const response = await fetch(`${API_BASE_URL}/api/warranty/list`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -76,7 +77,7 @@ const WarrantyPage = () => {
             const currentUser = auth.currentUser;
             if (currentUser) token = await currentUser.getIdToken();
 
-            const response = await fetch(`/api/warranty/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/api/warranty/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -215,7 +216,7 @@ const WarrantyPage = () => {
 
             if (!token) throw new Error("User not authenticated. Please log in again.");
 
-            const response = await fetch('/api/warranty/upload', {
+            const response = await fetch(`${API_BASE_URL}/api/warranty/upload`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
@@ -254,7 +255,7 @@ const WarrantyPage = () => {
             const currentUser = auth.currentUser;
             if (currentUser) token = await currentUser.getIdToken();
 
-            const response = await fetch('/api/warranty/finalize', {
+            const response = await fetch(`${API_BASE_URL}/api/warranty/finalize`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

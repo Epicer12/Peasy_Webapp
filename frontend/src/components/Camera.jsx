@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../utils/apiClient";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
-const WS_BASE_URL = API_BASE_URL.replace(/^http/, "ws");
+const WS_BASE_URL = (API_BASE_URL || window.location.origin).replace(/^http/, "ws");
 
 const TARGET_COMPONENTS = [
   "CPU", "CPU_COOLER", "CASE_FAN", "GPU", "HDD", "SSD",

@@ -5,6 +5,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import axios from 'axios';
 import { auth } from '../firebase';
+import { API_BASE_URL } from '../utils/apiClient';
 
 const DRACO_DECODER = 'https://www.gstatic.com/draco/versioned/decoders/1.5.6/';
 
@@ -42,7 +43,6 @@ export default function SecureModelViewer({ modelId }) {
 
     async function fetchModel() {
       try {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
         const response = await axios.get(`${API_BASE_URL}/api/models/${modelId}`, {
           headers: { Authorization: `Bearer ${userToken}` },
         });
