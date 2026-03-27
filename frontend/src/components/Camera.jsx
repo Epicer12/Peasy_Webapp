@@ -37,6 +37,8 @@ function Camera() {
   });
   const [instanceCounts, setInstanceCounts] = useState({}); // Advanced mode: {GPU: 2, RAM: 3, ...}
 
+  const handleDetectionResultRef = useRef(null);
+
   const sendFrame = useCallback(() => {
     if (!ws.current || ws.current.readyState !== WebSocket.OPEN) return;
     if (!videoRef.current || !captureCanvasRef.current) {
@@ -80,28 +82,30 @@ function Camera() {
 
     // Update Locked Items State
     if (data.locked_items) {
-      const prevLocked = new Set(lockedItems);
-      const newLocked = new Set(data.locked_items);
-      setLockedItems(newLocked);
-
-      // Find components that were JUST locked and need VLM identification
-      const newlyLocked = data.locked_items.filter(item => !prevLocked.has(item));
-      if (newlyLocked.length > 0) {
-        autoIdentifyComponents(newlyLocked);
-      }
+      setLockedItems(prevLocked => {
+        const newLocked = new Set(data.locked_items);
+        // Find components that were JUST locked and need VLM identification
+        const newlyLocked = data.locked_items.filter(item => !prevLocked.has(item));
+        if (newlyLocked.length > 0) {
+          autoIdentifyComponents(newlyLocked);
+        }
+        return newLocked;
+      });
 
       // Check if all targets found
-      const foundCount = TARGET_COMPONENTS.filter(t => newLocked.has(t)).length;
+      const foundCount = TARGET_COMPONENTS.filter(t => data.locked_items.includes(t)).length;
       if (foundCount >= TARGET_COMPONENTS.length) {
         setAllFound(true);
-        return; // Stop loop
       }
     }
 
-    // DRAW OVERLAY REMOVED FOR SEAMLESS UX
-    // drawOverlay(data.objects || []);
     setIsScanning(false);
-  }, [sendFrame, lockedItems, allFound]);
+  }, [autoIdentifyComponents]);
+
+  // Sync ref with the latest handler
+  useEffect(() => {
+    handleDetectionResultRef.current = handleDetectionResult;
+  }, [handleDetectionResult]);
 
   const drawOverlay = (objects) => {
     const canvas = overlayCanvasRef.current;
@@ -190,7 +194,7 @@ function Camera() {
   };
 
   // Automated Deep Identification for newly discovered components
-  const autoIdentifyComponents = async (components) => {
+  const autoIdentifyComponents = useCallback(async (components) => {
     setIsAnalysing(true);
     
     // Track which items are being identified
@@ -228,7 +232,7 @@ function Camera() {
     } finally {
       setIsAnalysing(false);
     }
-  };
+  }, [mode, quantities]);
 
   // Keep manual getComponentDetails as fallback or for re-scanning
   const getComponentDetails = async () => {
@@ -344,7 +348,9 @@ function Camera() {
 
       socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        handleDetectionResult(data);
+        if (handleDetectionResultRef.current) {
+          handleDetectionResultRef.current(data);
+        }
       };
 
       ws.current = socket;
@@ -368,7 +374,7 @@ function Camera() {
       stopCamera();
       if (ws.current) ws.current.close();
     };
-  }, [cameraOn, handleDetectionResult, mode]);
+  }, [cameraOn, mode]);
 
   return (
     <div className="flex flex-col h-full bg-[#050505] text-[#eeeeee] font-mono overflow-hidden">
