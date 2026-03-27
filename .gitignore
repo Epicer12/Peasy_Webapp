@@ -22,6 +22,9 @@ env/
 backend/.env
 .pytest_cache
 
+# Agent (n8n)
+agent/configs/.env
+
 # YOLO / AI
 runs/
 *.onnx

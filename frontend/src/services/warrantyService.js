@@ -1,4 +1,5 @@
 import { auth } from '../firebase';
+import { API_BASE_URL } from '../utils/apiClient';
 
 export const getWarranties = async () => {
     try {
@@ -6,7 +7,7 @@ export const getWarranties = async () => {
         if (!currentUser) return [];
 
         const token = await currentUser.getIdToken();
-        const response = await fetch('/api/warranty/list', {
+        const response = await fetch(`${API_BASE_URL}/api/warranty/list`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }

@@ -1,10 +1,12 @@
+import { API_BASE_URL } from '../utils/apiClient';
+
 /**
  * Service for Community Hub API interactions
  */
 
 export const getCommunityBuilds = async (limit = 20, offset = 0) => {
     try {
-        const response = await fetch(`/api/community/builds?limit=${limit}&offset=${offset}`);
+        const response = await fetch(`${API_BASE_URL}/api/community/builds?limit=${limit}&offset=${offset}`);
         if (!response.ok) throw new Error('Failed to fetch community builds');
         return await response.json();
     } catch (e) {
@@ -15,7 +17,7 @@ export const getCommunityBuilds = async (limit = 20, offset = 0) => {
 
 export const getCommunityBuildById = async (id) => {
     try {
-        const response = await fetch(`/api/community/builds/${id}`);
+        const response = await fetch(`${API_BASE_URL}/api/community/builds/${id}`);
         if (!response.ok) throw new Error('Failed to fetch build details');
         return await response.json();
     } catch (e) {
@@ -26,7 +28,7 @@ export const getCommunityBuildById = async (id) => {
 
 export const toggleLike = async (id, token) => {
     try {
-        const response = await fetch(`/api/community/builds/${id}/like`, {
+        const response = await fetch(`${API_BASE_URL}/api/community/builds/${id}/like`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -42,7 +44,7 @@ export const toggleLike = async (id, token) => {
 
 export const addComment = async (id, commentText, isAnonymous, token) => {
     try {
-        const response = await fetch(`/api/community/builds/${id}/comment`, {
+        const response = await fetch(`${API_BASE_URL}/api/community/builds/${id}/comment`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -62,7 +64,7 @@ export const addComment = async (id, commentText, isAnonymous, token) => {
 
 export const publishProject = async (id, buildStory, imageUrl, authorName, displayName, token) => {
     try {
-        const response = await fetch(`/api/community/publish/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/api/community/publish/${id}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -85,7 +87,7 @@ export const publishProject = async (id, buildStory, imageUrl, authorName, displ
 
 export const updateCommunityBuild = async (id, name, authorName, buildStory, token) => {
     try {
-        const response = await fetch(`/api/community/builds/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/api/community/builds/${id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -107,7 +109,7 @@ export const updateCommunityBuild = async (id, name, authorName, buildStory, tok
 
 export const getUserCommunityBuilds = async (token) => {
     try {
-        const response = await fetch('/api/community/my-builds', {
+        const response = await fetch(`${API_BASE_URL}/api/community/my-builds`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
