@@ -27,7 +27,7 @@ import ProfilePage from './pages/ProfilePage';
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/app">
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<AuthPage />} />
