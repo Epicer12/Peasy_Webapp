@@ -7,8 +7,7 @@ class ComponentParser:
         spec = {
             "brand": "Unknown",
             "socket": "Unknown",
-            "series": "Unknown",
-            "image": "https://via.placeholder.com/150" # Default placeholder
+            "series": "Unknown"
         }
 
         if "intel" in name:
@@ -36,9 +35,7 @@ class ComponentParser:
         name = name.lower()
         spec = {
             "socket": "Unknown",
-            "ram_type": "DDR4", # Defaulting to DDR4 is risky but common, let's try to detect
-            "form_factor": "ATX",
-            "image": "https://via.placeholder.com/150"
+            "form_factor": "ATX"
         }
 
         # Chipset detection for Socket
@@ -81,8 +78,7 @@ class ComponentParser:
         spec = {
             "type": "Unknown",
             "capacity": "Unknown",
-            "speed": "Unknown",
-            "image": "https://via.placeholder.com/150"
+            "speed": "Unknown"
         }
         
         if "ddr5" in name:
@@ -104,8 +100,7 @@ class ComponentParser:
         name = name.lower()
         spec = {
             "chipset": "Unknown",
-            "memory": "Unknown",
-            "image": "https://via.placeholder.com/150"
+            "memory": "Unknown"
         }
         
         # Chipset/Series Detection
@@ -138,8 +133,7 @@ class ComponentParser:
         name = name.lower()
         spec = {
             "wattage": "Unknown",
-            "efficiency": "Unknown",
-            "image": "https://via.placeholder.com/150"
+            "efficiency": "Unknown"
         }
         
         # Wattage
@@ -160,8 +154,7 @@ class ComponentParser:
         name = name.lower()
         spec = {
             "form_factor": "ATX", # Default assumption
-            "type": "Mid Tower",
-            "image": "https://via.placeholder.com/150"
+            "type": "Mid Tower"
         }
         
         # Determine strict form factor limits
@@ -181,9 +174,7 @@ class ComponentParser:
     def parse_cooler(name):
         name = name.lower()
         spec = {
-            "type": "Air",
-            "socket_support": [],
-            "image": "https://via.placeholder.com/150"
+            "socket_support": []
         }
         
         if "liquid" in name or "aio" in name or "water" in name or re.search(r"\d+mm", name):
@@ -205,8 +196,7 @@ class ComponentParser:
         spec = {
             "type": "HDD", 
             "capacity": "Unknown",
-            "interface": "SATA",
-            "image": "https://via.placeholder.com/150"
+            "interface": "SATA"
         }
         
         # Type Detection

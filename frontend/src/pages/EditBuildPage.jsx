@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftIcon, PencilSquareIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
-import { mockBuilds } from '../utils/mockCommunityData';
+import { getCommunityBuildById, updateCommunityBuild } from '../services/communityService';
+import { auth } from '../firebase';
 
 const EditBuildPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     const [formData, setFormData] = useState({
         userName: '',
@@ -16,35 +18,44 @@ const EditBuildPage = () => {
     });
 
     useEffect(() => {
-        // Mock fetching data for the build
-        const build = mockBuilds.find(b => b.id === id) || mockBuilds[0];
-        const newFormData = {
-            userName: build.userName,
-            buildName: build.buildName,
-            story: build.story,
+        const fetchBuildDetails = async () => {
+            try {
+                const build = await getCommunityBuildById(id);
+                setFormData({
+                    userName: build.author_name || build.user_email?.split('@')[0] || '',
+                    buildName: build.name || '',
+                    story: build.build_story || '',
+                });
+            } catch (error) {
+                console.error("Error fetching build for edit:", error);
+                alert("Failed to load build details.");
+                navigate('/community/my-builds');
+            } finally {
+                setLoading(false);
+            }
         };
-        // Only update state if data has changed
-        if (
-            formData.userName !== newFormData.userName ||
-            formData.buildName !== newFormData.buildName ||
-            formData.story !== newFormData.story
-        ) {
-            setFormData(newFormData);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id]);
+        fetchBuildDetails();
+    }, [id, navigate]);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        const user = auth.currentUser;
+        if (!user) return;
+        
         setIsSubmitting(true);
-
-        setTimeout(() => {
-            setIsSubmitting(false);
+        try {
+            const token = await user.getIdToken();
+            await updateCommunityBuild(id, formData.buildName, formData.userName, formData.story, token);
             setIsSuccess(true);
             setTimeout(() => {
                 navigate('/community/my-builds');
             }, 2000);
-        }, 1500);
+        } catch (error) {
+            console.error("Error updating build:", error);
+            alert("Failed to update build.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (isSuccess) {
@@ -54,6 +65,16 @@ const EditBuildPage = () => {
                 <div className="space-y-2">
                     <h2 className="text-3xl font-black text-white uppercase italic">Changes Saved!</h2>
                     <p className="text-gray-400 font-mono">Syncing with HIVE-MIND...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-[#ccff00] font-mono text-xl animate-pulse">
+                    FETCHING_RECORD...
                 </div>
             </div>
         );

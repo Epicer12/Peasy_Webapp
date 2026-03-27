@@ -18,9 +18,8 @@ class ComponentTracker:
         self.accumulated_counts = defaultdict(int) 
         self.gap_counts = defaultdict(int) 
         
-        # Calibration: 3-Second Rule & Flicker Protection
-        # High-speed local inference allows for consistent visibility checks.
-        self.LOCK_THRESHOLD = 45 # ~3 seconds at 15 FPS
+        # Calibration: Immediate Lock for Static Capture
+        self.LOCK_THRESHOLD = 1
         self.MAX_GAP_TOLERANCE = 5 
         
         # Build Summary Persistence

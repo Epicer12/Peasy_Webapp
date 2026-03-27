@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     PencilSquareIcon,
@@ -12,10 +12,16 @@ import {
     ArrowsRightLeftIcon,
     XMarkIcon,
     CheckIcon,
-    PhotoIcon
+    PhotoIcon,
+    PresentationChartLineIcon,
+    CubeTransparentIcon
 } from '@heroicons/react/24/outline';
-import { getProjectById, updateProject, getProjects } from '../services/componentService';
+import { getProjectById, updateProject, getProjects, analyzeBottleneck } from '../services/componentService';
 import { auth } from '../firebase';
+import BottleneckAnalysisModal from '../components/modals/BottleneckAnalysisModal';
+import PerformanceDashboardModal from '../components/modals/PerformanceDashboardModal';
+import PerformanceSummary from '../components/build/PerformanceSummary';
+import SecureModelViewer from '../components/SecureModelViewer';
 
 const BuildDetailsPage = () => {
     const { projectId } = useParams();
@@ -24,12 +30,23 @@ const BuildDetailsPage = () => {
     const [allProjects, setAllProjects] = useState([]);
     const [loading, setLoading] = useState(true);
     const [updatingStatus, setUpdatingStatus] = useState(false);
+    const [guideData, setGuideData] = useState(null);
+    const [isGuideLoading, setIsGuideLoading] = useState(false);
 
     // UI States
     const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+    const [is3DModalOpen, setIs3DModalOpen] = useState(false);
     const [editingCompIndex, setEditingCompIndex] = useState(null);
     const [editForm, setEditForm] = useState(null);
 
+    // Bottleneck States
+    const [isBottleneckModalOpen, setIsBottleneckModalOpen] = useState(false);
+    const [isPerfModalOpen, setIsPerfModalOpen] = useState(false);
+    const [bottleneckReport, setBottleneckReport] = useState(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    const [sessionId] = useState(() => "build_" + Math.floor(Math.random() * 1000000));
+    
     useEffect(() => {
         const fetchProject = async () => {
             try {
@@ -57,6 +74,8 @@ const BuildDetailsPage = () => {
         fetchProject();
         fetchAllProjects();
     }, [projectId]);
+
+
 
     const handleStatusChange = async (newStatus) => {
         setUpdatingStatus(true);
@@ -120,6 +139,126 @@ const BuildDetailsPage = () => {
         }
     };
 
+    const handleDetectBottlenecks = useCallback(async (showModal = true) => {
+        setIsAnalyzing(true);
+        try {
+            const report = await analyzeBottleneck(project.components);
+            setBottleneckReport(report);
+            if (showModal) setIsBottleneckModalOpen(true);
+        } catch (error) {
+            console.error("Error analyzing bottleneck:", error);
+            alert("Failed to analyze build balance.");
+        } finally {
+            setIsAnalyzing(false);
+        }
+    }, [project]);
+
+    // Auto-analyze when project is loaded
+    useEffect(() => {
+        if (project && project.components && !bottleneckReport && !isAnalyzing) {
+            handleDetectBottlenecks(false);
+        }
+    }, [project, bottleneckReport, isAnalyzing, handleDetectBottlenecks]);
+
+    const active3DModel = 'pc2';
+
+    // --- AI Agent: Assembly Guide Logic ---
+    const AGENT_BASE_URL = import.meta.env.VITE_AGENT_BASE_URL;
+
+    const handleGetAssemblyGuide = async () => {
+        setIsGuideLoading(true);
+        try {
+            const response = await fetch(`${AGENT_BASE_URL}/webhook/assembly-guide`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    projectId: projectId,
+                    userId: auth.currentUser?.uid,
+                    userEmail: auth.currentUser?.email,
+                    buildName: project?.name,
+                    components: project?.components,
+                    sessionId: sessionId
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to reach AI Agent');
+
+            let data;
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                data = await response.json();
+            } else {
+                // If it's text/plain, wrap it in our expected object format
+                const text = await response.text();
+                data = {
+                    step: text,
+                    current: 1, // Fallback
+                    total: 10   // Fallback
+                };
+            }
+
+            setGuideData(data);
+
+            // Navigate to GuidePage with the initial data and the current hardware list
+            // Navigate to GuidePage with the initial data, project ID, components, and the session ID
+            navigate('/guide', { 
+                state: { 
+                    initialGuide: data, 
+                    projectId: projectId, 
+                    existingComponents: project.components,
+                    sessionId: sessionId
+                } 
+            });
+        } catch (error) {
+            console.error("Agent communication error:", error);
+            // Check if it's a CORS issue or a JSON parsing issue
+            if (error.name === 'SyntaxError') {
+                console.warn("Agent returned non-JSON response. Attempting to recover...");
+            }
+            alert("The AI Agent is currently recalibrating. Please make sure the n8n workflow is ACTIVE and set to 'Respond to Webhook' correctly.");
+        } finally {
+            setIsGuideLoading(false);
+        }
+    };
+
+    const handleNextStep = async () => {
+        setIsGuideLoading(true);
+        try {
+            const response = await fetch(`${AGENT_BASE_URL}/webhook/assembly-guide`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    chatInput: "NEXT",
+                    projectId: projectId
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch next step');
+
+            let data;
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                data = {
+                    step: text,
+                    current: (guideData?.current || 0) + 1,
+                    total: guideData?.total || 10
+                };
+            }
+            setGuideData(data);
+        } catch (error) {
+            console.error("Error fetching next step:", error);
+        } finally {
+            setIsGuideLoading(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-[#050505] flex items-center justify-center">
@@ -153,6 +292,32 @@ const BuildDetailsPage = () => {
             default: return { color: "#eeeeee", borderColor: "#333" };
         }
     };
+
+    // Calculate Saved Guide Progress from components column
+    const savedGuideObj = project?.components?.find(c => c.type === 'assembly_guide');
+    const savedGuideSteps = savedGuideObj ? savedGuideObj.data : [];
+    const hasSavedGuide = savedGuideSteps.length > 0;
+
+    let savedGuideProgressPct = 0;
+    if (hasSavedGuide) {
+        let totalPct = 0;
+        savedGuideSteps.forEach(step => {
+            if (Array.isArray(step.instructions)) {
+                const instCount = step.instructions.length;
+                if (instCount === 0) {
+                    totalPct += 10;
+                } else {
+                    let tickedCount = 0;
+                    step.instructions.forEach(inst => {
+                        if (inst.status === 'ticked') tickedCount++;
+                    });
+                    totalPct += (tickedCount / instCount) * 10;
+                }
+            }
+        });
+        savedGuideProgressPct = Math.floor(totalPct);
+        if (savedGuideProgressPct > 100) savedGuideProgressPct = 100;
+    }
 
     return (
         <div className="min-h-screen bg-[#050505] text-[#eeeeee] p-5 md:p-10 selection:bg-[#00f3ff] selection:text-black">
@@ -208,17 +373,26 @@ const BuildDetailsPage = () => {
                         </div>
 
                         <div className="space-y-6">
-                            {project.components && project.components.map((comp, idx) => (
+                            {project.components && project.components.filter(c => c.type !== 'assembly_guide').map((comp, idx) => (
                                 <div key={idx} className={`group bg-[#0a0a0a] border ${comp.isBought ? 'border-[#ccff00]/40' : 'border-[#1a1a1a]'} p-8 hover:border-[#00f3ff44] transition-all relative overflow-hidden`}>
                                     <div className="flex flex-col md:flex-row gap-8 items-start relative z-10">
-                                        <div className={`w-28 h-28 bg-[#1a1a1a] border-2 ${comp.isBought ? 'border-[#ccff00]' : 'border-[#222]'} flex-shrink-0 flex items-center justify-center relative overflow-hidden`}>
-                                            <div className="text-[#333] text-[10px] font-mono-tech uppercase transform -rotate-12 group-hover:text-[#00f3ff] transition-colors font-black">HW_NODE</div>
+                                        <div className={`w-28 h-28 bg-[#1a1a1a] border-2 ${comp.isBought ? 'border-[#ccff00]' : 'border-[#222]'} flex-shrink-0 flex items-center justify-center relative overflow-hidden group/img`}>
+                                            {(comp.image || comp.image_url) ? (
+                                                <img
+                                                    src={comp.image || comp.image_url}
+                                                    alt={comp.name}
+                                                    style={{ transform: comp.image_rotate ? `rotate(${comp.image_rotate}deg)` : 'none' }}
+                                                    className="object-contain w-full h-full p-2 filter grayscale group-hover/img:grayscale-0 transition-all duration-700 ease-out"
+                                                />
+                                            ) : (
+                                                <div className="text-[#333] text-[10px] font-mono-tech uppercase transform -rotate-12 group-hover/img:text-[#00f3ff] transition-colors font-black">HW_NODE</div>
+                                            )}
                                         </div>
 
                                         <div className="flex-grow min-w-0 h-full flex flex-col">
                                             <div className="flex justify-between items-start gap-6 mb-4">
                                                 <div className="min-w-0 flex-grow">
-                                                    <div className="text-[#00f3ff] text-[10px] font-black font-mono-tech uppercase tracking-widest border-b border-[#1a1a1a] inline-block pb-1">{comp.type || "UNKNOWN"}</div>
+                                                    <div className="text-[#00f3ff] text-[10px] font-black font-mono-tech uppercase tracking-widest border-b border-[#1a1a1a] inline-block pb-1">{comp.type || ""}</div>
                                                     <h3 className="text-2xl font-black uppercase tracking-tight text-white group-hover:text-[#00f3ff] transition-colors leading-tight">{comp.name}</h3>
                                                 </div>
                                                 <div className="flex gap-3 flex-shrink-0">
@@ -230,7 +404,7 @@ const BuildDetailsPage = () => {
                                             {/* Attribute mapping */}
                                             <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8 border-t border-[#1a1a1a] pt-4 mb-8">
                                                 {Object.entries(comp).map(([key, value]) => {
-                                                    if (['name', 'type', 'id', 'image', 'price', 'specs', 'isBought'].includes(key)) return null;
+                                                    if (['name', 'type', 'id', 'image', 'image_url', 'image_rotate', 'price', 'specs', 'isBought'].includes(key)) return null;
                                                     if (!value) return null;
                                                     return (
                                                         <div key={key} className="flex flex-col">
@@ -269,16 +443,28 @@ const BuildDetailsPage = () => {
 
                     {/* Action Panel */}
                     <div className="space-y-8">
-                        <div className="bg-[#0a0a0a] border border-[#333] p-8 space-y-8 sticky top-10 shadow-2xl">
+                        <div className="bg-[#0a0a0a] border border-[#333] p-8 space-y-8 sticky top-[-15px] shadow-2xl">
                             <div className="text-[11px] font-black font-mono-tech text-[#00f3ff] border-b-2 border-[#1a1a1a] pb-6 uppercase tracking-[0.3em]">CORE_COMMAND_PANEL</div>
                             <div className="flex flex-col gap-4">
                                 <button className="w-full bg-[#ccff00] text-black py-4 text-[12px] font-black uppercase tracking-widest hover:bg-white transition-all flex items-center justify-center gap-2 group">
                                     <ShieldCheckIcon className="w-5 h-5" />
                                     CHECK_COMPATIBILITY
                                 </button>
-                                <button className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[12px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all flex items-center justify-center gap-2">
-                                    <BarsArrowUpIcon className="w-5 h-5" />
-                                    DETECT_BOTTLENECKS
+                                <button
+                                    className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[12px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all flex items-center justify-center gap-2"
+                                    onClick={handleDetectBottlenecks}
+                                    disabled={isAnalyzing}
+                                >
+                                    {isAnalyzing ? <ArrowPathIcon className="w-5 h-5 animate-spin" /> : <BarsArrowUpIcon className="w-5 h-5" />}
+                                    {isAnalyzing ? "CALCULATING_BALANCE..." : "DETECT_BOTTLENECKS"}
+                                </button>
+                                <button
+                                    className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[12px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all flex items-center justify-center gap-2 group"
+                                    onClick={() => setIsPerfModalOpen(true)}
+                                    disabled={!bottleneckReport}
+                                >
+                                    <PresentationChartLineIcon className="w-5 h-5 group-hover:text-[#00f3ff] transition-colors" />
+                                    PERFORMANCE_DASHBOARD
                                 </button>
                                 <button
                                     className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[13px] font-black uppercase tracking-widest hover:border-[#00f3ff] hover:text-[#00f3ff] transition-all flex items-center justify-center gap-2"
@@ -287,8 +473,37 @@ const BuildDetailsPage = () => {
                                     <ArrowsRightLeftIcon className="w-5 h-5" />
                                     COMPARE_BUILDS
                                 </button>
-                                <button className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[13px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all font-mono-tech">GET_ASSEMBLY_GUIDE</button>
-                                <button className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[13px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all font-mono-tech">SHARE_WITH_COMMUNITY</button>
+
+                                {hasSavedGuide ? (
+                                    <button
+                                        className="w-full border-2 border-[#00ff88] text-[#00ff88] py-4 text-[13px] font-black uppercase tracking-widest hover:bg-[#00ff88] hover:text-black transition-all font-mono-tech flex justify-center items-center gap-2 shadow-[0_0_15px_rgba(0,255,136,0.1)]"
+                                        onClick={() => navigate('/guide', { state: { initialGuide: savedGuideSteps, projectId: project.id, isViewingOnly: true, existingComponents: project.components } })}
+                                    >
+                                        VIEW SAVED GUIDE ({savedGuideProgressPct}%)
+                                    </button>
+                                ) : (
+                                    <button
+                                        className={`w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[13px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all font-mono-tech ${isGuideLoading ? 'animate-pulse opacity-50' : ''}`}
+                                        onClick={handleGetAssemblyGuide}
+                                        disabled={isGuideLoading}
+                                    >
+                                        {isGuideLoading ? 'AGENT_COMPUTING...' : 'GET_ASSEMBLY_GUIDE'}
+                                    </button>
+                                )}
+
+                                <button
+                                    className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[13px] font-black uppercase tracking-widest hover:border-[#00f3ff] hover:text-[#00f3ff] transition-all flex items-center justify-center gap-2 group"
+                                    onClick={() => setIs3DModalOpen(true)}
+                                >
+                                    <CubeTransparentIcon className="w-5 h-5 group-hover:text-[#00f3ff] transition-colors" />
+                                    3D_HARDWARE_PREVIEW
+                                </button>
+                                <button
+                                    className="w-full border-2 border-[#333] text-[#eeeeee] py-4 text-[13px] font-black uppercase tracking-widest hover:border-[#00f3ff] transition-all font-mono-tech"
+                                    onClick={() => navigate('/community/upload', { state: { prefillBuildId: project.id } })}
+                                >
+                                    SHARE_WITH_COMMUNITY
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -336,7 +551,7 @@ const BuildDetailsPage = () => {
 
                                 {/* Dynamic Attributes Editing */}
                                 {Object.entries(editForm).map(([key, value]) => {
-                                    if (['name', 'type', 'id', 'image', 'price', 'specs', 'isBought'].includes(key)) return null;
+                                    if (['name', 'type', 'id', 'image', 'image_url', 'image_rotate', 'price', 'specs', 'isBought'].includes(key)) return null;
                                     return (
                                         <div key={key} className="space-y-4">
                                             <label className="text-[10px] font-black font-mono-tech text-[#555] uppercase tracking-widest">{key.replace(/_/g, ' ')}</label>
@@ -390,6 +605,46 @@ const BuildDetailsPage = () => {
                         </div>
                         <div className="p-6 bg-[#050505] border-t border-[#111] text-[9px] font-mono-tech text-[#444] uppercase tracking-widest text-center">
                             SELECT_A_SAVED_CONSTRUCT_TO_INITIATE_DIFFERENTIAL_ANALYSIS
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Bottleneck Analysis Modal */}
+            <BottleneckAnalysisModal
+                isOpen={isBottleneckModalOpen}
+                onClose={() => setIsBottleneckModalOpen(false)}
+                report={bottleneckReport}
+            />
+            <PerformanceDashboardModal
+                isOpen={isPerfModalOpen}
+                onClose={() => setIsPerfModalOpen(false)}
+                report={bottleneckReport}
+            />
+
+            {/* 3D Hardware Preview Modal */}
+            {is3DModalOpen && (
+                <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-[100] flex items-center justify-center p-6">
+                    <div className="bg-[#0a0a0a] border-2 border-[#00f3ff] w-full max-w-5xl h-[80vh] flex flex-col overflow-hidden shadow-[0_0_50px_rgba(0,243,255,0.15)] relative">
+                        <div className="bg-[#111] p-6 border-b border-[#333] flex justify-between items-center shrink-0">
+                            <div className="flex items-center gap-4">
+                                <div className="text-[#00f3ff] text-xs font-black font-mono-tech uppercase tracking-widest flex items-center gap-2">
+                                    <CubeTransparentIcon className="w-5 h-5" />
+                                    3D_HARDWARE_PREVIEW // {active3DModel.toUpperCase()}
+                                </div>
+                                <div className="text-[10px] text-[#666] font-mono-tech border border-[#333] px-2 py-0.5 rounded-sm">
+                                    REPRESENTATIVE_MODEL
+                                </div>
+                            </div>
+                            <button onClick={() => setIs3DModalOpen(false)} className="text-[#444] hover:text-white transition-colors"><XMarkIcon className="w-6 h-6" /></button>
+                        </div>
+                        <div className="flex-1 bg-black relative">
+                            <SecureModelViewer modelId={active3DModel} />
+
+                            {/* Overlay UI elements for aesthetics */}
+                            <div className="absolute bottom-6 right-6 pointer-events-none text-right">
+                                <div className="text-[10px] text-[#00f3ff] font-mono-tech font-bold uppercase tracking-widest">INTERACTIVE_PREVIEW</div>
+                                <div className="text-[8px] text-[#444] font-mono-tech">DRAG TO ROTATE // SCROLL TO ZOOM</div>
+                            </div>
                         </div>
                     </div>
                 </div>
