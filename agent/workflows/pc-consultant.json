@@ -1,0 +1,151 @@
+{
+  "name": "PC Chatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pc-consultant",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -128,
+        16
+      ],
+      "id": "43bdb1d2-457a-4e72-9340-96e0a7f35571",
+      "name": "Webhook",
+      "webhookId": "8cd10841-df19-4332-9ed7-5fdea8bbe619"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=COMPONENTS IN THIS BUILD:\n{{ JSON.stringify($json.body.components) }}\n\nUSER QUESTION:\n{{ $json.body.chatInput || $json.body.input || \"Hello! I need help.\" }}\n\nInstructions:\n- Use the COMPONENTS list above to give specific technical advice.\n- Always prioritize this most recent User Question.\n- If you cannot find the hardware in the list above, only then provide general advice.\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=\"You are a friendly and expert PC Technical Consultant. \n\nYOUR ONLY GOAL:\n- Answer the user's specific questions about PC assembly, components, or troubleshooting.\n- Use your technical knowledge of the specific [Brand] and [Model] of parts stored in your session memory to give precise advice.\n\nSTRICT CONSTRAINTS:\n- DO NOT provide a 10-step assembly guide.\n- DO NOT use the format 'Step X/10'.\n- DO NOT ask for a JSON file if it is already in your memory.\n- If the user asks something dangerous (like opening a Power Supply), give a clear safety warning.\n\nTONE & STYLE:\n- Be positive, encouraging, and professional.\n- If a question is NOT related to PC building, politely inform the user: 'I am specialized in PC assembly; I can't help with that, but I'm happy to answer any build-related questions!'\"\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        96,
+        16
+      ],
+      "id": "b02b2883-dedf-4232-8671-ff81f09e3d59",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama3:latest",
+        "options": {
+          "temperature": 0.8,
+          "numCtx": 4096
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        272
+      ],
+      "id": "e1928f7b-4dfb-4f5a-b8d5-9a7e66dfde93",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "ILp90m1pP61gPRiL",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{$node[\"Webhook\"].json[\"body\"][\"sessionId\"]}}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        144,
+        256
+      ],
+      "id": "ccaa802e-fafa-4cee-b5c8-923b4a1cc75b",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"reply\": {{ JSON.stringify($json.output) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        464,
+        16
+      ],
+      "id": "cb0c3a52-71ff-43cb-98e5-29fdd8d49c55",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "4674e0c6-18b2-45d9-ab47-9a77db52aead",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3d705e528dd302d3d4a94ccc42f2e4ce5bad730d88a719457d3947260eb9f51c"
+  },
+  "id": "aACvHwRsBGy9ZB3W",
+  "tags": []
+}

@@ -1,0 +1,1602 @@
+[
+    {
+        "name": "Intel® Core i3-12100F Processor 12M Cache, up to 4.30 GHz",
+        "category": "Processor",
+        "price": 39000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i3-12100f-processor-12m-cache-up-to-430-ghz-1",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:45.687971"
+    },
+    {
+        "name": "AMD Ryzen 7 9850X3D Desktop Processor 96M Cache",
+        "category": "Processor",
+        "price": 182000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-9850x3d-desktop-processor-96m-cache-1",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:45.687971"
+    },
+    {
+        "name": "AMD Ryzen™ 7 5700G (up to 4.6Ghz 8-cores 16-threads) 16M Cache",
+        "category": "Processor",
+        "price": 62500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-5700g-up-to-46ghz-8-cores-16-threads-16m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:45.691641"
+    },
+    {
+        "name": "AMD Ryzen™ 9 9950X3D (up to 5.7Ghz 16-cores 32-threads) 128M Cache - Tray",
+        "category": "Processor",
+        "price": 228000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-9-9950x3d-up-to-57ghz-16-cores-32-threads-128m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:45.693641"
+    },
+    {
+        "name": "Intel® Core™ Ultra 5 Processor 235 (24M Cache, up to 5.00 GHz)",
+        "category": "Processor",
+        "price": 79500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-ultra-5-processor-235-24m-cache-up-to-500-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:45.693641"
+    },
+    {
+        "name": "AMD Ryzen™ 9 9900X3D (up to 5.5Ghz 12-cores 24-threads) 128M Cache",
+        "category": "Processor",
+        "price": 218500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-9-9900x3d-up-to-55ghz-12-cores-24-threads-128m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:45.693641"
+    },
+    {
+        "name": "AMD Ryzen 7 9800X3D (Up to 5.2 GHz 8-Cores 16-Treads ) 96M Cache",
+        "category": "Processor",
+        "price": 162500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-9800x3d-up-to-52-ghz-8-cores-16-treads-96m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:45.696296"
+    },
+    {
+        "name": "AMD Ryzen 7 7700 (up to 5.3Ghz 8-cores 16-threads) 32M Cache - TRAY",
+        "category": "Processor",
+        "price": 76500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-7700-up-to-53ghz-8-cores-16-threads-32m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:45.696296"
+    },
+    {
+        "name": "AMD RYZEN 7 8700G (up to 5.1Ghz 8-cores 16-threads) 24M Cache - TRAY",
+        "category": "Processor",
+        "price": 85500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-8700g-up-to-51ghz-8-cores-16-threads-24m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:45.696296"
+    },
+    {
+        "name": "AMD RYZEN 5 7500X3D - TRAY",
+        "category": "Processor",
+        "price": 84500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-7500x3d-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:45.696296"
+    },
+    {
+        "name": "Intel® Core™ Ultra 5 Processor 225F (20M Cache, up to 4.90 GHz)",
+        "category": "Processor",
+        "price": 54500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-ultra-5-processor-225f-20m-cache-up-to-490-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:45.696296"
+    },
+    {
+        "name": "Intel Core i5 processor 14600KF",
+        "category": "Processor",
+        "price": 79500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i5-processor-14600kf",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:45.696296"
+    },
+    {
+        "name": "AMD Ryzen 5 5600 (6 Cores, 12 Threads) Up To 4.4 GHz",
+        "category": "Processor",
+        "price": 43500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-5600-6-cores-12-threads-up-to-44-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:48.069468"
+    },
+    {
+        "name": "INTEL CORE I3 12100 (12M CACHE, UP TO 4.30)",
+        "category": "Processor",
+        "price": 49000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i3-12100-12m-cache-up-to-430",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:48.072982"
+    },
+    {
+        "name": "AMD Ryzen 5 8400F (up to 4.7Ghz 6-cores 12-threads) 16M Cache - Tray",
+        "category": "Processor",
+        "price": 44500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-8400f-up-to-47ghz-6-cores-12-threads-16m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:48.072982"
+    },
+    {
+        "name": "Intel Core Ultra 7 Processor 265",
+        "category": "Processor",
+        "price": 99000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-ultra-7-processor-265-1",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:48.072982"
+    },
+    {
+        "name": "Intel® Core Ultra 9 Processor 285K",
+        "category": "Processor",
+        "price": 199500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-ultra-9-processor-285k",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:48.072982"
+    },
+    {
+        "name": "AMD Ryzen 9 9950X (up to 5.7Ghz 16-cores 32-threads) 64M Cache",
+        "category": "Processor",
+        "price": 179000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-9-9950x-up-to-57ghz-16-cores-32-threads-64m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:48.072982"
+    },
+    {
+        "name": "AMD Ryzen 7 9700X (up to 5.5Ghz 8-cores 16-threads) 32M Cache",
+        "category": "Processor",
+        "price": 98000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-9700x-up-to-55ghz-8-cores-16-threads-32m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:48.079882"
+    },
+    {
+        "name": "Intel® Core Ultra 7 Processor 265K",
+        "category": "Processor",
+        "price": 106500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-ultra-7-processor-265k",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:48.079882"
+    },
+    {
+        "name": "AMD Ryzen 9 9900X (up to 5.6Ghz 12-cores 24-threads) 64M Cache - Tray",
+        "category": "Processor",
+        "price": 138500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-9-9900x-up-to-56ghz-12-cores-24-threads-64m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:48.079882"
+    },
+    {
+        "name": "INTEL CORE I7 14700 (33M CACHE, UP TO 5.40 GHZ)",
+        "category": "Processor",
+        "price": 154500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i7-14700-33m-cache-up-to-540-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:48.079882"
+    },
+    {
+        "name": "AMD RYZEN 5 8500G UP TO 5GHZ 6-CORES 12-THREADS) 22M CACHE",
+        "category": "Processor",
+        "price": 59500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-8500g-up-to-5ghz-6-cores-12-threads-22m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:48.083428"
+    },
+    {
+        "name": "AMD Ryzen 5 9600X (up to 5.4Ghz 6-cores 12-threads) 32M Cache",
+        "category": "Processor",
+        "price": 89500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-9600x-up-to-54ghz-6-cores-12-threads-32m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:48.084145"
+    },
+    {
+        "name": "AMD Ryzen 5 7500F (up to 5.0Ghz 6-cores 12-threads) 32M Cache  - TRAY",
+        "category": "Processor",
+        "price": 49500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-7500f-up-to-50ghz-6-cores-12-threads-32m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:49.619797"
+    },
+    {
+        "name": "AMD Ryzen 7 7800X3D (up to 5Ghz 8-cores 16-threads) 96M AMD V-Cache - Tray",
+        "category": "Processor",
+        "price": 129500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-7800x3d-up-to-5ghz-8-cores-16-threads-96m-amd-v-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:49.619797"
+    },
+    {
+        "name": "Intel Core i7-12700K - Tray",
+        "category": "Processor",
+        "price": 89500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i7-12700k-tray-1",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:49.627467"
+    },
+    {
+        "name": "AMD Ryzen 7 7700X (up to 5.4Ghz 8-cores 16-threads) 32M Cache - TRAY",
+        "category": "Processor",
+        "price": 85000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-7700x-up-to-54ghz-8-cores-16-threads-32m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:49.627467"
+    },
+    {
+        "name": "INTEL CORE I7 12700F (25M CACHE, UP TO 4.90 GHZ)",
+        "category": "Processor",
+        "price": 79500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i7-12700f-25m-cache-up-to-490-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:49.629644"
+    },
+    {
+        "name": "AMD Ryzen 5 7600X (up to 5.3Ghz 6-cores 12-threads) 32M Cache",
+        "category": "Processor",
+        "price": 67000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-7600x-up-to-53ghz-6-cores-12-threads-32m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:49.629644"
+    },
+    {
+        "name": "AMD Ryzen 5 5600GT (up to 4.6Ghz 6-cores 12-threads) 16M Cache",
+        "category": "Processor",
+        "price": 50000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-5600gt-up-to-46ghz-6-cores-12-threads-16m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:49.629644"
+    },
+    {
+        "name": "AMD Ryzen 5 8600G up to 5Ghz 6-cores 12-threads) 16M Cache - Tray",
+        "category": "Processor",
+        "price": 69000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-8600g-up-to-5ghz-6-cores-12-threads-16m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:49.633068"
+    },
+    {
+        "name": "Intel Core Ultra 5 Processor 245K",
+        "category": "Processor",
+        "price": 104000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-ultra-5-processor-245k",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:49.635399"
+    },
+    {
+        "name": "Intel® Core i7-13700F Processor (30M Cache, up to 5.20 GHz)",
+        "category": "Processor",
+        "price": 89000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i7-13700f-processor-30m-cache-up-to-520-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:49.635399"
+    },
+    {
+        "name": "INTEL CORE I9 14900K (36M CACHE, UP TO 6.00 GHZ) - Tray",
+        "category": "Processor",
+        "price": 164500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i9-14900k-36m-cache-up-to-600-ghz-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:49.635399"
+    },
+    {
+        "name": "INTEL CORE I7 14700K (33M CACHE, UP TO 5.60 GHZ) - TRAY",
+        "category": "Processor",
+        "price": 132000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i7-14700k-33m-cache-up-to-560-ghz-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:49.635399"
+    },
+    {
+        "name": "AMD Ryzen 5 7600 (up to 5.1Ghz 6-cores 12-threads) 32M Cache - TRAY",
+        "category": "Processor",
+        "price": 56500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-7600-up-to-51ghz-6-cores-12-threads-32m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:51.366040"
+    },
+    {
+        "name": "INTEL CORE I5 14600K (24M CACHE, UP TO 5.30 GHZ)",
+        "category": "Processor",
+        "price": 82000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i5-14600k-24m-cache-up-to-530-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:51.368660"
+    },
+    {
+        "name": "AMD RYZEN 9 7900X (UP TO 5.6GHZ 12-CORES 24-THREADS) 76M CACHE",
+        "category": "Processor",
+        "price": 125000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-9-7900x-up-to-56ghz-12-cores-24-threads-76m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:51.370092"
+    },
+    {
+        "name": "AMD RYZEN 7 5700X (UP TO 4.6GHZ 8-CORES 16-THREADS) 36M CACHE",
+        "category": "Processor",
+        "price": 62500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-5700x-up-to-46ghz-8-cores-16-threads-36m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:51.370092"
+    },
+    {
+        "name": "INTEL CORE I7 12700 (25M CACHE, UP TO 4.90)",
+        "category": "Processor",
+        "price": 89500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i7-12700-25m-cache-up-to-490",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:51.370092"
+    },
+    {
+        "name": "INTEL CORE I5-12400 (18M CACHE, UP TO 4.40 GHZ)",
+        "category": "Processor",
+        "price": 68000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i5-12400-18m-cache-up-to-440-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:51.370092"
+    },
+    {
+        "name": "INTEL CORE I5-12400F (18M CACHE, UP TO 4.40 GHZ)",
+        "category": "Processor",
+        "price": 49000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i5-12400f-18m-cache-up-to-440-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:51.370092"
+    },
+    {
+        "name": "Intel® Core™ i3-13100 Processor (12M Cache, up to 4.50 GHz)",
+        "category": "Processor",
+        "price": 39000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i3-13100-processor-12m-cache-up-to-450-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:51.370092"
+    },
+    {
+        "name": "AMD RYZEN 5 5600G (UP TO 4.4GHZ 6-CORES 12-THREADS) 19M CACHE - TRAY",
+        "category": "Processor",
+        "price": 45000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-5600g-up-to-44ghz-6-cores-12-threads-19m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:51.376630"
+    },
+    {
+        "name": "INTEL CORE I5 14400F (20M CACHE, UP TO 4.70 GHZ)",
+        "category": "Processor",
+        "price": 56500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i5-14400f-20m-cache-up-to-470-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:51.376630"
+    },
+    {
+        "name": "INTEL CORE I5 14400 (20M CACHE, UP TO 4.70 GHZ)",
+        "category": "Processor",
+        "price": 88500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i5-14400-20m-cache-up-to-470-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:51.376630"
+    },
+    {
+        "name": "AMD RYZEN 5 5600X (UP TO 4.6GHZ 6-CORES 12-THREADS) 35M CACHE - TRAY",
+        "category": "Processor",
+        "price": 47500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-5600x-up-to-46ghz-6-cores-12-threads-35m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:51.379803"
+    },
+    {
+        "name": "Intel® Core™ Ultra 5 Processor 225 (20M Cache, up to 4.90 GHz)",
+        "category": "Processor",
+        "price": 60000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-ultra-5-processor-225-20m-cache-up-to-490-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:53.119359"
+    },
+    {
+        "name": "INTEL CORE I7 14700F (33M CACHE, UP TO 5.40 GHZ)",
+        "category": "Processor",
+        "price": 114500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i7-14700f-33m-cache-up-to-540-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:53.119359"
+    },
+    {
+        "name": "Intel® Core i3-12100F Processor 12M Cache, up to 4.30 GHz",
+        "category": "Processor",
+        "price": 39000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i3-12100f-processor-12m-cache-up-to-430-ghz-1",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:54.918866"
+    },
+    {
+        "name": "AMD Ryzen 7 9850X3D Desktop Processor 96M Cache",
+        "category": "Processor",
+        "price": 182000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-9850x3d-desktop-processor-96m-cache-1",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:54.919808"
+    },
+    {
+        "name": "AMD Ryzen™ 7 5700G (up to 4.6Ghz 8-cores 16-threads) 16M Cache",
+        "category": "Processor",
+        "price": 62500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-5700g-up-to-46ghz-8-cores-16-threads-16m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:54.919808"
+    },
+    {
+        "name": "AMD Ryzen™ 9 9950X3D (up to 5.7Ghz 16-cores 32-threads) 128M Cache - Tray",
+        "category": "Processor",
+        "price": 228000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-9-9950x3d-up-to-57ghz-16-cores-32-threads-128m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:54.919808"
+    },
+    {
+        "name": "Intel® Core™ Ultra 5 Processor 235 (24M Cache, up to 5.00 GHz)",
+        "category": "Processor",
+        "price": 79500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-ultra-5-processor-235-24m-cache-up-to-500-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:54.919808"
+    },
+    {
+        "name": "AMD Ryzen™ 9 9900X3D (up to 5.5Ghz 12-cores 24-threads) 128M Cache",
+        "category": "Processor",
+        "price": 218500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-9-9900x3d-up-to-55ghz-12-cores-24-threads-128m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:54.919808"
+    },
+    {
+        "name": "AMD Ryzen 7 9800X3D (Up to 5.2 GHz 8-Cores 16-Treads ) 96M Cache",
+        "category": "Processor",
+        "price": 162500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-9800x3d-up-to-52-ghz-8-cores-16-treads-96m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:54.919808"
+    },
+    {
+        "name": "AMD Ryzen 7 7700 (up to 5.3Ghz 8-cores 16-threads) 32M Cache - TRAY",
+        "category": "Processor",
+        "price": 76500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-7700-up-to-53ghz-8-cores-16-threads-32m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:54.919808"
+    },
+    {
+        "name": "AMD RYZEN 7 8700G (up to 5.1Ghz 8-cores 16-threads) 24M Cache - TRAY",
+        "category": "Processor",
+        "price": 85500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-8700g-up-to-51ghz-8-cores-16-threads-24m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:54.919808"
+    },
+    {
+        "name": "AMD RYZEN 5 7500X3D - TRAY",
+        "category": "Processor",
+        "price": 84500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-7500x3d-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:54.929468"
+    },
+    {
+        "name": "Intel® Core™ Ultra 5 Processor 225F (20M Cache, up to 4.90 GHz)",
+        "category": "Processor",
+        "price": 54500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-ultra-5-processor-225f-20m-cache-up-to-490-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:54.929468"
+    },
+    {
+        "name": "Intel Core i5 processor 14600KF",
+        "category": "Processor",
+        "price": 79500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i5-processor-14600kf",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:54.929468"
+    },
+    {
+        "name": "AMD Ryzen 5 5600 (6 Cores, 12 Threads) Up To 4.4 GHz",
+        "category": "Processor",
+        "price": 43500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-5600-6-cores-12-threads-up-to-44-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:57.135380"
+    },
+    {
+        "name": "INTEL CORE I3 12100 (12M CACHE, UP TO 4.30)",
+        "category": "Processor",
+        "price": 49000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i3-12100-12m-cache-up-to-430",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:57.135380"
+    },
+    {
+        "name": "AMD Ryzen 5 8400F (up to 4.7Ghz 6-cores 12-threads) 16M Cache - Tray",
+        "category": "Processor",
+        "price": 44500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-8400f-up-to-47ghz-6-cores-12-threads-16m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:57.135380"
+    },
+    {
+        "name": "Intel Core Ultra 7 Processor 265",
+        "category": "Processor",
+        "price": 99000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-ultra-7-processor-265-1",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:57.135380"
+    },
+    {
+        "name": "Intel® Core Ultra 9 Processor 285K",
+        "category": "Processor",
+        "price": 199500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-ultra-9-processor-285k",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:57.141392"
+    },
+    {
+        "name": "AMD Ryzen 9 9950X (up to 5.7Ghz 16-cores 32-threads) 64M Cache",
+        "category": "Processor",
+        "price": 179000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-9-9950x-up-to-57ghz-16-cores-32-threads-64m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:57.141493"
+    },
+    {
+        "name": "AMD Ryzen 7 9700X (up to 5.5Ghz 8-cores 16-threads) 32M Cache",
+        "category": "Processor",
+        "price": 98000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-9700x-up-to-55ghz-8-cores-16-threads-32m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:57.141493"
+    },
+    {
+        "name": "Intel® Core Ultra 7 Processor 265K",
+        "category": "Processor",
+        "price": 106500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-ultra-7-processor-265k",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:57.143878"
+    },
+    {
+        "name": "AMD Ryzen 9 9900X (up to 5.6Ghz 12-cores 24-threads) 64M Cache - Tray",
+        "category": "Processor",
+        "price": 138500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-9-9900x-up-to-56ghz-12-cores-24-threads-64m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:57.143878"
+    },
+    {
+        "name": "INTEL CORE I7 14700 (33M CACHE, UP TO 5.40 GHZ)",
+        "category": "Processor",
+        "price": 154500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i7-14700-33m-cache-up-to-540-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:57.146024"
+    },
+    {
+        "name": "AMD RYZEN 5 8500G UP TO 5GHZ 6-CORES 12-THREADS) 22M CACHE",
+        "category": "Processor",
+        "price": 59500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-8500g-up-to-5ghz-6-cores-12-threads-22m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:57.146024"
+    },
+    {
+        "name": "AMD Ryzen 5 9600X (up to 5.4Ghz 6-cores 12-threads) 32M Cache",
+        "category": "Processor",
+        "price": 89500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-9600x-up-to-54ghz-6-cores-12-threads-32m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:57.146024"
+    },
+    {
+        "name": "AMD Ryzen 5 7500F (up to 5.0Ghz 6-cores 12-threads) 32M Cache  - TRAY",
+        "category": "Processor",
+        "price": 49500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-7500f-up-to-50ghz-6-cores-12-threads-32m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:59.285432"
+    },
+    {
+        "name": "AMD Ryzen 7 7800X3D (up to 5Ghz 8-cores 16-threads) 96M AMD V-Cache - Tray",
+        "category": "Processor",
+        "price": 129500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-7800x3d-up-to-5ghz-8-cores-16-threads-96m-amd-v-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:59.291643"
+    },
+    {
+        "name": "Intel Core i7-12700K - Tray",
+        "category": "Processor",
+        "price": 89500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i7-12700k-tray-1",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:59.293648"
+    },
+    {
+        "name": "AMD Ryzen 7 7700X (up to 5.4Ghz 8-cores 16-threads) 32M Cache - TRAY",
+        "category": "Processor",
+        "price": 85000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-7700x-up-to-54ghz-8-cores-16-threads-32m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:59.293648"
+    },
+    {
+        "name": "INTEL CORE I7 12700F (25M CACHE, UP TO 4.90 GHZ)",
+        "category": "Processor",
+        "price": 79500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i7-12700f-25m-cache-up-to-490-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:59.296159"
+    },
+    {
+        "name": "AMD Ryzen 5 7600X (up to 5.3Ghz 6-cores 12-threads) 32M Cache",
+        "category": "Processor",
+        "price": 67000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-7600x-up-to-53ghz-6-cores-12-threads-32m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:59.296159"
+    },
+    {
+        "name": "AMD Ryzen 5 5600GT (up to 4.6Ghz 6-cores 12-threads) 16M Cache",
+        "category": "Processor",
+        "price": 50000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-5600gt-up-to-46ghz-6-cores-12-threads-16m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:59.296159"
+    },
+    {
+        "name": "AMD Ryzen 5 8600G up to 5Ghz 6-cores 12-threads) 16M Cache - Tray",
+        "category": "Processor",
+        "price": 69000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-8600g-up-to-5ghz-6-cores-12-threads-16m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:59.296159"
+    },
+    {
+        "name": "Intel Core Ultra 5 Processor 245K",
+        "category": "Processor",
+        "price": 104000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-ultra-5-processor-245k",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:59.299746"
+    },
+    {
+        "name": "Intel® Core i7-13700F Processor (30M Cache, up to 5.20 GHz)",
+        "category": "Processor",
+        "price": 89000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i7-13700f-processor-30m-cache-up-to-520-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:59.299746"
+    },
+    {
+        "name": "INTEL CORE I9 14900K (36M CACHE, UP TO 6.00 GHZ) - Tray",
+        "category": "Processor",
+        "price": 164500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i9-14900k-36m-cache-up-to-600-ghz-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:59.299746"
+    },
+    {
+        "name": "INTEL CORE I7 14700K (33M CACHE, UP TO 5.60 GHZ) - TRAY",
+        "category": "Processor",
+        "price": 132000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i7-14700k-33m-cache-up-to-560-ghz-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:35:59.299746"
+    },
+    {
+        "name": "AMD Ryzen 5 7600 (up to 5.1Ghz 6-cores 12-threads) 32M Cache - TRAY",
+        "category": "Processor",
+        "price": 56500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-7600-up-to-51ghz-6-cores-12-threads-32m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:36:01.219939"
+    },
+    {
+        "name": "INTEL CORE I5 14600K (24M CACHE, UP TO 5.30 GHZ)",
+        "category": "Processor",
+        "price": 82000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i5-14600k-24m-cache-up-to-530-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:36:01.229574"
+    },
+    {
+        "name": "AMD RYZEN 9 7900X (UP TO 5.6GHZ 12-CORES 24-THREADS) 76M CACHE",
+        "category": "Processor",
+        "price": 125000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-9-7900x-up-to-56ghz-12-cores-24-threads-76m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:36:01.229574"
+    },
+    {
+        "name": "AMD RYZEN 7 5700X (UP TO 4.6GHZ 8-CORES 16-THREADS) 36M CACHE",
+        "category": "Processor",
+        "price": 62500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-7-5700x-up-to-46ghz-8-cores-16-threads-36m-cache",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:36:01.232751"
+    },
+    {
+        "name": "INTEL CORE I7 12700 (25M CACHE, UP TO 4.90)",
+        "category": "Processor",
+        "price": 89500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i7-12700-25m-cache-up-to-490",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:36:01.232751"
+    },
+    {
+        "name": "INTEL CORE I5-12400 (18M CACHE, UP TO 4.40 GHZ)",
+        "category": "Processor",
+        "price": 68000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i5-12400-18m-cache-up-to-440-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:36:01.235311"
+    },
+    {
+        "name": "INTEL CORE I5-12400F (18M CACHE, UP TO 4.40 GHZ)",
+        "category": "Processor",
+        "price": 49000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i5-12400f-18m-cache-up-to-440-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:36:01.236706"
+    },
+    {
+        "name": "Intel® Core™ i3-13100 Processor (12M Cache, up to 4.50 GHz)",
+        "category": "Processor",
+        "price": 39000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i3-13100-processor-12m-cache-up-to-450-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:36:01.237221"
+    },
+    {
+        "name": "AMD RYZEN 5 5600G (UP TO 4.4GHZ 6-CORES 12-THREADS) 19M CACHE - TRAY",
+        "category": "Processor",
+        "price": 45000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-5600g-up-to-44ghz-6-cores-12-threads-19m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "Out of Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:36:01.237221"
+    },
+    {
+        "name": "INTEL CORE I5 14400F (20M CACHE, UP TO 4.70 GHZ)",
+        "category": "Processor",
+        "price": 56500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i5-14400f-20m-cache-up-to-470-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:36:01.237221"
+    },
+    {
+        "name": "INTEL CORE I5 14400 (20M CACHE, UP TO 4.70 GHZ)",
+        "category": "Processor",
+        "price": 88500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i5-14400-20m-cache-up-to-470-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:36:01.237221"
+    },
+    {
+        "name": "AMD RYZEN 5 5600X (UP TO 4.6GHZ 6-CORES 12-THREADS) 35M CACHE - TRAY",
+        "category": "Processor",
+        "price": 47500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/amd-ryzen-5-5600x-up-to-46ghz-6-cores-12-threads-35m-cache-tray",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:36:01.237221"
+    },
+    {
+        "name": "Intel® Core™ Ultra 5 Processor 225 (20M Cache, up to 4.90 GHz)",
+        "category": "Processor",
+        "price": 60000.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-ultra-5-processor-225-20m-cache-up-to-490-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:36:03.532694"
+    },
+    {
+        "name": "INTEL CORE I7 14700F (33M CACHE, UP TO 5.40 GHZ)",
+        "category": "Processor",
+        "price": 114500.0,
+        "currency": "LKR",
+        "url": "https://www.nanotek.lk/product/intel-core-i7-14700f-33m-cache-up-to-540-ghz",
+        "shop_name": "Nanotek",
+        "description": "",
+        "specifications": {},
+        "metadata": {
+            "stock_status": "In Stock",
+            "slug": "processor",
+            "original_category_name": "Processor"
+        },
+        "last_updated": "2026-02-16T14:36:03.532694"
+    }
+]

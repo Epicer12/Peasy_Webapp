@@ -17,9 +17,10 @@ def test_mapping_logic():
     
     print(f"Testing mapping logic for {email}...")
     try:
-        token, uid = get_supabase_user_token(firebase_uid, email)
+        token, uid, username = get_supabase_user_token(firebase_uid, email)
         print(f"RESULT: Token generated: {token[:20]}...")
         print(f"RESULT: Supabase UID: {uid}")
+        print(f"RESULT: Username: {username}")
         assert token is not None
         assert uid is not None
     except Exception as e:

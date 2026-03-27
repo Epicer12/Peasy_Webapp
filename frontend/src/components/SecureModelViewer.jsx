@@ -65,9 +65,10 @@ export default function SecureModelViewer({ modelId }) {
   return (
     <div
       onContextMenu={(e) => e.preventDefault()}
-      style={{ width: '100%', height: '100%', minHeight: '300px', background: '#f5f5f5', borderRadius: '8px', overflow: 'hidden' }}
+      style={{ width: '100%', height: '100%', minHeight: '300px', background: '#000000', borderRadius: '8px', overflow: 'hidden' }}
     >
       <Canvas shadows camera={{ position: [0, 0, 5], fov: 45 }}>
+        <color attach="background" args={['#313030ff']} />
         <Stage environment="city" intensity={0.6} adjustCamera={true}>
           <Model url={modelUrl} />
         </Stage>

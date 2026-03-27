@@ -28,12 +28,13 @@ from supabase import create_client
 
 class User:
     """User class with access control and Supabase session mapping"""
-    def __init__(self, uid: str, email: Optional[str] = None, supabase_token: Optional[str] = None, supabase_uid: Optional[str] = None, name: Optional[str] = None):
-        self.uid = uid  # Firebase UID
+    def __init__(self, uid: str, email: Optional[str] = None, supabase_token: Optional[str] = None, supabase_uid: Optional[str] = None, name: Optional[str] = None, username: Optional[str] = None):
+        self.uid = uid  # Firebase UID or Supabase Sub
         self.email = email
         self.supabase_token = supabase_token  # JWT for Supabase RLS
         self.supabase_uid = supabase_uid      # Supabase Auth UUID
-        self.name = name or email or uid
+        self.username = username
+        self.name = name or username or email or uid
     
     def has_access(self, model_id: str) -> bool:
         return True
@@ -53,21 +54,23 @@ def get_warranty_supabase():
 def get_supabase_user_token(firebase_uid: str, email: str):
     """
     Mapping Service: Links Firebase UID to a Supabase User for RLS.
-    Returns (supabase_token, supabase_uid)
+    Returns (supabase_token, supabase_uid, username)
     """
     try:
         supabase = get_warranty_supabase()
         
         # 1. Check if mapping exists
         try:
-            res = supabase.table("user_mappings").select("supabase_id").eq("firebase_uid", firebase_uid).execute()
+            res = supabase.table("user_mappings").select("supabase_id, username").eq("firebase_uid", firebase_uid).execute()
         except Exception as table_err:
             print(f"CRITICAL ERROR: Mapping table access failed. Error: {table_err}")
-            return None, None
+            return None, None, None
             
         supabase_uid = None
+        username = None
         if res.data and len(res.data) > 0:
             supabase_uid = res.data[0]["supabase_id"]
+            username = res.data[0].get("username")
         else:
             # 2. Create shadow user if not exists
             password = os.urandom(16).hex()
@@ -102,13 +105,13 @@ def get_supabase_user_token(firebase_uid: str, email: str):
                     pass
 
         if not supabase_uid:
-            return None, None
+            return None, None, None
 
         # 3. Create a custom JWT for this user
         secret = os.getenv("SUPABASE_JWT_SECRET")
         if not secret:
             print("ERROR: SUPABASE_JWT_SECRET missing in .env")
-            return None, supabase_uid
+            return None, supabase_uid, username
 
         payload = {
             "aud": "authenticated",
@@ -119,14 +122,14 @@ def get_supabase_user_token(firebase_uid: str, email: str):
         }
         encoded_token = jwt.encode(payload, secret, algorithm="HS256")
         
-        return encoded_token, supabase_uid
+        return encoded_token, supabase_uid, username
     except Exception as global_err:
         print(f"UNEXPECTED ERROR in get_supabase_user_token: {global_err}")
-        return None, None
+        return None, None, None
 
 async def get_current_user(authorization: str = Header(None)):
     """
-    Verify Firebase ID token and return authenticated user.
+    Verify Token (Firebase or Supabase) and return authenticated user.
     """
     if not authorization:
         # Fallback for development
@@ -134,6 +137,7 @@ async def get_current_user(authorization: str = Header(None)):
 
     token = authorization.replace("Bearer ", "").strip()
     
+    # Strategy 1: Firebase Verification
     if FIREBASE_ENABLED:
         try:
             decoded_token = auth.verify_id_token(token)
@@ -141,17 +145,34 @@ async def get_current_user(authorization: str = Header(None)):
             email = decoded_token.get("email")
             name = decoded_token.get("name", "User")
             
-            sb_token, sb_uid = get_supabase_user_token(uid, email)
-            return User(uid=uid, email=email, name=name, supabase_uid=sb_uid, supabase_token=sb_token)
-        except Exception as e:
-            raise HTTPException(status_code=403, detail=f"Invalid Firebase token: {str(e)}")
-    else:
+            sb_token, sb_uid, username = get_supabase_user_token(uid, email)
+            return User(uid=uid, email=email, name=name, supabase_uid=sb_uid, supabase_token=sb_token, username=username)
+        except Exception:
+            pass # Fallback to Strategy 2
+
+    # Strategy 2: Supabase JWT Verification (Direct Backend Auth)
+    secret = os.getenv("SUPABASE_JWT_SECRET")
+    if secret:
         try:
-            # Fallback: decode without verification to get user identity in dev
-            decoded = jwt.decode(token, options={"verify_signature": False})
-            uid = decoded.get("user_id") or decoded.get("sub") or "dev_user"
-            email = decoded.get("email", "dev@example.com")
-            sb_token, sb_uid = get_supabase_user_token(uid, email)
-            return User(uid=uid, email=email, name="Dev User", supabase_uid=sb_uid, supabase_token=sb_token)
-        except:
-            return User(uid="dev_user", email="dev@example.com", name="Dev User", supabase_uid="00000000-0000-0000-0000-000000000000", supabase_token=token)
+            decoded = jwt.decode(token, secret, algorithms=["HS256"], audience="authenticated")
+            sb_uid = decoded.get("sub")
+            email = decoded.get("email")
+            
+            # Fetch username from mappings
+            supabase = get_warranty_supabase()
+            res = supabase.table("user_mappings").select("username").eq("supabase_id", sb_uid).execute()
+            username = res.data[0].get("username") if res.data else None
+            
+            return User(uid=sb_uid, email=email, supabase_uid=sb_uid, supabase_token=token, username=username)
+        except Exception:
+            pass
+
+    # Fallback: Insecure decode for dev
+    try:
+        decoded = jwt.decode(token, options={"verify_signature": False})
+        uid = decoded.get("user_id") or decoded.get("sub") or "dev_user"
+        email = decoded.get("email", "dev@example.com")
+        sb_token, sb_uid, username = get_supabase_user_token(uid, email)
+        return User(uid=uid, email=email, name="Dev User", supabase_uid=sb_uid, supabase_token=sb_token, username=username)
+    except:
+        return User(uid="dev_user", email="dev@example.com", name="Dev User", supabase_uid="00000000-0000-0000-0000-000000000000", supabase_token=token)

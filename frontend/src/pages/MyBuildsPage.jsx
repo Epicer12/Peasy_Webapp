@@ -1,14 +1,53 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockUserBuilds } from '../utils/mockCommunityData';
 import { ArrowLeftIcon, PencilSquareIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { getUserCommunityBuilds } from '../services/communityService';
+import { deleteProject } from '../services/componentService';
+import { auth } from '../firebase';
 
 const MyBuildsPage = () => {
     const navigate = useNavigate();
+    const [builds, setBuilds] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const handleDelete = (id) => {
+    useEffect(() => {
+        const fetchMyBuilds = async () => {
+            const user = auth.currentUser;
+            if (!user) {
+                setLoading(false);
+                return;
+            }
+            try {
+                const token = await user.getIdToken();
+                const data = await getUserCommunityBuilds(token);
+                setBuilds(data.map(b => ({
+                    id: b.id,
+                    buildName: b.name,
+                    createdAt: b.created_at,
+                    imageUrl: b.image_url,
+                    likes: 0 // Fetching likes for individual items could be added if needed
+                })));
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchMyBuilds();
+    }, []);
+
+    const handleDelete = async (id) => {
         if (confirm('Are you sure you want to remove this build from the community hub?')) {
-            alert('Build removed successfully (Mock)');
+            const user = auth.currentUser;
+            if (!user) return;
+            try {
+                await deleteProject(id, user.email);
+                setBuilds(builds.filter(b => b.id !== id));
+                alert('Build removed successfully');
+            } catch (error) {
+                console.error(error);
+                alert('Failed to remove build');
+            }
         }
     };
 
@@ -34,15 +73,23 @@ const MyBuildsPage = () => {
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-                {mockUserBuilds.map((build) => (
+                {loading ? (
+                    <div className="py-20 text-center text-gray-500 font-mono italic animate-pulse">
+                        RETRIEVING_COMMUNITY_DATA...
+                    </div>
+                ) : builds.map((build) => (
                     <div
                         key={build.id}
                         className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-[#ccff00]/30 transition-all group"
                     >
                         <div className="flex items-center gap-6">
-                            <div className="w-16 h-16 bg-[#ccff00]/10 rounded-xl flex items-center justify-center">
-                                <span className="text-2xl">🖥️</span>
-                            </div>
+                            {build.imageUrl ? (
+                                <img src={build.imageUrl} alt={build.buildName} className="w-16 h-16 rounded-xl object-cover border border-[#ccff00]" />
+                            ) : (
+                                <div className="w-16 h-16 bg-[#ccff00]/10 rounded-xl flex items-center justify-center text-2xl border border-white/10">
+                                    🖥️
+                                </div>
+                            )}
                             <div>
                                 <h3 className="text-xl font-bold text-white group-hover:text-[#ccff00] transition-colors">
                                     {build.buildName}
@@ -84,7 +131,7 @@ const MyBuildsPage = () => {
                     </div>
                 ))}
 
-                {mockUserBuilds.length === 0 && (
+                {!loading && builds.length === 0 && (
                     <div className="text-center py-20 bg-white/5 border border-dashed border-white/10 rounded-3xl">
                         <p className="text-gray-500 font-mono italic">No builds published yet. Be the first to share!</p>
                     </div>

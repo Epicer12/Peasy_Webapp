@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import logo from '../../assets/logo-white.png';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { auth } from '../../firebase';
+import UserProfilePopover from './UserProfilePopover';
 import {
     HomeIcon,
     CpuChipIcon,
@@ -15,6 +17,21 @@ import {
 const MainLayout = () => {
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [user, setUser] = useState(null);
+    const [menuOpen, setMenuOpen] = useState(false);
+
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+            setUser(currentUser);
+        });
+        return () => unsubscribe();
+    }, []);
+    
+    // Pages that take over the top dashboard bar entirely
+    const isHeadlessMode = 
+        location.pathname.startsWith('/guide') || 
+        location.pathname.startsWith('/build-details') || 
+        location.pathname === '/build';
 
     const navigation = [
         { name: 'HOME', href: '/home', icon: HomeIcon },
@@ -24,7 +41,6 @@ const MainLayout = () => {
         { name: 'MARKET', href: '/marketplace', icon: ShoppingBagIcon },
         { name: 'COMMUNITY', href: '/community', icon: UserGroupIcon },
         { name: 'WARRANTY', href: '/warranty', icon: WrenchScrewdriverIcon },
-        { name: 'PROFILE', href: '/profile', icon: UserGroupIcon },
     ];
 
     const getPageTitle = () => {
@@ -81,37 +97,54 @@ const MainLayout = () => {
                 </nav>
 
                 {/* User Profile / Footer */}
-                <div className="h-16 flex flex-col justify-end items-center pb-4 border-t-2 border-[#333333]">
-                    <div className="w-full px-4 flex items-center justify-between">
-                        <span className="text-[10px] text-[#666]">USER: 8829</span>
-                        <div className="w-6 h-6 border-2 border-[#eeeeee] flex items-center justify-center font-bold text-[10px]">
-                            US
+                <div className="relative w-full border-t-2 border-[#333333] mt-auto">
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuOpen(!menuOpen);
+                        }}
+                        className="w-full h-16 flex items-center justify-between px-4 hover:bg-[#111] transition-colors cursor-pointer group"
+                    >
+                        <span className="text-[10px] text-[#666] group-hover:text-[#eeeeee] uppercase truncate max-w-[100px] font-bold">
+                            {user?.displayName || user?.email?.split('@')[0] || 'GUEST'}
+                        </span>
+                        <div className="w-6 h-6 border-2 border-[#eeeeee] flex items-center justify-center font-bold text-[10px] group-hover:border-[#00f3ff] group-hover:text-[#00f3ff] transition-colors shrink-0">
+                            {(user?.displayName || user?.email || 'GU').substring(0, 2).toUpperCase()}
                         </div>
-                    </div>
+                    </button>
+                    {menuOpen && (
+                        <UserProfilePopover 
+                            user={user} 
+                            isOpen={menuOpen} 
+                            onClose={() => setMenuOpen(false)} 
+                        />
+                    )}
                 </div>
             </aside>
 
             {/* Main Content Wrapper */}
             <div className="flex-1 flex flex-col min-w-0">
 
-                {/* Brutalist Header */}
-                <header className="h-16 md:h-20 flex items-end justify-between px-6 md:px-8 pb-3 border-b-2 border-[#333333] bg-[#050505]">
-                    <div className="flex flex-col w-full">
-                        <div className="flex justify-between items-start mb-1">
-                            {/* Hamburger for mobile */}
-                            <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-[#eeeeee]">
-                                <Bars3Icon className="w-6 h-6" />
-                            </button>
-                            <span className="text-[10px] font-mono text-[#666666] ml-auto">SYS.VER.2.0.5 // ONLINE</span>
+                {/* Brutalist Header - Hidden on specific pages to let them take over */}
+                {!isHeadlessMode && (
+                    <header className="h-16 md:h-20 flex items-end justify-between px-6 md:px-8 pb-3 border-b-2 border-[#333333] bg-[#050505]">
+                        <div className="flex flex-col w-full">
+                            <div className="flex justify-between items-start mb-1">
+                                {/* Hamburger for mobile */}
+                                <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-[#eeeeee]">
+                                    <Bars3Icon className="w-6 h-6" />
+                                </button>
+                                <span className="text-[10px] font-mono text-[#666666] ml-auto">SYS.VER.2.0.5 // ONLINE</span>
+                            </div>
+                            <h2 className="text-2xl md:text-4xl font-black tracking-[-0.05em] uppercase leading-none text-[#eeeeee]">
+                                {getPageTitle()}
+                            </h2>
                         </div>
-                        <h2 className="text-2xl md:text-4xl font-black tracking-[-0.05em] uppercase leading-none text-[#eeeeee]">
-                            {getPageTitle()}
-                        </h2>
-                    </div>
-                </header>
+                    </header>
+                )}
 
-                {/* Page Content - Added bottom padding */}
-                <main className="flex-1 overflow-y-auto p-6 md:p-12 pb-32 relative scrollbar-thin scrollbar-thumb-[#333333] scrollbar-track-transparent">
+                {/* Page Content - Dynamic padding based on mode */}
+                <main className={`flex-1 overflow-y-auto pb-32 relative scrollbar-thin scrollbar-thumb-[#333333] scrollbar-track-transparent ${isHeadlessMode ? '' : 'p-6 md:p-12'}`}>
                     <Outlet />
                 </main>
             </div>
