@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, googleProvider, signInWithPopup } from '../../firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { API_BASE_URL } from '../../utils/apiClient';
 
 function SignUpPage({ toggleMode }) {
   const [username, setUsername] = useState('');
@@ -19,7 +20,7 @@ function SignUpPage({ toggleMode }) {
       const user = result.user;
       const idToken = await user.getIdToken();
 
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -51,7 +52,7 @@ function SignUpPage({ toggleMode }) {
       const user = userCredential.user;
       const idToken = await user.getIdToken();
 
-      const registerRes = await fetch('/api/auth/register', {
+      const registerRes = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

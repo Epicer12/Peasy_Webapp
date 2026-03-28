@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
 import ProductCard from '../components/marketplace/ProductCard';
 import ProductModal from '../components/marketplace/ProductModal';
 import DualPriceSlider from '../components/marketplace/DualPriceSlider';
+import { API_BASE_URL } from '../utils/apiClient';
 
 const MarketplacePage = () => {
     const [activeTab, setActiveTab] = useState('all');
@@ -33,13 +33,13 @@ const MarketplacePage = () => {
     // Initial mount fetches
     useEffect(() => {
         // Fetch known shops
-        fetch('/api/marketplace/shops')
+        fetch(`${API_BASE_URL}/api/marketplace/shops`)
             .then(res => res.json())
             .then(data => setShopsData(data))
             .catch(err => console.error("Error fetching shops:", err));
 
         // Fetch curated offers
-        fetch('/api/marketplace/offers')
+        fetch(`${API_BASE_URL}/api/marketplace/offers`)
             .then(res => res.json())
             .then(data => setOffersData(data))
             .catch(err => console.error("Error fetching offers:", err));
@@ -48,7 +48,7 @@ const MarketplacePage = () => {
     const fetchMarketplaceData = useCallback(async () => {
         setLoading(true);
         try {
-            let url = `/api/marketplace/search?category=${activeTab}&shop=${activeShop}`;
+            let url = `${API_BASE_URL}/api/marketplace/search?category=${activeTab}&shop=${activeShop}`;
             if (searchQuery) url += `&q=${encodeURIComponent(searchQuery)}`;
             if (minPrice) url += `&min_price=${minPrice}`;
             if (maxPrice) url += `&max_price=${maxPrice}`;

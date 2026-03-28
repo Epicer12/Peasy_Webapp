@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, googleProvider, signInWithPopup } from '../../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { API_BASE_URL } from '../../utils/apiClient';
 
 function LoginPage({ toggleMode }) {
   const [email, setEmail] = useState('');
@@ -18,7 +19,7 @@ function LoginPage({ toggleMode }) {
       const user = result.user;
       const idToken = await user.getIdToken();
 
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

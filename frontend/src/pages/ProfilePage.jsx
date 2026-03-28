@@ -12,6 +12,7 @@ import {
     ArrowRightIcon
 } from '@heroicons/react/24/outline';
 import { auth } from '../firebase';
+import { API_BASE_URL } from '../utils/apiClient';
 
 const ProfilePage = () => {
     const [profile, setProfile] = useState({
@@ -38,7 +39,7 @@ const ProfilePage = () => {
             if (!currentUser) throw new Error("Authentication required");
             
             const token = await currentUser.getIdToken();
-            const response = await fetch('/api/user/profile', {
+            const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -72,7 +73,7 @@ const ProfilePage = () => {
             const formData = new FormData();
             formData.append('file', file);
 
-            const response = await fetch('/api/user/profile-photo', {
+            const response = await fetch(`${API_BASE_URL}/api/user/profile-photo`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
@@ -102,7 +103,7 @@ const ProfilePage = () => {
             if (!currentUser) throw new Error("Authentication required");
             const token = await currentUser.getIdToken();
 
-            const response = await fetch('/api/user/update', {
+            const response = await fetch(`${API_BASE_URL}/api/user/update`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

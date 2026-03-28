@@ -1,3 +1,5 @@
+import { API_BASE_URL } from '../utils/apiClient';
+
 // [ComponentService] Unified API Version
 // Centralized service for PC parts, project management, and hardware analysis.
 
@@ -5,7 +7,7 @@ export const searchComponents = async (query, type) => {
     try {
         console.log(`[ComponentService] searchComponents calling API for ${type}, Query: ${query}`);
         
-        const response = await fetch(`/api/components/search?type=${encodeURIComponent(type)}&q=${encodeURIComponent(query || "")}`);
+        const response = await fetch(`${API_BASE_URL}/api/components/search?type=${encodeURIComponent(type)}&q=${encodeURIComponent(query || "")}`);
         if (!response.ok) {
             throw new Error(`API error: ${response.statusText}`);
         }
@@ -36,7 +38,7 @@ export const submitBuildRequest = async (payload) => {
 export const generateBuilds = async (payload) => {
     console.log("Generating builds for payload:", payload);
     try {
-        const response = await fetch('/api/generate-builds', {
+        const response = await fetch(`${API_BASE_URL}/api/generate-builds`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -55,7 +57,7 @@ export const generateBuilds = async (payload) => {
 
 export const generateBuildSummary = async (builds) => {
     try {
-        const response = await fetch('/api/generate-summary', {
+        const response = await fetch(`${API_BASE_URL}/api/generate-summary`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ builds })
@@ -86,7 +88,7 @@ export const saveProject = async (projectData) => {
             projectData.image_url = BUILD_IMAGES[randomIndex];
         }
 
-        const response = await fetch('/api/projects', {
+        const response = await fetch(`${API_BASE_URL}/api/projects`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(projectData)
@@ -101,7 +103,7 @@ export const saveProject = async (projectData) => {
 
 export const getProjects = async (email) => {
     try {
-        const url = email ? `/api/projects?user_email=${email}` : '/api/projects';
+        const url = email ? `${API_BASE_URL}/api/projects?user_email=${email}` : `${API_BASE_URL}/api/projects`;
         const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch projects');
         return await response.json();
@@ -113,7 +115,7 @@ export const getProjects = async (email) => {
 
 export const getProjectById = async (id, email) => {
     try {
-        const url = email ? `/api/projects/${id}?user_email=${email}` : `/api/projects/${id}`;
+        const url = email ? `${API_BASE_URL}/api/projects/${id}?user_email=${email}` : `${API_BASE_URL}/api/projects/${id}`;
         const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch project');
         return await response.json();
@@ -125,7 +127,7 @@ export const getProjectById = async (id, email) => {
 
 export const updateProject = async (id, projectData) => {
     try {
-        const response = await fetch(`/api/projects/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/api/projects/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(projectData)
@@ -140,7 +142,7 @@ export const updateProject = async (id, projectData) => {
 
 export const analyzeBottleneck = async (components) => {
     try {
-        const response = await fetch('/api/analyze/bottleneck', {
+        const response = await fetch(`${API_BASE_URL}/api/analyze/bottleneck`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(components)
@@ -155,7 +157,7 @@ export const analyzeBottleneck = async (components) => {
 
 export const deleteProject = async (id, email) => {
     try {
-        const response = await fetch(`/api/projects/${id}?user_email=${email}`, {
+        const response = await fetch(`${API_BASE_URL}/api/projects/${id}?user_email=${email}`, {
             method: 'DELETE'
         });
         if (!response.ok) throw new Error('Failed to delete project');
@@ -168,7 +170,7 @@ export const deleteProject = async (id, email) => {
 
 export const deleteWarranty = async (id, token) => {
     try {
-        const response = await fetch(`/api/warranty/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/api/warranty/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
